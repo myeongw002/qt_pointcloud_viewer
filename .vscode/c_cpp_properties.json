@@ -1,0 +1,25 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/myungw00/ROS2/ros2_ws/install/tutorial_interfaces/include/**",
+        "/home/myungw00/ROS2/ros2_ws/install/turtlesim/include/**",
+        "/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_cbg_executor/include/**",
+        "/opt/ros/galactic/include/**",
+        "/home/myungw00/ROS2/Qt_ws/src/pointcloud_test/include/**",
+        "/home/myungw00/ROS2/Qt_ws/src/qt_gui_test/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
