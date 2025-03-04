@@ -121,12 +121,6 @@ void PointCloudWidget::paintGL() {
     }
 }
 
-
-
-
-
-
-
 void PointCloudWidget::resizeGL(int w, int h) {
     if (h == 0) h = 1;
     float aspect = static_cast<float>(w) / static_cast<float>(h);
@@ -141,6 +135,14 @@ void PointCloudWidget::resizeGL(int w, int h) {
 // ✅ Handle mouse press (store initial position)
 void PointCloudWidget::mousePressEvent(QMouseEvent *event) {
     lastMousePos = event->pos();
+    showIndicator = true;  // ✅ Show indicator
+}
+
+void PointCloudWidget::mouseReleaseEvent(QMouseEvent *event) {
+    // ✅ Stop showing the indicator when the mouse is released
+    showIndicator = false;
+    hideTimer.stop();  // ✅ Stop the timer
+    update();  // ✅ Trigger repaint
 }
 
 void PointCloudWidget::mouseMoveEvent(QMouseEvent *event) {
@@ -152,14 +154,12 @@ void PointCloudWidget::mouseMoveEvent(QMouseEvent *event) {
         rotationX += dy * 0.5f;
         rotationY += dx * 0.5f;
         showIndicator = true;  // ✅ Show indicator
-        hideTimer.start(timerInterval); // ✅ Hide after 1 second of inactivity
     } 
     else if (event->buttons() & Qt::MiddleButton) {
         // ✅ Pan the camera
         panX += dx * 0.01f;
         panY -= dy * 0.01f;
         showIndicator = true;  // ✅ Show indicator
-        hideTimer.start(timerInterval); // ✅ Hide after 1 second of inactivity
     }
 
     lastMousePos = event->pos();

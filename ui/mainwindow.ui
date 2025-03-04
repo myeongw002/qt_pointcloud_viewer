@@ -14,24 +14,11 @@
    <string>ROS2 Qt GUI</string>
   </property>
   <widget class="QWidget" name="pointcloud_view">
-   <widget class="QPushButton" name="start_button">
-    <property name="geometry">
-     <rect>
-      <x>560</x>
-      <y>510</y>
-      <width>106</width>
-      <height>30</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>PushButton</string>
-    </property>
-   </widget>
    <widget class="QLabel" name="status_label">
     <property name="geometry">
      <rect>
-      <x>200</x>
-      <y>520</y>
+      <x>280</x>
+      <y>600</y>
       <width>80</width>
       <height>21</height>
      </rect>
@@ -58,8 +45,21 @@
       <x>11</x>
       <y>11</y>
       <width>937</width>
-      <height>320</height>
+      <height>461</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="start_button">
+    <property name="geometry">
+     <rect>
+      <x>570</x>
+      <y>600</y>
+      <width>106</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>PushButton</string>
     </property>
    </widget>
   </widget>
