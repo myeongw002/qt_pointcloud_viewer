@@ -57,6 +57,7 @@
         "iostream": "cpp",
         "cmath": "cpp",
         "complex": "cpp",
-        "condition_variable": "cpp"
+        "condition_variable": "cpp",
+        "thread": "cpp"
     }
 }
