@@ -54,6 +54,9 @@
         "qtwidgets": "cpp",
         "qpushbutton": "cpp",
         "qopenglwidget": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "cmath": "cpp",
+        "complex": "cpp",
+        "condition_variable": "cpp"
     }
 }
