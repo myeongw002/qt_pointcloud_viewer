@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     }
     ui->pointcloud_view->layout()->addWidget(viewer);
     
-    viewer -> setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    viewer -> setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     QVBoxLayout *mainLayout = new QVBoxLayout();
     mainLayout->addWidget(ui->pointcloud_view);  // OpenGL widget
     mainLayout->addWidget(ui->status_label);     // Status label

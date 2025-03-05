@@ -57,7 +57,8 @@ void PointCloudWidget::paintGL() {
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadIdentity();
-        glOrtho(-1, 1, -1, 1, -1, 1);
+        float aspect = float(width()) / float(height());
+        glOrtho(-aspect, aspect, -1, 1, -1, 1);  // ✅ Corrected for aspect ratio
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
@@ -150,21 +151,24 @@ void PointCloudWidget::mouseMoveEvent(QMouseEvent *event) {
     int dy = event->y() - lastMousePos.y();
 
     if (event->buttons() & Qt::LeftButton) {
-        // ✅ Rotate the camera
+        // ✅ Rotate X-axis (Up/Down) with limits
         rotationX += dy * 0.5f;
+        rotationX = std::clamp(rotationX, -90.0f, 90.0f);  // ✅ Limit to -80 to 80 degrees
+
+        // ✅ Rotate Y-axis (Left/Right) with limits
         rotationY += dx * 0.5f;
-        showIndicator = true;  // ✅ Show indicator
     } 
     else if (event->buttons() & Qt::MiddleButton) {
         // ✅ Pan the camera
         panX += dx * 0.01f;
         panY -= dy * 0.01f;
-        showIndicator = true;  // ✅ Show indicator
     }
 
+    showIndicator = true;
     lastMousePos = event->pos();
-    update();  // ✅ Trigger repaint
+    update();
 }
+
 
 void PointCloudWidget::wheelEvent(QWheelEvent *event) {
     float delta = event->angleDelta().y();

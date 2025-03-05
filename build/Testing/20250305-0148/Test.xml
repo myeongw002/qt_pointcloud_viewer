@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="(empty)"
+	BuildStamp="20250305-0148-Experimental"
+	Name="myungw00-Lenovo-ThinkBook-16p-Gen-2"
+	Generator="ctest-3.31.1"
+	CompilerName="/usr/bin/c++"
+	CompilerVersion="9.4.0"
+	OSName="Linux"
+	Hostname="myungw00-Lenovo-ThinkBook-16p-Gen-2"
+	OSRelease="5.15.0-131-generic"
+	OSVersion="#141~20.04.1-Ubuntu SMP Thu Jan 16 18:38:51 UTC 2025"
+	OSPlatform="x86_64"
+	Is64Bits="1"
+	VendorString="AuthenticAMD"
+	VendorID="Advanced Micro Devices"
+	FamilyID="25"
+	ModelID="80"
+	ModelName="AMD Ryzen 9 5900HX with Radeon Graphics"
+	ProcessorCacheSize="512"
+	NumberOfLogicalCPU="16"
+	NumberOfPhysicalCPU="8"
+	TotalVirtualMemory="15623"
+	TotalPhysicalMemory="31448"
+	LogicalProcessorsPerPhysical="2"
+	ProcessorClockFrequency="1200"
+	>
+	<Testing>
+		<StartDateTime>Mar 05 16:29 KST</StartDateTime>
+		<StartTestTime>1741159764</StartTestTime>
+		<TestList/>
+		<EndDateTime>Mar 05 16:29 KST</EndDateTime>
+		<EndTestTime>1741159764</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>
