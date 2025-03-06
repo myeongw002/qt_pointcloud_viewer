@@ -9,25 +9,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     node = rclcpp::Node::make_shared("qt_pointcloud_viewer");
-
-    viewer = new PointCloudWidget(this, node);  // ✅ Pass ROS node to PointCloudWidget
-
-    if (!ui->pointcloud_view->layout()) {
-        std::cout << "Creating new layout for pointcloud_view" << std::endl;
-        ui->pointcloud_view->setLayout(new QVBoxLayout());
-    }
-    ui->pointcloud_view->layout()->addWidget(viewer);
     
-    viewer -> setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-    QVBoxLayout *mainLayout = new QVBoxLayout();
-    mainLayout->addWidget(ui->pointcloud_view);  // OpenGL widget
-    mainLayout->addWidget(ui->status_label);     // Status label
-    mainLayout->addWidget(ui->start_button);     // Button
-
-    QWidget *centralWidget = new QWidget();
-    centralWidget->setLayout(mainLayout);
-    setCentralWidget(centralWidget);
-
+    viewer = dynamic_cast<PointCloudWidget*>(ui->openGLWidget);
+    if (!viewer) {
+        qFatal("Failed to cast to PointCloudWidget");
+    }
+    //viewer->setRosNode(node);
     connect(ui->start_button, &QPushButton::clicked, this, &MainWindow::startStreaming);
 
     // ✅ Start ROS spinning in a separate thread

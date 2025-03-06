@@ -188,9 +188,11 @@ void PointCloudWidget::pointCloudCallback(const sensor_msgs::msg::PointCloud2::S
     update();
 }
 
-
-
 void PointCloudWidget::hideIndicator() {
     showIndicator = false;
     update();  // ✅ Trigger repaint to remove indicator
+}
+
+void PointCloudWidget::setRosNode(rclcpp::Node::SharedPtr ros_node) {
+    this->node = ros_node;
 }

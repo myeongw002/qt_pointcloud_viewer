@@ -15,6 +15,7 @@ class PointCloudWidget : public QOpenGLWidget {
 
 public:
     explicit PointCloudWidget(QWidget *parent = nullptr, rclcpp::Node::SharedPtr ros_node = nullptr);
+    void setRosNode(rclcpp::Node::SharedPtr ros_node);
 
 protected:
     void initializeGL() override;
@@ -33,7 +34,7 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
     rclcpp::Node::SharedPtr node;
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription;
-
+    
     void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
     // ✅ Variables for rotation, zoom, and panning
