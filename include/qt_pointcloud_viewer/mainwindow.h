@@ -1,5 +1,6 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
+#include <QVector3D>
 
 #include <QMainWindow>
 #include <rclcpp/rclcpp.hpp>
@@ -25,7 +26,8 @@ private:
     Ui::MainWindow *ui;
     rclcpp::Node::SharedPtr node;
     std::thread ros_thread;
-    PointCloudWidget *viewer;
+    // PointCloudWidget *viewer;
+    // QOpenGLWidget *openGLWidget;
 };
 
 #endif // MAINWINDOW_H

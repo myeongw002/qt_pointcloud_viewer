@@ -1,19 +1,30 @@
 #include "pointcloud_widget.h"
 #include <pcl_conversions/pcl_conversions.h>
 #include <iostream>
+#include <qdebug.h>
+PointCloudWidget::PointCloudWidget(QWidget *parent)
+    : QOpenGLWidget(parent), cloud(new pcl::PointCloud<pcl::PointXYZ>) {
 
-PointCloudWidget::PointCloudWidget(QWidget *parent, rclcpp::Node::SharedPtr ros_node)
-    : QOpenGLWidget(parent), cloud(new pcl::PointCloud<pcl::PointXYZ>), node(ros_node) {
+    rotationX = rotationY = 0.0f;
+    panX = panY = 0.0f;
+    zoom = -5.0f;
+    showIndicator = false;  // ✅ Initially hidden
+    
+    hideTimer.setSingleShot(true);
+    connect(&hideTimer, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
+}
 
+void PointCloudWidget::setSubscription(rclcpp::Node::SharedPtr ros_node) {
+    this->node = ros_node;
     rclcpp::QoS qos_settings(rclcpp::KeepLast(10));
     qos_settings.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
     qos_settings.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
 
     subscription = node->create_subscription<sensor_msgs::msg::PointCloud2>(
-        "/tugv/os64_pts", qos_settings,
+        "/mugv/os128_pts", qos_settings,
         std::bind(&PointCloudWidget::pointCloudCallback, this, std::placeholders::_1));
     
-    std::cout << "Subscribed to /tugv/os64_pts" << std::endl;
+    std::cout << "Subscribed to /mugv/os128_pts" << std::endl;
 
     rotationX = rotationY = 0.0f;
     panX = panY = 0.0f;
@@ -25,6 +36,7 @@ PointCloudWidget::PointCloudWidget(QWidget *parent, rclcpp::Node::SharedPtr ros_
 }
 
 void PointCloudWidget::initializeGL() {
+    qDebug() << "initializeGL() called";  // ✅ 로그 출력 추가
     glEnable(GL_DEPTH_TEST);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -71,8 +83,8 @@ void PointCloudWidget::paintGL() {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // ✅ Define indicator parameters (adjust transparency with alpha)
-        float cylinderRadius = 0.05f;  // Fixed size regardless of zoom
-        float cylinderHeight = 0.02f;  // Increase this for more thickness
+        float cylinderRadius = 0.03f;  // Fixed size regardless of zoom
+        float cylinderHeight = 0.01f;  // Increase this for more thickness
         float alpha = 0.5f;  // Transparency (0.0 = fully transparent, 1.0 = fully opaque)
         int segments = 30;  // Smoother cylinder
 
@@ -153,7 +165,7 @@ void PointCloudWidget::mouseMoveEvent(QMouseEvent *event) {
     if (event->buttons() & Qt::LeftButton) {
         // ✅ Rotate X-axis (Up/Down) with limits
         rotationX += dy * 0.5f;
-        rotationX = std::clamp(rotationX, -90.0f, 90.0f);  // ✅ Limit to -80 to 80 degrees
+        rotationX = std::clamp(rotationX, -180.0f, 180.0f);  // ✅ Limit to -80 to 80 degrees
 
         // ✅ Rotate Y-axis (Left/Right) with limits
         rotationY += dx * 0.5f;
@@ -188,11 +200,9 @@ void PointCloudWidget::pointCloudCallback(const sensor_msgs::msg::PointCloud2::S
     update();
 }
 
+
+
 void PointCloudWidget::hideIndicator() {
     showIndicator = false;
     update();  // ✅ Trigger repaint to remove indicator
-}
-
-void PointCloudWidget::setRosNode(rclcpp::Node::SharedPtr ros_node) {
-    this->node = ros_node;
 }

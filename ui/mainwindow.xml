@@ -39,7 +39,7 @@
      <bool>false</bool>
     </property>
    </widget>
-   <widget class="PointCloudWidget" name="openGLWidget">
+   <widget class="QOpenGLWidget" name="openGLWidget">
     <property name="geometry">
      <rect>
       <x>70</x>
@@ -68,16 +68,6 @@
      <string>PushButton</string>
     </property>
    </widget>
-   <widget class="QSpinBox" name="spinBox">
-    <property name="geometry">
-     <rect>
-      <x>120</x>
-      <y>590</y>
-      <width>52</width>
-      <height>30</height>
-     </rect>
-    </property>
-   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -91,13 +81,6 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>PointCloudWidget</class>
-   <extends>QOpenGLWidget</extends>
-   <header>pointcloud_widget.h</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>
