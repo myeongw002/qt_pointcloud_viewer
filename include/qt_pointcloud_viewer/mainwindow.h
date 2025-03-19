@@ -26,7 +26,7 @@ private:
     Ui::MainWindow *ui;
     rclcpp::Node::SharedPtr node;
     std::thread ros_thread;
-    // PointCloudWidget *viewer;
+    PointCloudWidget *viewer;
     // QOpenGLWidget *openGLWidget;
 };
 

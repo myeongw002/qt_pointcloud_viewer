@@ -8,13 +8,6 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
 
-    std::cout << "Starting qt gui" << std::endl;    
-    std::cout << ui << std::endl;
-
-    if (!ui) {
-        std::cerr << "Error: ui is nullptr before setupUi!" << std::endl;
-    }
-
     try {
         std::cout << "Setting up UI..." << std::endl;
         ui->setupUi(this);
@@ -24,63 +17,38 @@ MainWindow::MainWindow(QWidget *parent)
         std::cerr << "❌ Unknown Exception in setupUi()" << std::endl;
     }
 
-    std::cout << "setupUi() completed" << std::endl;
-
-
-
     node = rclcpp::Node::make_shared("qt_pointcloud_viewer");
-    
     
 
     // viewer = new PointCloudWidget(this, node);
-    std::cout << "Viewer before cast: " << ui->openGLWidget << std::endl;
+    // std::cout << "Viewer before cast: " << ui->openGLWidget << std::endl;
 
-    if (ui->openGLWidget) {
-        std::cout << "openGLWidget Type (RTTI): " << typeid(*ui->openGLWidget).name() << std::endl;
+    // if (ui->openGLWidget) {
+    //     std::cout << "openGLWidget Type (RTTI): " << typeid(*ui->openGLWidget).name() << std::endl;
 
-        if (ui->openGLWidget->metaObject()) {
-            std::cout << "openGLWidget Qt Type: " << ui->openGLWidget->metaObject()->className() << std::endl;
-        } else {
-            std::cerr << "Warning: openGLWidget has no metaObject()" << std::endl;
-        }
-    } else {
-        std::cerr << "Error: ui->openGLWidget is nullptr" << std::endl;
-        return;
-    }
+    //     if (ui->openGLWidget->metaObject()) {
+    //         std::cout << "openGLWidget Qt Type: " << ui->openGLWidget->metaObject()->className() << std::endl;
+    //     } else {
+    //         std::cerr << "Warning: openGLWidget has no metaObject()" << std::endl;
+    //     }
+    // } else {
+    //     std::cerr << "Error: ui->openGLWidget is nullptr" << std::endl;
+    //     return;
+    // }
 
     // Attempt qobject_cast
     PointCloudWidget *viewer = qobject_cast<PointCloudWidget *>(ui->openGLWidget);
-    std::cout << "Viewer after cast: " << viewer << std::endl;
-
-    if (!viewer) {
-        std::cerr << "Failed to cast to PointCloudWidget" << std::endl;
-
-        // Check if the object inherits from PointCloudWidget
-        if (ui->openGLWidget->inherits("PointCloudWidget")) {
-            std::cerr << "But ui->openGLWidget does inherit from PointCloudWidget" << std::endl;
-        } else {
-            std::cerr << "ui->openGLWidget does NOT inherit from PointCloudWidget" << std::endl;
-        }
-
-        // Check if Q_OBJECT is missing
-        std::cerr << "Possible reasons:\n"
-                  << "1. The class does not have Q_OBJECT macro.\n"
-                  << "2. The instance is actually of a different type (check logs above).\n"
-                  << "3. MOC was not properly run (try cleaning and rebuilding the project).\n"
-                  << "4. ui->openGLWidget was not correctly initialized as a PointCloudWidget instance.\n";
-
-        return;
-    }
+    // std::cout << "Viewer after cast: " << viewer << std::endl;
 
     viewer->setSubscription(node);
 
-    if (!ui->centralwidget->layout()) {
-        std::cout << "Creating new layout for pointcloud_view" << std::endl;
-        ui->centralwidget->setLayout(new QVBoxLayout());
-    }
+    // if (!ui->centralwidget->layout()) {
+    //     std::cout << "Creating new layout for pointcloud_view" << std::endl;
+    //     ui->centralwidget->setLayout(new QVBoxLayout());
+    // }
     
 
-    viewer -> setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    // viewer -> setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 
 
     connect(ui->start_button, &QPushButton::clicked, this, &MainWindow::startStreaming);

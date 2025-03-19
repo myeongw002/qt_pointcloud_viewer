@@ -6,19 +6,12 @@
 int main(int argc, char *argv[]) {
     try {
         // ROS2 및 Qt 초기화
-    std::cout << "Initializing ROS2 and Qt..." << std::endl;    
     
-    rclcpp::init(argc, argv);
-    std::cout << "1" << std::endl;   
-    
+    rclcpp::init(argc, argv);    
     QApplication app(argc, argv);
-    std::cout << "2" << std::endl;    
-    
     MainWindow window;
-    std::cout << "3" << std::endl;
     
     window.show();
-    std::cout << "4" << std::endl;
     
     return app.exec();
     }
