@@ -18,41 +18,17 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     node = rclcpp::Node::make_shared("qt_pointcloud_viewer");
-    
-
-    // viewer = new PointCloudWidget(this, node);
-    // std::cout << "Viewer before cast: " << ui->openGLWidget << std::endl;
-
-    // if (ui->openGLWidget) {
-    //     std::cout << "openGLWidget Type (RTTI): " << typeid(*ui->openGLWidget).name() << std::endl;
-
-    //     if (ui->openGLWidget->metaObject()) {
-    //         std::cout << "openGLWidget Qt Type: " << ui->openGLWidget->metaObject()->className() << std::endl;
-    //     } else {
-    //         std::cerr << "Warning: openGLWidget has no metaObject()" << std::endl;
-    //     }
-    // } else {
-    //     std::cerr << "Error: ui->openGLWidget is nullptr" << std::endl;
-    //     return;
-    // }
 
     // Attempt qobject_cast
     PointCloudWidget *viewer = qobject_cast<PointCloudWidget *>(ui->openGLWidget);
+    this->viewer = viewer;
     // std::cout << "Viewer after cast: " << viewer << std::endl;
 
-    viewer->setSubscription(node);
-
-    // if (!ui->centralwidget->layout()) {
-    //     std::cout << "Creating new layout for pointcloud_view" << std::endl;
-    //     ui->centralwidget->setLayout(new QVBoxLayout());
-    // }
-    
-
-    // viewer -> setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-
+    viewer->setNode(node);
 
     connect(ui->start_button, &QPushButton::clicked, this, &MainWindow::startStreaming);
-
+    connect(ui->comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+        this, &MainWindow::onComboBoxIndexChanged);
     // ✅ Start ROS spinning in a separate thread
     ros_thread = std::thread([this]() { rclcpp::spin(node); });
 }
@@ -66,9 +42,34 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::startStreaming() {
-    updateStatus("Listening for PointCloud2 data...");
+    if (this->current_index == 0) {
+        std::cout << "❌ No topic selected. Please select a topic." << std::endl;
+        return ;
+    } 
+
+    this->viewer->setStartFlag(true);
 }
 
 void MainWindow::updateStatus(const QString &status) {
     ui->status_label->setText(status);
+    ui->status_label->adjustSize(); 
+}
+
+void MainWindow::onComboBoxIndexChanged(int index) {
+    QString status = "";
+
+    this->current_index = index;
+    std::cout << "Index changed to: " << this->current_index << std::endl;
+    this->viewer->setTopicName(index);
+
+    std::string topic_name = this->viewer->getTopicName();
+
+    if (topic_name == "/") {
+        status = QString::fromStdString("No topic selected. Please select a topic.");
+    }
+    else {
+        status = QString::fromStdString("Listening for PointCloud2 data..." + topic_name);
+        this->viewer->setStartFlag(true);
+    }
+    updateStatus(status);
 }

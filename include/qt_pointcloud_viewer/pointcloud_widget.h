@@ -15,7 +15,10 @@ class PointCloudWidget : public QOpenGLWidget {
 
 public:
     explicit PointCloudWidget(QWidget *parent = nullptr);
-    void setSubscription(rclcpp::Node::SharedPtr ros_node = nullptr);
+    void setNode(rclcpp::Node::SharedPtr ros_node = nullptr);
+    void setStartFlag(bool flag); 
+    void setTopicName(int index);
+    std::string getTopicName() ;
 
 protected:
     void initializeGL() override;
@@ -47,6 +50,9 @@ private:
     QTimer hideTimer;  // ✅ Timer to hide the indicator
     bool showIndicator;  // ✅ Flag to control indicator visibility
     const int timerInterval = 100;  // ✅ Interval for hiding the indicator
+    bool start_flag = false; // ✅ Flag to control the start of the point cloud display
+    std::string topic_name = ""; // ✅ Topic name for point cloud data
+    // rclcpp::Subscription subscription;
 };
 
 #endif // POINTCLOUD_WIDGET_H

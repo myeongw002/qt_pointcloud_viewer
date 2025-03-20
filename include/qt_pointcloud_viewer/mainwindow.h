@@ -21,12 +21,14 @@ public:
 private slots:
     void startStreaming();
     void updateStatus(const QString &status);
-
+    void onComboBoxIndexChanged(int index);
+    
 private:
     Ui::MainWindow *ui;
     rclcpp::Node::SharedPtr node;
     std::thread ros_thread;
     PointCloudWidget *viewer;
+    int current_index = 0;
     // QOpenGLWidget *openGLWidget;
 };
 

@@ -21,5 +21,4 @@ int main(int argc, char *argv[]) {
         std::cout << "Unknown Exception occurred!" << std::endl;
     }
     
-    return -1;
 }

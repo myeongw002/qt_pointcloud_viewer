@@ -14,17 +14,9 @@ PointCloudWidget::PointCloudWidget(QWidget *parent)
     connect(&hideTimer, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
 }
 
-void PointCloudWidget::setSubscription(rclcpp::Node::SharedPtr ros_node) {
+void PointCloudWidget::setNode(rclcpp::Node::SharedPtr ros_node) {
     this->node = ros_node;
-    rclcpp::QoS qos_settings(rclcpp::KeepLast(10));
-    qos_settings.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
-    qos_settings.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
-
-    subscription = node->create_subscription<sensor_msgs::msg::PointCloud2>(
-        "/mugv/os128_pts", qos_settings,
-        std::bind(&PointCloudWidget::pointCloudCallback, this, std::placeholders::_1));
-    
-    std::cout << "Subscribed to /mugv/os128_pts" << std::endl;
+    // std::cout << "🔹 setSubscription() called on object: " << this << std::endl;
 
     rotationX = rotationY = 0.0f;
     panX = panY = 0.0f;
@@ -34,6 +26,46 @@ void PointCloudWidget::setSubscription(rclcpp::Node::SharedPtr ros_node) {
     hideTimer.setSingleShot(true);
     connect(&hideTimer, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
 }
+
+
+void PointCloudWidget::setStartFlag(bool flag) {
+    // std::cout << "setStartFlag called on object at: " << this << std::endl;
+    // std::cout << "setStartFlag called with flag: " << flag << std::endl;
+    this->start_flag = flag;
+    // std::cout << "start_flag is now: " << this->start_flag << std::endl;
+}
+
+void PointCloudWidget::setTopicName(int index) {
+    switch (index) {
+        case 1:
+            this->topic_name = "/mugv/os128_pts";
+            break;
+        case 2:
+            this->topic_name = "/sugv2/os64_pts";
+            break;
+        default:
+            this->topic_name = "/"; 
+            this->start_flag = false;  // ✅ Disable subscription if no valid topic is selected
+            return;
+    }
+
+    std::cout << "Topic name set to: " << this->topic_name << std::endl;
+
+    rclcpp::QoS qos_settings(rclcpp::KeepLast(10));
+    qos_settings.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
+    qos_settings.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
+    
+    subscription = this->node->create_subscription<sensor_msgs::msg::PointCloud2>(
+        this->topic_name, qos_settings,
+        std::bind(&PointCloudWidget::pointCloudCallback, this, std::placeholders::_1));
+    
+    std::cout << "Subscribed to " << this->topic_name <<std::endl;
+}
+
+std::string PointCloudWidget::getTopicName() {
+    return this->topic_name;
+}
+
 
 void PointCloudWidget::initializeGL() {
     qDebug() << "initializeGL() called";  // ✅ 로그 출력 추가
@@ -189,6 +221,12 @@ void PointCloudWidget::wheelEvent(QWheelEvent *event) {
 }
 
 void PointCloudWidget::pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+    if (this->start_flag == false) {
+        // std::cout << "pointCloudCallback on object at: " << this << " | start_flag: " << this->start_flag << std::endl;
+        // std::cout << "start_flag is false, ignoring message." << this->start_flag <<std::endl;
+        return;  // ✅ Ignore messages if start_flag is false
+    }
+
     pcl::fromROSMsg(*msg, *cloud);
     
     if (cloud->points.empty()) {
@@ -197,10 +235,8 @@ void PointCloudWidget::pointCloudCallback(const sensor_msgs::msg::PointCloud2::S
         std::cout << "Received point cloud with " << cloud->points.size() << " points." << std::endl;
     }
 
-    update();
+    update();     
 }
-
-
 
 void PointCloudWidget::hideIndicator() {
     showIndicator = false;
