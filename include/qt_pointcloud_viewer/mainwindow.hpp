@@ -28,6 +28,7 @@ private:
     int currentIndex_ = 0;
     std::vector<ViewerPanel*> panels_;
     // QOpenGLWidget *openGLWidget;
+    int panelCount_ = 3; // Number of panels
 };
 
 #endif // MAINWINDOW_H

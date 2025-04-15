@@ -37,8 +37,8 @@ private:
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_;
     rclcpp::Node::SharedPtr node_;
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
-
     void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+    void paintPoints();
 
     // ✅ Variables for rotation, zoom, and panning
     float rotationX_ = 0.0f;

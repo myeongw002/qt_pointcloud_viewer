@@ -4,7 +4,7 @@
 ViewerPanel::ViewerPanel(QWidget* parent)
     : QWidget(parent) {
     // Initialize the viewer
-    viewer_ = new PointCloudWidget(this);
+    //viewer_ = new PointCloudWidget(this);
     
     
 }

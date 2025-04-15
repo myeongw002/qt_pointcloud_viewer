@@ -24,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
     node_ = rclcpp::Node::make_shared("qt_pointcloud_viewer");
     
     try {
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < panelCount_; ++i) {
             ViewerPanel* panel = new ViewerPanel(this);
         
             QLabel* label = findChild<QLabel*>(QString("label_%1").arg(i+1));
@@ -63,20 +63,4 @@ MainWindow::~MainWindow() {
     }
     delete ui_;
 }
-
-/*
-void MainWindow::startStreaming() {
-    if (currentIndex_ == 0) {
-        std::cout << "❌ No topic selected. Please select a topic." << std::endl;
-        return ;
-    } 
-
-    viewer1_->setStartFlag(true);
-}
-*/
-
-// void MainWindow::updateStatus(const QString &status) {
-//     ui_->label->setText(status);
-//     ui_->label->adjustSize(); 
-// }
 

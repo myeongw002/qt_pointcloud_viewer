@@ -95,28 +95,8 @@ void PointCloudWidget::paintGL() {
     glTranslatef(panX_, panY_, zoom_);
     glRotatef(rotationX_, 1.0f, 0.0f, 0.0f);
     glRotatef(rotationY_, 0.0f, 1.0f, 0.0f);
-
-    /*
-    glBegin(GL_POINTS);
-    for (const auto &point : cloud_->points) {
-        // intensity 값을 [0, 1] 범위로 정규화
-        float normalized_intensity = point.intensity / 255.0f;  // 보통 0~255 범위
-
-        float r = normalized_intensity;
-        float g = 1.0f - std::abs(normalized_intensity - 0.5f) * 2.0f;
-        float b = 1.0f - normalized_intensity;
-        glColor3f(r, g, b);
-        glVertex3f(point.x, point.y, point.z);
-    }
-    glEnd();
-    */
     
-    glBegin(GL_POINTS);
-    glColor3f(0.0f, 1.0f, 0.0f);  // Green color
-    for (const auto &point : cloud_->points) {
-        glVertex3f(point.x, point.y, point.z);
-    }
-    glEnd();
+    paintPoints();
 
 
     // ✅ Only draw the indicator when rotating or panning
@@ -265,4 +245,28 @@ void PointCloudWidget::pointCloudCallback(const sensor_msgs::msg::PointCloud2::S
 void PointCloudWidget::hideIndicator() {
     showIndicator_ = false;
     update();  // ✅ Trigger repaint to remove indicator
+}
+
+
+void PointCloudWidget::paintPoints() {
+    /*
+    glBegin(GL_POINTS);
+    for (const auto &point : cloud_->points) {
+        // intensity 값을 [0, 1] 범위로 정규화
+        float normalized_intensity = point.intensity / 255.0f;  // 보통 0~255 범위
+
+        float r = normalized_intensity;
+        float g = 1.0f - std::abs(normalized_intensity - 0.5f) * 2.0f;
+        float b = 1.0f - normalized_intensity;
+        glColor3f(r, g, b);
+        glVertex3f(point.x, point.y, point.z);
+    }
+    glEnd();
+    */
+    glBegin(GL_POINTS);
+    glColor3f(0.0f, 1.0f, 0.0f);  // Green color
+    for (const auto &point : cloud_->points) {
+        glVertex3f(point.x, point.y, point.z);
+    }
+    glEnd();
 }
