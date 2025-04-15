@@ -21,11 +21,15 @@ add_executable(${PROJECT_NAME}
     src/main.cpp
     src/mainwindow.cpp
     src/pointcloud_widget.cpp
+    src/viewer_panel.cpp
     ui/mainwindow.ui
 )
 
 # MOC 파일 자동 생성
-set(MOC_HEADERS include/${PROJECT_NAME}/mainwindow.h include/${PROJECT_NAME}/pointcloud_widget.h)
+set(MOC_HEADERS include/${PROJECT_NAME}/mainwindow.hpp 
+    include/${PROJECT_NAME}/pointcloud_widget.hpp 
+    include/${PROJECT_NAME}/viewer_panel.hpp)
+
 qt5_wrap_cpp(MOC_SRCS ${MOC_HEADERS})
 
 target_include_directories(${PROJECT_NAME} PUBLIC

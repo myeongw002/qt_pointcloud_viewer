@@ -34,24 +34,24 @@ protected:
     
     
 private:
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
-    rclcpp::Node::SharedPtr node;
-    rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_;
+    rclcpp::Node::SharedPtr node_;
+    rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
 
     void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
     // ✅ Variables for rotation, zoom, and panning
-    float rotationX = 0.0f;
-    float rotationY = 0.0f;
-    float zoom = -10.0f;
-    float panX = 0.0f;  // ✅ New: Panning left/right
-    float panY = 0.0f;  // ✅ New: Panning up/down
-    QPoint lastMousePos;
-    QTimer hideTimer;  // ✅ Timer to hide the indicator
-    bool showIndicator;  // ✅ Flag to control indicator visibility
-    const int timerInterval = 100;  // ✅ Interval for hiding the indicator
-    bool start_flag = false; // ✅ Flag to control the start of the point cloud display
-    std::string topic_name = ""; // ✅ Topic name for point cloud data
+    float rotationX_ = 0.0f;
+    float rotationY_ = 0.0f;
+    float zoom_ = -10.0f;
+    float panX_ = 0.0f;  // ✅ New: Panning left/right
+    float panY_ = 0.0f;  // ✅ New: Panning up/down
+    QPoint lastMousePos_;
+    QTimer hideTimer_;  // ✅ Timer to hide the indicator
+    bool showIndicator_;  // ✅ Flag to control indicator visibility
+    const int timerInterval_ = 100;  // ✅ Interval for hiding the indicator
+    bool startFlag_ = true; // ✅ Flag to control the start of the point cloud display
+    std::string topicName_ = ""; // ✅ Topic name for point cloud data
     // rclcpp::Subscription subscription;
 };
 

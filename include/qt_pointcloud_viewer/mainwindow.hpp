@@ -5,7 +5,9 @@
 #include <QMainWindow>
 #include <rclcpp/rclcpp.hpp>
 #include <thread>
-#include "pointcloud_widget.h"
+#include "pointcloud_widget.hpp"
+#include "viewer_panel.hpp"
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -17,18 +19,14 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
-private slots:
-    void startStreaming();
-    void updateStatus(const QString &status);
-    void onComboBoxIndexChanged(int index);
     
 private:
-    Ui::MainWindow *ui;
-    rclcpp::Node::SharedPtr node;
-    std::thread ros_thread;
-    PointCloudWidget *viewer;
-    int current_index = 0;
+    Ui::MainWindow *ui_;
+    rclcpp::Node::SharedPtr node_;
+    std::thread ros_thread_;
+    PointCloudWidget *viewer_;
+    int currentIndex_ = 0;
+    std::vector<ViewerPanel*> panels_;
     // QOpenGLWidget *openGLWidget;
 };
 

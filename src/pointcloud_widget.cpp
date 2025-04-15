@@ -1,69 +1,78 @@
-#include "pointcloud_widget.h"
+#include "pointcloud_widget.hpp"
 #include <pcl_conversions/pcl_conversions.h>
 #include <iostream>
 #include <qdebug.h>
 PointCloudWidget::PointCloudWidget(QWidget *parent)
-    : QOpenGLWidget(parent), cloud(new pcl::PointCloud<pcl::PointXYZ>) {
+    : QOpenGLWidget(parent), cloud_(new pcl::PointCloud<pcl::PointXYZI>) {
 
-    rotationX = rotationY = 0.0f;
-    panX = panY = 0.0f;
-    zoom = -5.0f;
-    showIndicator = false;  // ✅ Initially hidden
+    rotationX_ = rotationY_ = 0.0f;
+    panX_ = panY_ = 0.0f;
+    zoom_ = -5.0f;
+    showIndicator_ = false;  // ✅ Initially hidden
     
-    hideTimer.setSingleShot(true);
-    connect(&hideTimer, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
+    hideTimer_.setSingleShot(true);
+    connect(&hideTimer_, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
 }
 
 void PointCloudWidget::setNode(rclcpp::Node::SharedPtr ros_node) {
-    this->node = ros_node;
+    node_ = ros_node;
     // std::cout << "🔹 setSubscription() called on object: " << this << std::endl;
 
-    rotationX = rotationY = 0.0f;
-    panX = panY = 0.0f;
-    zoom = -5.0f;
-    showIndicator = false;  // ✅ Initially hidden
+    rotationX_ = rotationY_ = 0.0f;
+    panX_ = panY_ = 0.0f;
+    zoom_ = -5.0f;
+    showIndicator_ = false;  // ✅ Initially hidden
     
-    hideTimer.setSingleShot(true);
-    connect(&hideTimer, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
+    hideTimer_.setSingleShot(true);
+    connect(&hideTimer_, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
 }
 
 
 void PointCloudWidget::setStartFlag(bool flag) {
     // std::cout << "setStartFlag called on object at: " << this << std::endl;
     // std::cout << "setStartFlag called with flag: " << flag << std::endl;
-    this->start_flag = flag;
+    startFlag_ = flag;
     // std::cout << "start_flag is now: " << this->start_flag << std::endl;
 }
 
 void PointCloudWidget::setTopicName(int index) {
     switch (index) {
         case 1:
-            this->topic_name = "/mugv/os128_pts";
+            topicName_ = "/mugv/os128_pts";
             break;
         case 2:
-            this->topic_name = "/sugv2/os64_pts";
+            topicName_ = "/tugv/os64_pts";
             break;
+        case 3:
+            topicName_ = "/sugv1/os64_pts";
+            break;
+        case 4:
+            topicName_ = "/sugv2/os64_pts";
+            break;        
+        case 5:
+            topicName_ = "/suav/livox/lidar";
+            break;    
         default:
-            this->topic_name = "/"; 
-            this->start_flag = false;  // ✅ Disable subscription if no valid topic is selected
+            topicName_ = "/"; 
+            startFlag_ = false;  // ✅ Disable subscription if no valid topic is selected
             return;
     }
 
-    std::cout << "Topic name set to: " << this->topic_name << std::endl;
+    std::cout << "Topic name set to: " << topicName_ << std::endl;
 
     rclcpp::QoS qos_settings(rclcpp::KeepLast(10));
     qos_settings.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
     qos_settings.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
     
-    subscription = this->node->create_subscription<sensor_msgs::msg::PointCloud2>(
-        this->topic_name, qos_settings,
+    subscription_ = this->node_->create_subscription<sensor_msgs::msg::PointCloud2>(
+        topicName_, qos_settings,
         std::bind(&PointCloudWidget::pointCloudCallback, this, std::placeholders::_1));
     
-    std::cout << "Subscribed to " << this->topic_name <<std::endl;
+    std::cout << "Subscribed to " << this->topicName_ <<std::endl;
 }
 
 std::string PointCloudWidget::getTopicName() {
-    return this->topic_name;
+    return topicName_;
 }
 
 
@@ -83,20 +92,35 @@ void PointCloudWidget::paintGL() {
     
     // ✅ Apply camera transformations (panning, zooming, rotation) to the scene
     glLoadIdentity();
-    glTranslatef(panX, panY, zoom);
-    glRotatef(rotationX, 1.0f, 0.0f, 0.0f);
-    glRotatef(rotationY, 0.0f, 1.0f, 0.0f);
+    glTranslatef(panX_, panY_, zoom_);
+    glRotatef(rotationX_, 1.0f, 0.0f, 0.0f);
+    glRotatef(rotationY_, 0.0f, 1.0f, 0.0f);
 
-    // ✅ Draw the Point Cloud
+    /*
+    glBegin(GL_POINTS);
+    for (const auto &point : cloud_->points) {
+        // intensity 값을 [0, 1] 범위로 정규화
+        float normalized_intensity = point.intensity / 255.0f;  // 보통 0~255 범위
+
+        float r = normalized_intensity;
+        float g = 1.0f - std::abs(normalized_intensity - 0.5f) * 2.0f;
+        float b = 1.0f - normalized_intensity;
+        glColor3f(r, g, b);
+        glVertex3f(point.x, point.y, point.z);
+    }
+    glEnd();
+    */
+    
     glBegin(GL_POINTS);
     glColor3f(0.0f, 1.0f, 0.0f);  // Green color
-    for (const auto &point : cloud->points) {
+    for (const auto &point : cloud_->points) {
         glVertex3f(point.x, point.y, point.z);
     }
     glEnd();
 
+
     // ✅ Only draw the indicator when rotating or panning
-    if (showIndicator) {
+    if (showIndicator_) {
         // ✅ Switch to 2D screen space for the indicator
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
@@ -107,8 +131,8 @@ void PointCloudWidget::paintGL() {
         glLoadIdentity();
 
         // ✅ Apply rotation to the indicator (matches camera rotation)
-        glRotatef(rotationX, 1.0f, 0.0f, 0.0f);
-        glRotatef(rotationY, 0.0f, 1.0f, 0.0f);
+        glRotatef(rotationX_, 1.0f, 0.0f, 0.0f);
+        glRotatef(rotationY_, 0.0f, 1.0f, 0.0f);
 
         // ✅ Enable transparency
         glEnable(GL_BLEND);
@@ -179,66 +203,66 @@ void PointCloudWidget::resizeGL(int w, int h) {
 
 // ✅ Handle mouse press (store initial position)
 void PointCloudWidget::mousePressEvent(QMouseEvent *event) {
-    lastMousePos = event->pos();
-    showIndicator = true;  // ✅ Show indicator
+    lastMousePos_ = event->pos();
+    showIndicator_ = true;  // ✅ Show indicator
 }
 
 void PointCloudWidget::mouseReleaseEvent(QMouseEvent *event) {
     // ✅ Stop showing the indicator when the mouse is released
-    showIndicator = false;
-    hideTimer.stop();  // ✅ Stop the timer
+    showIndicator_ = false;
+    hideTimer_.stop();  // ✅ Stop the timer
     update();  // ✅ Trigger repaint
 }
 
 void PointCloudWidget::mouseMoveEvent(QMouseEvent *event) {
-    int dx = event->x() - lastMousePos.x();
-    int dy = event->y() - lastMousePos.y();
+    int dx = event->x() - lastMousePos_.x();
+    int dy = event->y() - lastMousePos_.y();
 
     if (event->buttons() & Qt::LeftButton) {
         // ✅ Rotate X-axis (Up/Down) with limits
-        rotationX += dy * 0.5f;
-        rotationX = std::clamp(rotationX, -180.0f, 180.0f);  // ✅ Limit to -80 to 80 degrees
+        rotationX_ += dy * 0.5f;
+        rotationX_ = std::clamp(rotationX_, -180.0f, 180.0f);  // ✅ Limit to -80 to 80 degrees
 
         // ✅ Rotate Y-axis (Left/Right) with limits
-        rotationY += dx * 0.5f;
+        rotationY_ += dx * 0.5f;
     } 
     else if (event->buttons() & Qt::MiddleButton) {
         // ✅ Pan the camera
-        panX += dx * 0.01f;
-        panY -= dy * 0.01f;
+        panX_ += dx * 0.01f;
+        panY_ -= dy * 0.01f;
     }
 
-    showIndicator = true;
-    lastMousePos = event->pos();
+    showIndicator_ = true;
+    lastMousePos_ = event->pos();
     update();
 }
 
 
 void PointCloudWidget::wheelEvent(QWheelEvent *event) {
     float delta = event->angleDelta().y();
-    zoom += delta * 0.01f;
+    zoom_ += delta * 0.01f;
     update();  // ✅ Trigger repaint
 }
 
 void PointCloudWidget::pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-    if (this->start_flag == false) {
+    if (startFlag_ == false) {
         // std::cout << "pointCloudCallback on object at: " << this << " | start_flag: " << this->start_flag << std::endl;
         // std::cout << "start_flag is false, ignoring message." << this->start_flag <<std::endl;
         return;  // ✅ Ignore messages if start_flag is false
     }
 
-    pcl::fromROSMsg(*msg, *cloud);
+    pcl::fromROSMsg(*msg, *cloud_);
     
-    if (cloud->points.empty()) {
+    if (cloud_->points.empty()) {
         std::cout << "Received an empty point cloud!" << std::endl;
     } else {
-        std::cout << "Received point cloud with " << cloud->points.size() << " points." << std::endl;
+        std::cout << "Received point cloud with " << cloud_->points.size() << " points." << std::endl;
     }
 
     update();     
 }
 
 void PointCloudWidget::hideIndicator() {
-    showIndicator = false;
+    showIndicator_ = false;
     update();  // ✅ Trigger repaint to remove indicator
 }

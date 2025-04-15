@@ -119,6 +119,17 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "bit": "cpp"
+        "bit": "cpp",
+        "*.ipp": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp",
+        "any": "cpp",
+        "rope": "cpp",
+        "slist": "cpp",
+        "regex": "cpp",
+        "csetjmp": "cpp",
+        "strstream": "cpp",
+        "valarray": "cpp",
+        "qvector3d": "cpp"
     }
 }
