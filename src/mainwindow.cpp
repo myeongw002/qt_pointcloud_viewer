@@ -25,23 +25,30 @@ MainWindow::MainWindow(QWidget *parent)
     
     try {
         for (int i = 0; i < panelCount_; ++i) {
-            ViewerPanel* panel = new ViewerPanel(this);
-        
+            Widget::ViewerPanel* panel = new Widget::ViewerPanel(this);
+            
+            auto* viewer = qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(QString("openGLWidget_%1").arg(i+1)));
+            if (viewer) {
+                panel->setPointCloudWidget(viewer, node_);
+            }
             QLabel* label = findChild<QLabel*>(QString("label_%1").arg(i+1));
             if (label) {
                 panel->setStatusLabel(label);
             }
-        
-            QComboBox* combo = findChild<QComboBox*>(QString("comboBox_%1").arg(i+1));
+            QComboBox* combo = findChild<QComboBox*>(QString("robotComboBox_%1").arg(i+1));
             if (combo) {
-                panel->setComboBox(combo);
+                panel->setRobotComboBox(combo);
             }
-        
-            auto* viewer = qobject_cast<PointCloudWidget*>(findChild<QWidget*>(QString("openGLWidget_%1").arg(i+1)));
-            if (viewer) {
-                panel->setPointCloudWidget(viewer, node_);
+            QCheckBox* axisCheckBox = findChild<QCheckBox*>(QString("axisCheckBox_%1").arg(i+1));
+            if (axisCheckBox) {
+                panel->setAxisCheckBox(axisCheckBox);
+            }
+            QCheckBox* gridCheckBox = findChild<QCheckBox*>(QString("gridCheckBox_%1").arg(i+1));
+            if (gridCheckBox) {
+                panel->setGridCheckBox(gridCheckBox);
             }
             
+            panel ->setPanelIdx_(i);
             panels_.push_back(panel);
         }
     } catch (const std::exception &e) {

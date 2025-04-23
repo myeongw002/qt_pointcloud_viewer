@@ -24,9 +24,8 @@ private:
     Ui::MainWindow *ui_;
     rclcpp::Node::SharedPtr node_;
     std::thread ros_thread_;
-    PointCloudWidget *viewer_;
-    int currentIndex_ = 0;
-    std::vector<ViewerPanel*> panels_;
+    Widget::PointCloudWidget *viewer_;
+    std::vector<Widget::ViewerPanel*> panels_;
     // QOpenGLWidget *openGLWidget;
     int panelCount_ = 3; // Number of panels
 };
