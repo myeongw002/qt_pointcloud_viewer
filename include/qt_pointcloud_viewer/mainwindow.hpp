@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 #include <QVector3D>
-
+#include <QDockWidget>
 #include <QMainWindow>
 #include <rclcpp/rclcpp.hpp>
 #include <thread>
@@ -28,6 +28,7 @@ private:
     std::vector<Widget::ViewerPanel*> panels_;
     // QOpenGLWidget *openGLWidget;
     int panelCount_ = 3; // Number of panels
+
 };
 
 #endif // MAINWINDOW_H

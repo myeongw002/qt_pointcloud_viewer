@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QVector3D>
 #include <QComboBox>    
+ #include <QTextEdit>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui_(new Ui::MainWindow) {
@@ -19,8 +20,23 @@ MainWindow::MainWindow(QWidget *parent)
     } catch (...) {
         std::cerr << "❌ Unknown Exception in setupUi()" << std::endl;
     }
+    //Check toolbar status
+    connect(ui_->toolBar->actions().at(0), &QAction::triggered, this, [this]() {
+            std::cout << "Toolbar action clicked!" << std::endl;
+            // 여기에 클릭 시 동작 추가
+        });
 
+        // QAction이 활성화 상태인지 확인
+    ui_->toolBar->actions().at(0)->setEnabled(true);
 
+    ui_->dockWidget->setVisible(false);
+    connect(ui_->actionShowPanel, &QAction::triggered, this, [this]() {
+        ui_->dockWidget->setVisible(!ui_->dockWidget->isVisible());
+    });
+    // if (!menuBar()) {
+    //     setMenuBar(ui_->menubar);
+    // }
+    // ui_->menubar->setNativeMenuBar(false);
     node_ = rclcpp::Node::make_shared("qt_pointcloud_viewer");
     
     try {

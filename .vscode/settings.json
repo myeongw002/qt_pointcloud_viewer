@@ -130,6 +130,12 @@
         "csetjmp": "cpp",
         "strstream": "cpp",
         "valarray": "cpp",
-        "qvector3d": "cpp"
+        "qvector3d": "cpp",
+        "cfenv": "cpp",
+        "cuchar": "cpp",
+        "filesystem": "cpp",
+        "scoped_allocator": "cpp",
+        "charconv": "cpp",
+        "netfwd": "cpp"
     }
 }
