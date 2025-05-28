@@ -20,14 +20,10 @@ MainWindow::MainWindow(QWidget *parent)
     } catch (...) {
         std::cerr << "❌ Unknown Exception in setupUi()" << std::endl;
     }
-    //Check toolbar status
-    connect(ui_->toolBar->actions().at(0), &QAction::triggered, this, [this]() {
-            std::cout << "Toolbar action clicked!" << std::endl;
-            // 여기에 클릭 시 동작 추가
-        });
 
-        // QAction이 활성화 상태인지 확인
-    ui_->toolBar->actions().at(0)->setEnabled(true);
+    ui_->toolBar->setStyleSheet(
+            "QToolButton {padding: 5px; }"
+    );
 
     ui_->dockWidget->setVisible(false);
     connect(ui_->actionShowPanel, &QAction::triggered, this, [this]() {
@@ -43,26 +39,26 @@ MainWindow::MainWindow(QWidget *parent)
         for (int i = 0; i < panelCount_; ++i) {
             Widget::ViewerPanel* panel = new Widget::ViewerPanel(this);
             
-            auto* viewer = qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(QString("openGLWidget_%1").arg(i+1)));
+            auto* viewer = qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(QString("openGLWidget_%1").arg(i)));
             if (viewer) {
                 panel->setPointCloudWidget(viewer, node_);
             }
-            QLabel* label = findChild<QLabel*>(QString("label_%1").arg(i+1));
-            if (label) {
-                panel->setStatusLabel(label);
-            }
-            QComboBox* combo = findChild<QComboBox*>(QString("robotComboBox_%1").arg(i+1));
-            if (combo) {
-                panel->setRobotComboBox(combo);
-            }
-            QCheckBox* axisCheckBox = findChild<QCheckBox*>(QString("axisCheckBox_%1").arg(i+1));
-            if (axisCheckBox) {
-                panel->setAxisCheckBox(axisCheckBox);
-            }
-            QCheckBox* gridCheckBox = findChild<QCheckBox*>(QString("gridCheckBox_%1").arg(i+1));
-            if (gridCheckBox) {
-                panel->setGridCheckBox(gridCheckBox);
-            }
+            // QLabel* label = findChild<QLabel*>(QString("label_%1").arg(i+1));
+            // if (label) {
+            //     panel->setStatusLabel(label);
+            // }
+            // QComboBox* combo = findChild<QComboBox*>(QString("robotComboBox_%1").arg(i+1));
+            // if (combo) {
+            //     panel->setRobotComboBox(combo);
+            // }
+            // QCheckBox* axisCheckBox = findChild<QCheckBox*>(QString("axisCheckBox_%1").arg(i+1));
+            // if (axisCheckBox) {
+            //     panel->setAxisCheckBox(axisCheckBox);
+            // }
+            // QCheckBox* gridCheckBox = findChild<QCheckBox*>(QString("gridCheckBox_%1").arg(i+1));
+            // if (gridCheckBox) {
+            //     panel->setGridCheckBox(gridCheckBox);
+            // }
             
             panel ->setPanelIdx_(i);
             panels_.push_back(panel);

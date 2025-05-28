@@ -27,7 +27,7 @@ private:
     Widget::PointCloudWidget *viewer_;
     std::vector<Widget::ViewerPanel*> panels_;
     // QOpenGLWidget *openGLWidget;
-    int panelCount_ = 3; // Number of panels
+    int panelCount_ = 6; // Number of panels
 
 };
 
