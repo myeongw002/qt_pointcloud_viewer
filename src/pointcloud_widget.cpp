@@ -32,19 +32,19 @@ namespace Widget {
     void PointCloudWidget::setTopicName(int index) {
         switch (index) {
             case 1:
-                topicName_ = "/mugv/os128_pts";
+                topicName_ = "/tugv/viz_global_cloud";
                 break;
             case 2:
-                topicName_ = "/tugv/os64_pts";
+                topicName_ = "/mugv/viz_global_cloud";
                 break;
             case 3:
-                topicName_ = "/sugv1/os64_pts";
+                topicName_ = "/sugv1/viz_global_cloud";
                 break;
             case 4:
-                topicName_ = "/sugv2/os64_pts";
+                topicName_ = "/sugv2/viz_global_cloud";
                 break;        
             case 5:
-                topicName_ = "/suav/livox/lidar";
+                topicName_ = "/suav/viz_global_cloud";
                 break;    
             default:
                 topicName_ = "/"; 
@@ -70,7 +70,7 @@ namespace Widget {
 
 
     void PointCloudWidget::initializeGL() {
-        qDebug() << "initializeGL() called";  // ✅ 로그 출력 추가
+        qDebug() << "initializeGL() ";  // ✅ 로그 출력 추가
         glEnable(GL_DEPTH_TEST);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();

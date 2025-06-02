@@ -64,15 +64,26 @@
   <widget class="QDockWidget" name="dockWidget">
    <property name="minimumSize">
     <size>
-     <width>350</width>
+     <width>300</width>
      <height>500</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
-     <width>350</width>
+     <width>300</width>
      <height>1080</height>
     </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QDockWidget {
+    margin: 0px;
+    padding: 0px;
+}
+QDockWidget::title {
+    padding: 0px;
+    margin: 0px;
+}
+</string>
    </property>
    <property name="floating">
     <bool>false</bool>
@@ -81,25 +92,106 @@
     <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
    <property name="allowedAreas">
-    <set>Qt::RightDockWidgetArea|Qt::TopDockWidgetArea</set>
+    <set>Qt::RightDockWidgetArea</set>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
+    <property name="styleSheet">
+     <string notr="true">QWidget{
+margin: 0px;
+padding: 0px;
+}</string>
+    </property>
+    <layout class="QGridLayout" name="gridLayout_3">
+     <item row="0" column="0">
       <widget class="QTabWidget" name="tabWidget">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QTabWidget::pane {
+    margin: 0px;
+    padding: 0px;
+}
+</string>
+       </property>
        <property name="currentIndex">
         <number>0</number>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>20</width>
+         <height>20</height>
+        </size>
        </property>
        <widget class="QWidget" name="tab_0">
         <property name="whatsThis">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;multi&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
+        <property name="styleSheet">
+         <string notr="true">QWidget{
+margin: 0px;
+}</string>
+        </property>
         <attribute name="title">
-         <string>Multi</string>
+         <string>All</string>
         </attribute>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="0" column="0">
+          <widget class="QTreeWidget" name="treeWidget">
+           <property name="styleSheet">
+            <string notr="true">QTreeWidget {
+    margin: 0px;
+    padding: 0px;
+}
+QTreeView::item {
+    padding: 0px;
+    margin: 0px;
+}
+</string>
+           </property>
+           <column>
+            <property name="text">
+             <string>Option</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Value</string>
+            </property>
+           </column>
+           <item>
+            <property name="text">
+             <string>Robot</string>
+            </property>
+            <property name="text">
+             <string>All</string>
+            </property>
+            <property name="flags">
+             <set>ItemIsSelectable|ItemIsEditable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled|ItemIsTristate</set>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>New Item</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </item>
+          </widget>
+         </item>
+        </layout>
        </widget>
        <widget class="QWidget" name="tab_1">
         <attribute name="title">
@@ -135,6 +227,9 @@
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
+   <property name="styleSheet">
+    <string notr="true">QToolButton {padding: 10px; }</string>
+   </property>
    <property name="movable">
     <bool>false</bool>
    </property>
@@ -154,7 +249,6 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionShowPanel"/>
-   <addaction name="actionasd"/>
    <addaction name="separator"/>
   </widget>
   <action name="actionShowPanel">
@@ -167,15 +261,6 @@
    </property>
    <property name="toolTip">
     <string>Show Panel</string>
-   </property>
-  </action>
-  <action name="actionasd">
-   <property name="icon">
-    <iconset theme="document-new">
-     <normaloff>.</normaloff>.</iconset>
-   </property>
-   <property name="text">
-    <string>asd</string>
    </property>
   </action>
  </widget>

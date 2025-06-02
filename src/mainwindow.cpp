@@ -21,9 +21,9 @@ MainWindow::MainWindow(QWidget *parent)
         std::cerr << "❌ Unknown Exception in setupUi()" << std::endl;
     }
 
-    ui_->toolBar->setStyleSheet(
-            "QToolButton {padding: 5px; }"
-    );
+    // ui_->toolBar->setStyleSheet(
+    //         "QToolButton {padding: 10px; }"
+    // );
 
     ui_->dockWidget->setVisible(false);
     connect(ui_->actionShowPanel, &QAction::triggered, this, [this]() {
@@ -42,6 +42,7 @@ MainWindow::MainWindow(QWidget *parent)
             auto* viewer = qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(QString("openGLWidget_%1").arg(i)));
             if (viewer) {
                 panel->setPointCloudWidget(viewer, node_);
+                viewer->setTopicName(i); // Set topic name based on panel index
             }
             // QLabel* label = findChild<QLabel*>(QString("label_%1").arg(i+1));
             // if (label) {
