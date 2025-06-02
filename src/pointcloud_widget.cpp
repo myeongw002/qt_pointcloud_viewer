@@ -1,312 +1,297 @@
 #include "pointcloud_widget.hpp"
 #include <pcl_conversions/pcl_conversions.h>
 #include <iostream>
-#include <qdebug.h>
 
 namespace Widget {
-    PointCloudWidget::PointCloudWidget(QWidget *parent)
-    : QOpenGLWidget(parent), cloud_(new pcl::PointCloud<pcl::PointXYZI>) {
 
-    rotationX_ = rotationY_ = 0.0f;
-    panX_ = panY_ = 0.0f;
-    zoom_ = -5.0f;
-    showIndicator_ = false;  // ✅ Initially hidden
-    
+PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
+    lastMousePos_ = QPoint(0, 0);
+    showIndicator_ = false;
+    cloud_.reset(new pcl::PointCloud<pcl::PointXYZI>);
+    connect(&hideTimer_, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
+    updateCameraPosition();
+}
+
+PointCloudWidget::~PointCloudWidget() {
+    makeCurrent();
+    doneCurrent();
+}
+
+void PointCloudWidget::setNode(rclcpp::Node::SharedPtr ros_node) {
+    node_ = ros_node;
+    yaw_ = 0.0f;
+    pitch_ = 0.0f;
+    distance_ = 10.0f;
+    focusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
+    showIndicator_ = false;
+
     hideTimer_.setSingleShot(true);
     connect(&hideTimer_, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
+
+    updateCameraPosition();
 }
 
-    void PointCloudWidget::setNode(rclcpp::Node::SharedPtr ros_node) {
-        node_ = ros_node;
-        // std::cout << "🔹 setSubscription() called on object: " << this << std::endl;
-
-        rotationX_ = rotationY_ = 0.0f;
-        panX_ = panY_ = 0.0f;
-        zoom_ = -5.0f;
-        showIndicator_ = false;  // ✅ Initially hidden
-        
-        hideTimer_.setSingleShot(true);
-        connect(&hideTimer_, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
+void PointCloudWidget::setTopicName(int index) {
+    switch (index) {
+        case 1:
+            topicName_ = "/tugv/viz_global_cloud";
+            break;
+        case 2:
+            topicName_ = "/mugv/viz_global_cloud";
+            break;
+        case 3:
+            topicName_ = "/sugv1/viz_global_cloud";
+            break;
+        case 4:
+            topicName_ = "/sugv2/viz_global_cloud";
+            break;        
+        case 5:
+            topicName_ = "/suav/viz_global_cloud";
+            break;    
+        default:
+            topicName_ = "/"; 
+            return;
     }
 
-    void PointCloudWidget::setTopicName(int index) {
-        switch (index) {
-            case 1:
-                topicName_ = "/tugv/viz_global_cloud";
-                break;
-            case 2:
-                topicName_ = "/mugv/viz_global_cloud";
-                break;
-            case 3:
-                topicName_ = "/sugv1/viz_global_cloud";
-                break;
-            case 4:
-                topicName_ = "/sugv2/viz_global_cloud";
-                break;        
-            case 5:
-                topicName_ = "/suav/viz_global_cloud";
-                break;    
-            default:
-                topicName_ = "/"; 
-                return;
-        }
+    std::cout << "Topic name set to: " << topicName_ << std::endl;
 
-        std::cout << "Topic name set to: " << topicName_ << std::endl;
+    rclcpp::QoS qos_settings(rclcpp::KeepLast(10));
+    qos_settings.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
+    qos_settings.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
+    
+    subscription_ = this->node_->create_subscription<sensor_msgs::msg::PointCloud2>(
+        topicName_, qos_settings,
+        std::bind(&PointCloudWidget::pointCloudCallback, this, std::placeholders::_1));
+    
+    std::cout << "Subscribed to " << this->topicName_ << std::endl;
+}
 
-        rclcpp::QoS qos_settings(rclcpp::KeepLast(10));
-        qos_settings.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
-        qos_settings.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
-        
-        subscription_ = this->node_->create_subscription<sensor_msgs::msg::PointCloud2>(
-            topicName_, qos_settings,
-            std::bind(&PointCloudWidget::pointCloudCallback, this, std::placeholders::_1));
-        
-        std::cout << "Subscribed to " << this->topicName_ <<std::endl;
-    }
+std::string PointCloudWidget::getTopicName() {
+    return topicName_;
+}
 
-    std::string PointCloudWidget::getTopicName() {
-        return topicName_;
-    }
+void PointCloudWidget::setShowAxes(bool show) {
+    showAxes_ = show;
+    update();
+}
 
+void PointCloudWidget::setShowGrid(bool show) {
+    showGrid_ = show;
+    update();
+}
 
-    void PointCloudWidget::initializeGL() {
-        qDebug() << "initializeGL() ";  // ✅ 로그 출력 추가
-        glEnable(GL_DEPTH_TEST);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        float aspect = width() / static_cast<float>(height());
-        glFrustum(-aspect, aspect, -1.0, 1.0, 1.0, 100.0);
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-    }
+void PointCloudWidget::setRotationSensitivity(float sensitivity) {
+    rotationSensitivity_ = sensitivity;
+}
 
-    void PointCloudWidget::paintGL() {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-        // ✅ Apply camera transformations (panning, zooming, rotation) to the scene
-        glLoadIdentity();
-        glTranslatef(panX_, panY_, zoom_);
-        glRotatef(rotationX_, 1.0f, 0.0f, 0.0f);
-        glRotatef(rotationY_, 0.0f, 1.0f, 0.0f);
-        
-        if (showGrid_) {
-            drawGrid();
-        }
-        if (showAxes_) {
-            drawAxes();
-        }
+void PointCloudWidget::setFocusPoint(const glm::vec3& focus) {
+    focusPoint_ = focus;
+    updateCameraPosition();
+    update();
+}
 
-        drawPoints();
+void PointCloudWidget::initializeGL() {
+    initializeOpenGLFunctions();
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+}
 
+void PointCloudWidget::resizeGL(int w, int h) {
+    glViewport(0, 0, w, h);
+    float aspect = float(w) / h;
+    projectionMatrix_ = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 1000.0f);
+}
 
-        // ✅ Only draw the indicator when rotating or panning
-        if (showIndicator_) {
-            // ✅ Switch to 2D screen space for the indicator
-            glMatrixMode(GL_PROJECTION);
-            glPushMatrix();
-            glLoadIdentity();
-            float aspect = float(width()) / float(height());
-            glOrtho(-aspect, aspect, -1, 1, -1, 1);  // ✅ Corrected for aspect ratio
-            glMatrixMode(GL_MODELVIEW);
-            glLoadIdentity();
+void PointCloudWidget::paintGL() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            // ✅ Apply rotation to the indicator (matches camera rotation)
-            glRotatef(rotationX_, 1.0f, 0.0f, 0.0f);
-            glRotatef(rotationY_, 0.0f, 1.0f, 0.0f);
+    viewMatrix_ = glm::lookAt(
+        cameraPos_,
+        focusPoint_,
+        glm::vec3(0, 1, 0)
+    );
 
-            // ✅ Enable transparency
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixf(glm::value_ptr(projectionMatrix_));
+    glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixf(glm::value_ptr(viewMatrix_));
 
-            // ✅ Define indicator parameters (adjust transparency with alpha)
-            float cylinderRadius = 0.03f;  // Fixed size regardless of zoom
-            float cylinderHeight = 0.01f;  // Increase this for more thickness
-            float alpha = 0.5f;  // Transparency (0.0 = fully transparent, 1.0 = fully opaque)
-            int segments = 30;  // Smoother cylinder
+    drawPoints();
+    if (showAxes_) drawAxes();
+    if (showGrid_) drawGrid();
+    if (showIndicator_) drawCameraIndicator();
+}
 
-            glColor4f(1.0f, 1.0f, 0.0f, alpha);  // ✅ Semi-transparent Yellow color
+void PointCloudWidget::updateCameraPosition() {
+    float x = distance_ * cos(glm::radians(pitch_)) * cos(glm::radians(yaw_));
+    float y = distance_ * sin(glm::radians(pitch_));
+    float z = distance_ * cos(glm::radians(pitch_)) * sin(glm::radians(yaw_));
 
-            // ✅ Draw the Top Disk
-            glBegin(GL_TRIANGLE_FAN);
-            glVertex3f(0.0f, 0.0f, cylinderHeight / 2.0f);
-            for (int i = 0; i <= segments; ++i) {
-                float angle = 2.0f * M_PI * float(i) / float(segments);
-                float x = cylinderRadius * cos(angle);
-                float y = cylinderRadius * sin(angle);
-                glVertex3f(x, y, cylinderHeight / 2.0f);
-            }
-            glEnd();
+    cameraPos_ = focusPoint_ + glm::vec3(x, y, z);
+}
 
-            // ✅ Draw the Bottom Disk
-            glBegin(GL_TRIANGLE_FAN);
-            glVertex3f(0.0f, 0.0f, -cylinderHeight / 2.0f);
-            for (int i = 0; i <= segments; ++i) {
-                float angle = 2.0f * M_PI * float(i) / float(segments);
-                float x = cylinderRadius * cos(angle);
-                float y = cylinderRadius * sin(angle);
-                glVertex3f(x, y, -cylinderHeight / 2.0f);
-            }
-            glEnd();
+void PointCloudWidget::mousePressEvent(QMouseEvent *event) {
+    lastMousePos_ = event->pos();
+    showIndicator_ = true;
+    hideTimer_.stop(); // 기존 타이머 중지
+    update();
+}
 
-            // ✅ Draw the Side Surface (Cylinder Walls)
-            glBegin(GL_QUAD_STRIP);
-            for (int i = 0; i <= segments; ++i) {
-                float angle = 2.0f * M_PI * float(i) / float(segments);
-                float x = cylinderRadius * cos(angle);
-                float y = cylinderRadius * sin(angle);
+void PointCloudWidget::mouseMoveEvent(QMouseEvent *event) {
+    if (event->buttons() & Qt::LeftButton) {
+        float deltaX = event->x() - lastMousePos_.x();
+        float deltaY = event->y() - lastMousePos_.y();
 
-                glVertex3f(x, y, -cylinderHeight / 2.0f);
-                glVertex3f(x, y, cylinderHeight / 2.0f);
-            }
-            glEnd();
+        yaw_ += deltaX * rotationSensitivity_;
+        pitch_ += deltaY * rotationSensitivity_;
 
-            // ✅ Disable blending after drawing the indicator
-            glDisable(GL_BLEND);
+        pitch_ = std::max(-180.0f, std::min(180.0f, pitch_));
 
-            // ✅ Restore previous projection
-            glMatrixMode(GL_PROJECTION);
-            glPopMatrix();
-            glMatrixMode(GL_MODELVIEW);
-        }
-    }
-
-    void PointCloudWidget::resizeGL(int w, int h) {
-        if (h == 0) h = 1;
-        float aspect = static_cast<float>(w) / static_cast<float>(h);
-        
-        glViewport(0, 0, w, h);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glFrustum(-aspect, aspect, -1.0, 1.0, 1.0, 100.0);
-        glMatrixMode(GL_MODELVIEW);
-    }
-
-    // ✅ Handle mouse press (store initial position)
-    void PointCloudWidget::mousePressEvent(QMouseEvent *event) {
         lastMousePos_ = event->pos();
-        showIndicator_ = true;  // ✅ Show indicator
-    }
+        showIndicator_ = true; // 드래그 중에는 인디케이터 유지
+        updateCameraPosition();
+        update();
+    } else if (event->buttons() & Qt::MiddleButton) {
+        float deltaX = (event->x() - lastMousePos_.x()) * 0.01f;
+        float deltaY = (event->y() - lastMousePos_.y()) * 0.01f;
 
-    void PointCloudWidget::mouseReleaseEvent(QMouseEvent *event) {
-        // ✅ Stop showing the indicator when the mouse is released
-        showIndicator_ = false;
-        hideTimer_.stop();  // ✅ Stop the timer
-        update();  // ✅ Trigger repaint
-    }
+        glm::vec3 right = glm::cross(glm::vec3(0, 1, 0), glm::normalize(cameraPos_ - focusPoint_));
+        glm::vec3 up = glm::cross(glm::normalize(cameraPos_ - focusPoint_), right);
+        focusPoint_ += -(right * deltaX) + (up * deltaY);
 
-    void PointCloudWidget::mouseMoveEvent(QMouseEvent *event) {
-        int dx = event->x() - lastMousePos_.x();
-        int dy = event->y() - lastMousePos_.y();
-
-        if (event->buttons() & Qt::LeftButton) {
-            // ✅ Rotate X-axis (Up/Down) with limits
-            rotationX_ += dy * 0.5f;
-            rotationX_ = std::clamp(rotationX_, -180.0f, 180.0f);  // ✅ Limit to -80 to 80 degrees
-
-            // ✅ Rotate Y-axis (Left/Right) with limits
-            rotationY_ += dx * 0.5f;
-        } 
-        else if (event->buttons() & Qt::MiddleButton) {
-            // ✅ Pan the camera
-            panX_ += dx * 0.01f;
-            panY_ -= dy * 0.01f;
-        }
-
-        showIndicator_ = true;
         lastMousePos_ = event->pos();
+        showIndicator_ = true; // 드래그 중에는 인디케이터 유지
+        updateCameraPosition();
         update();
     }
-
-
-    void PointCloudWidget::wheelEvent(QWheelEvent *event) {
-        float delta = event->angleDelta().y();
-        zoom_ += delta * 0.01f;
-        update();  // ✅ Trigger repaint
-    }
-
-    void PointCloudWidget::pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-        pcl::fromROSMsg(*msg, *cloud_);
-        
-        if (cloud_->points.empty()) {
-            std::cout << "Received an empty point cloud!" << std::endl;
-        } else {
-            std::cout << "Received point cloud with " << cloud_->points.size() << " points." << std::endl;
-        }
-
-        update();     
-    }
-
-    void PointCloudWidget::hideIndicator() {
-        showIndicator_ = false;
-        update();  // ✅ Trigger repaint to remove indicator
-    }
-
-
-    void PointCloudWidget::drawPoints() {
-        /*
-        glBegin(GL_POINTS);
-        for (const auto &point : cloud_->points) {
-            // intensity 값을 [0, 1] 범위로 정규화
-            float normalized_intensity = point.intensity / 255.0f;  // 보통 0~255 범위
-
-            float r = normalized_intensity;
-            float g = 1.0f - std::abs(normalized_intensity - 0.5f) * 2.0f;
-            float b = 1.0f - normalized_intensity;
-            glColor3f(r, g, b);
-            glVertex3f(point.x, point.y, point.z);
-        }
-        glEnd();
-        */
-        glBegin(GL_POINTS);
-        glColor3f(0.0f, 1.0f, 0.0f);  // Green color
-        for (const auto &point : cloud_->points) {
-            glVertex3f(point.x, point.y, point.z);
-        }
-        glEnd();
-    }    
-
-    void PointCloudWidget::drawAxes()
-    {
-        glLineWidth(3.0f);
-        glBegin(GL_LINES);
-
-        // X-axis (Red)
-        glColor3f(1.0f, 0.0f, 0.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(1.0f, 0.0f, 0.0f);
-
-        // Y-axis (Green)
-        glColor3f(0.0f, 1.0f, 0.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(0.0f, 1.0f, 0.0f);
-
-        // Z-axis (Blue)
-        glColor3f(0.0f, 0.0f, 1.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(0.0f, 0.0f, 1.0f);
-
-        glEnd();
-        glLineWidth(1.0f);
-    }
-
-    void PointCloudWidget::drawGrid() {
-        glBegin(GL_LINES);
-        glColor3f(0.5f, 0.5f, 0.5f);  // Gray color
-        for (float i = -10.0f; i <= 10.0f; i += 1.0f) {
-            glVertex3f(i, -10.0f, 0.0f);
-            glVertex3f(i, 10.0f, 0.0f);
-            glVertex3f(-10.0f, i, 0.0f);
-            glVertex3f(10.0f, i, 0.0f);
-        }
-        glEnd();
-    }
-
-    void PointCloudWidget::setShowAxes(bool show) {
-        showAxes_ = show;
-        update();  // ✅ Trigger repaint
-    }
-    void PointCloudWidget::setShowGrid(bool show) {
-        showGrid_ = show;
-        update();  // ✅ Trigger repaint
-    }
 }
+
+void PointCloudWidget::mouseReleaseEvent(QMouseEvent *event) {
+    Q_UNUSED(event);
+    hideTimer_.start(timerInterval_); // 마우스 뗄 때 타이머 시작
+}
+
+void PointCloudWidget::wheelEvent(QWheelEvent *event) {
+    distance_ -= event->angleDelta().y() * 0.01f;
+    distance_ = std::max(1.0f, distance_);
+    updateCameraPosition();
+    update();
+}
+
+void PointCloudWidget::hideIndicator() {
+    showIndicator_ = false;
+    update();
+}
+
+void PointCloudWidget::pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+    std::lock_guard<std::mutex> lock(cloudMutex_);
+    pcl::fromROSMsg(*msg, *cloud_);
+
+    // if (cloud_ && !cloud_->empty()) {
+    //     float centerX = 0.0f, centerY = 0.0f, centerZ = 0.0f;
+    //     for (const auto& point : *cloud_) {
+    //         centerX += point.x;
+    //         centerY += point.y;
+    //         centerZ += point.z;
+    //     }
+    //     centerX /= cloud_->size();
+    //     centerY /= cloud_->size();
+    //     centerZ /= cloud_->size();
+    //     focusPoint_ = glm::vec3(centerX, centerY, centerZ);
+
+    //     std::cout << "Focus Point Updated: (" << centerX << ", " << centerY << ", " << centerZ << ")\n";
+    // }
+
+    // updateCameraPosition();
+    update();
+}
+
+void PointCloudWidget::drawPoints() {
+    std::lock_guard<std::mutex> lock(cloudMutex_);
+    if (!cloud_ || cloud_->empty()) return;
+
+    glPointSize(2.0f);
+    glBegin(GL_POINTS);
+    for (const auto& point : *cloud_) {
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(point.x, point.y, point.z);
+    }
+    glEnd();
+}
+
+void PointCloudWidget::drawAxes() {
+    glBegin(GL_LINES);
+    glColor3f(1.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(1.0f, 0.0f, 0.0f);
+    glColor3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 1.0f, 0.0f);
+    glColor3f(0.0f, 0.0f, 1.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 1.0f);
+    glEnd();
+}
+
+void PointCloudWidget::drawGrid() {
+    glColor3f(0.3f, 0.3f, 0.3f);
+    glBegin(GL_LINES);
+    for (float i = -10.0f; i <= 10.0f; i += 1.0f) {
+        glVertex3f(i, 0.0f, -10.0f);
+        glVertex3f(i, 0.0f, 10.0f);
+        glVertex3f(-10.0f, 0.0f, i);
+        glVertex3f(10.0f, 0.0f, i);
+    }
+    glEnd();
+}
+
+void PointCloudWidget::drawCameraIndicator() {
+    glDisable(GL_DEPTH_TEST);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+
+    glTranslatef(focusPoint_.x, focusPoint_.y, focusPoint_.z);
+
+    float cylinderRadius = 0.3f;  // Fixed size regardless of zoom
+    float cylinderHeight = 0.1f;  // Increase this for more thickness
+    float alpha = 0.7f;  // Transparency (0.0 = fully transparent, 1.0 = fully opaque)
+    int segments = 30;  // Smoother cylinder
+
+    glColor4f(1.0f, 1.0f, 0.0f, alpha); 
+    
+    // ✅ Draw the Top Disk
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0.0f, 0.0f, cylinderHeight / 2.0f);
+    for (int i = 0; i <= segments; ++i) {
+        float angle = 2.0f * M_PI * float(i) / float(segments);
+        float x = cylinderRadius * cos(angle);
+        float y = cylinderRadius * sin(angle);
+        glVertex3f(x, y, cylinderHeight / 2.0f);
+    }
+    glEnd();
+
+    // ✅ Draw the Bottom Disk
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0.0f, 0.0f, -cylinderHeight / 2.0f);
+    for (int i = 0; i <= segments; ++i) {
+        float angle = 2.0f * M_PI * float(i) / float(segments);
+        float x = cylinderRadius * cos(angle);
+        float y = cylinderRadius * sin(angle);
+        glVertex3f(x, y, -cylinderHeight / 2.0f);
+    }
+    glEnd();
+
+    // ✅ Draw the Side Surface (Cylinder Walls)
+    glBegin(GL_QUAD_STRIP);
+    for (int i = 0; i <= segments; ++i) {
+        float angle = 2.0f * M_PI * float(i) / float(segments);
+        float x = cylinderRadius * cos(angle);
+        float y = cylinderRadius * sin(angle);
+
+        glVertex3f(x, y, -cylinderHeight / 2.0f);
+        glVertex3f(x, y, cylinderHeight / 2.0f);
+    }
+    glEnd();
+}
+
+} // namespace Widget
