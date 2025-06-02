@@ -34,7 +34,7 @@ void PointCloudWidget::setNode(rclcpp::Node::SharedPtr ros_node) {
 void PointCloudWidget::setTopicName(int index) {
     switch (index) {
         case 1:
-            topicName_ = "/tugv/viz_global_cloud";
+            topicName_ = "/sugv2/viz_global_cloud";
             break;
         case 2:
             topicName_ = "/mugv/viz_global_cloud";

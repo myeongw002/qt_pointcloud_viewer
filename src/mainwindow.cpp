@@ -2,12 +2,13 @@
 #include "./ui_mainwindow.h"
 #include "pointcloud_widget.hpp"
 #include "viewer_panel.hpp"
+#include "float_widget.hpp"
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
 #include <QVector3D>
 #include <QComboBox>    
- #include <QTextEdit>
+#include <QTextEdit>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui_(new Ui::MainWindow) {
@@ -24,6 +25,8 @@ MainWindow::MainWindow(QWidget *parent)
     // ui_->toolBar->setStyleSheet(
     //         "QToolButton {padding: 10px; }"
     // );
+
+
 
     ui_->dockWidget->setVisible(false);
     connect(ui_->actionShowPanel, &QAction::triggered, this, [this]() {
@@ -44,6 +47,7 @@ MainWindow::MainWindow(QWidget *parent)
                 panel->setPointCloudWidget(viewer, node_);
                 viewer->setTopicName(i); // Set topic name based on panel index
             }
+            
             // QLabel* label = findChild<QLabel*>(QString("label_%1").arg(i+1));
             // if (label) {
             //     panel->setStatusLabel(label);
@@ -64,6 +68,22 @@ MainWindow::MainWindow(QWidget *parent)
             panel ->setPanelIdx_(i);
             panels_.push_back(panel);
         }
+
+        auto* floatWidget = qobject_cast<Widget::FloatWidget*>(findChild<QWidget*>(QString("widget_1")));
+        if (floatWidget ) {
+            if (ui_->gridLayout) {
+                ui_->gridLayout->removeWidget(floatWidget);
+            }
+
+            floatWidget->setFloatingState(true);
+            // floatWidget->move(100, 100); // 초기 위치 설정
+            floatWidget->resize(400, 300); // 크기 설정
+        }
+        else {
+            std::cerr << "❌ Custom float widget not found!" << std::endl;
+        }
+    
+        
     } catch (const std::exception &e) {
         std::cerr << "❌ Exception in creating ViewerPanel: " << e.what() << std::endl;
     } catch (...) {
