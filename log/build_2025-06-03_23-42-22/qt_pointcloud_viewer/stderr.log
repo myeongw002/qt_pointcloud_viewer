@@ -1,0 +1,13 @@
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/float_widget.cpp:[m[K In member function ‘[01m[Kvirtual void Widget::FloatWidget::closeEvent(QCloseEvent*)[m[K’:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/float_widget.cpp:41:26:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[KWidget::FloatWidget::requestDock()[m[K’
+   41 |         emit requestDock([01;31m[K)[m[K;
+      |                          [01;31m[K^[m[K
+In file included from [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/float_widget.cpp:1[m[K:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/include/qt_pointcloud_viewer/float_widget.hpp:22:10:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid Widget::FloatWidget::requestDock(const QString&, int, int)[m[K’
+   22 |     void [01;36m[KrequestDock[m[K(const QString &widgetName, int row, int col); // 인자 추가
+      |          [01;36m[K^~~~~~~~~~~[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/include/qt_pointcloud_viewer/float_widget.hpp:22:10:[m[K [01;36m[Knote: [m[K  candidate expects 3 arguments, 0 provided
+make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:169: CMakeFiles/qt_pointcloud_viewer.dir/src/float_widget.cpp.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
+make[1]: *** [CMakeFiles/Makefile2:152: CMakeFiles/qt_pointcloud_viewer.dir/all] Error 2
+make: *** [Makefile:146: all] Error 2

@@ -1,0 +1,26 @@
+[0.015s] Invoking command in '/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/build/qt_pointcloud_viewer': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/myungw00/ROS2/ros2_ws/install/python_parameters:/home/myungw00/ROS2/ros2_ws/install/py_pubsub:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_service:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_server:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_guard_conditions:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_executors:/opt/ros/galactic /home/myungw00/.local/bin/cmake --build /home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/build/qt_pointcloud_viewer -- -j16 -l16
+[0.113s] [  5%] [34m[1mAutomatic MOC and UIC for target qt_pointcloud_viewer[0m
+[0.121s] [  5%] Built target qt_pointcloud_viewer_autogen
+[0.136s] [ 17%] [34m[1mGenerating include/qt_pointcloud_viewer/moc_float_widget.cpp[0m
+[0.136s] [ 17%] [34m[1mGenerating include/qt_pointcloud_viewer/moc_mainwindow.cpp[0m
+[0.269s] [ 23%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/main.cpp.o[0m
+[0.270s] [ 29%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/mainwindow.cpp.o[0m
+[0.273s] [ 35%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/viewer_panel.cpp.o[0m
+[0.273s] [ 41%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/float_widget.cpp.o[0m
+[0.275s] [ 47%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_mainwindow.cpp.o[0m
+[0.275s] [ 52%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_viewer_panel.cpp.o[0m
+[0.276s] [ 58%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_float_widget.cpp.o[0m
+[1.226s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/float_widget.cpp:[m[K In member function ‘[01m[Kvirtual void Widget::FloatWidget::closeEvent(QCloseEvent*)[m[K’:
+[1.226s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/float_widget.cpp:41:26:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[KWidget::FloatWidget::requestDock()[m[K’
+[1.226s]    41 |         emit requestDock([01;31m[K)[m[K;
+[1.226s]       |                          [01;31m[K^[m[K
+[1.227s] In file included from [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/float_widget.cpp:1[m[K:
+[1.227s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/include/qt_pointcloud_viewer/float_widget.hpp:22:10:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid Widget::FloatWidget::requestDock(const QString&, int, int)[m[K’
+[1.227s]    22 |     void [01;36m[KrequestDock[m[K(const QString &widgetName, int row, int col); // 인자 추가
+[1.227s]       |          [01;36m[K^~~~~~~~~~~[m[K
+[1.227s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/include/qt_pointcloud_viewer/float_widget.hpp:22:10:[m[K [01;36m[Knote: [m[K  candidate expects 3 arguments, 0 provided
+[1.356s] make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:169: CMakeFiles/qt_pointcloud_viewer.dir/src/float_widget.cpp.o] Error 1
+[1.356s] make[2]: *** Waiting for unfinished jobs....
+[5.822s] make[1]: *** [CMakeFiles/Makefile2:152: CMakeFiles/qt_pointcloud_viewer.dir/all] Error 2
+[5.822s] make: *** [Makefile:146: all] Error 2
+[5.826s] Invoked command in '/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/build/qt_pointcloud_viewer' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/myungw00/ROS2/ros2_ws/install/python_parameters:/home/myungw00/ROS2/ros2_ws/install/py_pubsub:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_service:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_server:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_guard_conditions:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_executors:/opt/ros/galactic /home/myungw00/.local/bin/cmake --build /home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/build/qt_pointcloud_viewer -- -j16 -l16

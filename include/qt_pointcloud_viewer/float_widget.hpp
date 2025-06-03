@@ -19,7 +19,7 @@ public:
     void setGridPosition(int row, int col) ;
 
 signals:
-    void requestDock(); // 도킹 복원 요청 시그널
+    void requestDock(const QString &widgetName, int row, int col); // 인자 추가
 
 protected:
     void closeEvent(QCloseEvent *event) override; // 창 닫기 이벤트 처리

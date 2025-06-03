@@ -9,6 +9,7 @@
 #include <QVector3D>
 #include <QComboBox>    
 #include <QTextEdit>
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui_(new Ui::MainWindow) {
@@ -84,8 +85,14 @@ MainWindow::MainWindow(QWidget *parent)
 
             floatWidget->setFloatingState(true);
             // floatWidget->move(100, 100); // 초기 위치 설정
-            floatWidget->resize(400, 300); // 크기 설정
-            // connect(floatWidget, &Widget::FloatWidget::requestDock, this, &MainWindow::handleDockRequest);
+            // floatWidget->resize(400, 300); // 크기 설정
+            //qDebug() << "FloatWidget parent after setup:" << floatWidget_->parent();
+            connect(floatWidget, &Widget::FloatWidget::requestDock, this, &MainWindow::handleDockRequest);
+            if (floatWidget_) {
+                qDebug() << "FloatWidget parent after setup:" << (floatWidget_->parent() ? "Valid parent" : "No parent");
+            } else {
+                qDebug() << "FloatWidget is null after setup";
+            }
         }
         else {
             std::cerr << "❌ Custom float widget not found!" << std::endl;
@@ -125,16 +132,25 @@ bool MainWindow::getWidgetGridPosition(QWidget* widget, int& row, int& col)
     }
     return false;
 }
-// void MainWindow::handleDockRequest()
-// {
-//     if (floatWidget && floatWidget->isFloating()) {
-//         // 플로팅 상태 해제
-//         floatWidget->setFloatingState(false);
-//         // 원래 부모와 그리드 레이아웃으로 복원
-//         floatWidget->setParent(this);
-//         if (ui_->gridLayout) {
-//             ui_->gridLayout->addWidget(floatWidget, gridRow_, gridCol_);
-//         }
-//         std::cout << "Float widget docked back to grid cell (" << gridRow_ << ", " << gridCol_ << ")" << std::endl;
-//     }
-// }
+
+void MainWindow::handleDockRequest(const QString &widgetName, int row, int col)
+{
+    qDebug() << "handleDockRequest called for" << widgetName << "at (" << row << "," << col << ")";
+    qDebug() << "floatWidget_:" << floatWidget_ << ", isFloating:" << (floatWidget_ ? floatWidget_->isFloating() : false);
+    qDebug() << "Top level widgets before:" << QApplication::topLevelWidgets();
+
+    if (floatWidget_ && floatWidget_->objectName() == widgetName && floatWidget_->isFloating()) {
+        floatWidget_->setFloatingState(false);
+        floatWidget_->setParent(this);
+        if (ui_->gridLayout) {
+            ui_->gridLayout->addWidget(floatWidget_, row, col);
+        }
+        qDebug() << "FloatWidget parent after setParent:" << floatWidget_->parent();
+        floatWidget_->show();
+        std::cout << "Float widget " << widgetName.toStdString() << " docked back to grid cell (" << row << ", " << col << ")" << std::endl;
+    } else {
+        std::cerr << "❌ Invalid float widget state or layout for " << widgetName.toStdString() << std::endl;
+    }
+
+    qDebug() << "Top level widgets after:" << QApplication::topLevelWidgets();
+}

@@ -19,10 +19,9 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    
 
 private slots:
-    // void handleDockRequest(); // 도킹 요청 처리 슬롯
+    void handleDockRequest(const QString &widgetName, int row, int col); // 도킹 요청 처리 슬롯
 
     
 private:

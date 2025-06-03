@@ -1,0 +1,32 @@
+[  5%] [34m[1mAutomatic MOC and UIC for target qt_pointcloud_viewer[0m
+[  5%] Built target qt_pointcloud_viewer_autogen
+[ 11%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/mainwindow.cpp.o[0m
+[ 17%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/float_widget.cpp.o[0m
+In file included from [01m[K/usr/include/x86_64-linux-gnu/qt5/QtGui/qtguiglobal.h:43[m[K,
+                 from [01m[K/usr/include/x86_64-linux-gnu/qt5/QtGui/qvector3d.h:43[m[K,
+                 from [01m[K/usr/include/x86_64-linux-gnu/qt5/QtGui/QVector3D:1[m[K,
+                 from [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/include/qt_pointcloud_viewer/mainwindow.hpp:3[m[K,
+                 from [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/mainwindow.cpp:1[m[K:
+/usr/include/x86_64-linux-gnu/qt5/QtCore/qobject.h: In instantiation of ‘[01m[Kstatic QMetaObject::Connection QObject::connect(const typename QtPrivate::FunctionPointer<Func>::Object*, Func1, const typename QtPrivate::FunctionPointer<Func2>::Object*, Func2, Qt::ConnectionType) [with Func1 = void (Widget::FloatWidget::*)(); Func2 = void (MainWindow::*)(const QString&, int, int); typename QtPrivate::FunctionPointer<Func>::Object = Widget::FloatWidget; typename QtPrivate::FunctionPointer<Func2>::Object = MainWindow][m[K’:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/mainwindow.cpp:88:105:[m[K   required from here
+[01m[K/usr/include/x86_64-linux-gnu/qt5/QtCore/qobject.h:239:9:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: The slot requires more arguments than the signal provides.
+  239 |         [01;31m[KQ_STATIC_ASSERT_X[m[K(int(SignalType::ArgumentCount) >= int(SlotType::ArgumentCount),
+      |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/usr/include/x86_64-linux-gnu/qt5/QtCore/qobject.h:241:9:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: Signal and slot arguments are not compatible.
+  241 |         [01;31m[KQ_STATIC_ASSERT_X[m[K((QtPrivate::CheckCompatibleArguments<typename SignalType::Arguments, typename SlotType::Arguments>::value),
+      |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+In file included from [01m[K/usr/include/x86_64-linux-gnu/qt5/QtCore/qobjectdefs.h:50[m[K,
+                 from [01m[K/usr/include/x86_64-linux-gnu/qt5/QtCore/qmetatype.h:50[m[K,
+                 from [01m[K/usr/include/x86_64-linux-gnu/qt5/QtGui/qvector3d.h:45[m[K,
+                 from [01m[K/usr/include/x86_64-linux-gnu/qt5/QtGui/QVector3D:1[m[K,
+                 from [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/include/qt_pointcloud_viewer/mainwindow.hpp:3[m[K,
+                 from [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/mainwindow.cpp:1[m[K:
+/usr/include/x86_64-linux-gnu/qt5/QtCore/qobjectdefs_impl.h: In instantiation of ‘[01m[Kstruct QtPrivate::List_Left<QtPrivate::List<>, 3>[m[K’:
+[01m[K/usr/include/x86_64-linux-gnu/qt5/QtCore/qobject.h:252:28:[m[K   required from ‘[01m[Kstatic QMetaObject::Connection QObject::connect(const typename QtPrivate::FunctionPointer<Func>::Object*, Func1, const typename QtPrivate::FunctionPointer<Func2>::Object*, Func2, Qt::ConnectionType) [with Func1 = void (Widget::FloatWidget::*)(); Func2 = void (MainWindow::*)(const QString&, int, int); typename QtPrivate::FunctionPointer<Func>::Object = Widget::FloatWidget; typename QtPrivate::FunctionPointer<Func2>::Object = MainWindow][m[K’
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/mainwindow.cpp:88:105:[m[K   required from here
+[01m[K/usr/include/x86_64-linux-gnu/qt5/QtCore/qobjectdefs_impl.h:72:118:[m[K [01;31m[Kerror: [m[Kno type named ‘[01m[KCar[m[K’ in ‘[01m[Kstruct QtPrivate::List<>[m[K’
+   72 |         typedef typename List_Append<List<typename L::Car>,typename List_Left<typename L::Cdr, N - 1>::Value>::Value [01;31m[KValue[m[K;
+      |                                                                                                                      [01;31m[K^~~~~[m[K
+make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:127: CMakeFiles/qt_pointcloud_viewer.dir/src/mainwindow.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:152: CMakeFiles/qt_pointcloud_viewer.dir/all] Error 2
+make: *** [Makefile:146: all] Error 2

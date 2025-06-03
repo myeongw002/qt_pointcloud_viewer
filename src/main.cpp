@@ -16,6 +16,8 @@ int main(int argc, char *argv[]) {
     
     rclcpp::init(argc, argv);    
     QApplication app(argc, argv);
+    app.setQuitOnLastWindowClosed(false);
+    qDebug() << "Quit on last window closed:" << app.quitOnLastWindowClosed();
     MainWindow window;
     
     window.show();

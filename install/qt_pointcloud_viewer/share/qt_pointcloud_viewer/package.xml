@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>qt_pointcloud_viewer</name>
+  <version>0.1.0</version>
+  <description>ROS2 Qt GUI for PointCloud2 visualization using OpenGL</description>
+  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- ROS2 Build & Execution Dependencies -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>pcl_conversions</depend>
+  <depend>pcl_ros</depend>
+
+  <!-- Qt & OpenGL Dependencies -->
+  <depend>qtbase5-dev</depend>
+  <depend>qttools5-dev</depend>
+  <depend>libqt5opengl5-dev</depend>
+
+  <!-- Point Cloud Library (PCL) -->
+  <depend>libpcl-dev</depend>
+
+  <!-- Testing Dependencies -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
