@@ -70,7 +70,8 @@ namespace Widget {
         bool showIndicator_ = false;
         QTimer hideTimer_;
         const int timerInterval_ = 100;
-        std::string topicName_ = "";
+        std::string pcdTopic_ = "";
+        std::string pathTopic_ = "";
         bool showAxes_ = false;
         bool showGrid_ = false;
     };

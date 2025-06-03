@@ -1,17 +1,14 @@
 #include "float_widget.hpp"
-#include <QDebug>
+
 namespace Widget {
 
 FloatWidget::FloatWidget(QWidget *parent) :
     QWidget(parent)
 {
-    // 기본 크기 설정
-    // resize(400, 300);
 }
 
 FloatWidget::~FloatWidget()
 {
-    // 더 이상 ui 객체가 없으므로 delete 불필요
 }
 
 void FloatWidget::setFloatingState(bool floating)
@@ -27,6 +24,23 @@ void FloatWidget::setFloatingState(bool floating)
         setWindowFlags(Qt::Widget);
         show();
     }
+}
+
+void FloatWidget::setGridPosition(int row, int col)
+{
+    gridRow_ = row;
+    gridCol_ = col;
+}
+
+void FloatWidget::closeEvent(QCloseEvent *event)
+{
+    // if (isFloating_) {
+    //     // 창 닫기 대신 도킹 요청
+    //     emit requestDock();
+    //     event->ignore(); // 닫기 이벤트 무시
+    // } else {
+    //     event->accept(); // 플로팅 상태가 아니면 닫기 허용
+    // }
 }
 
 } // namespace Widget

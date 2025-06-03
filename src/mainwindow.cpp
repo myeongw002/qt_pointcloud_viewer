@@ -47,7 +47,7 @@ MainWindow::MainWindow(QWidget *parent)
                 panel->setPointCloudWidget(viewer, node_);
                 viewer->setTopicName(i); // Set topic name based on panel index
             }
-            
+            // auto* floatWidget = qobject_cast<Widget::FloatWidget*>(findChild<QWidget*>(QString("widget_1")));
             // QLabel* label = findChild<QLabel*>(QString("label_%1").arg(i+1));
             // if (label) {
             //     panel->setStatusLabel(label);
@@ -71,13 +71,21 @@ MainWindow::MainWindow(QWidget *parent)
 
         auto* floatWidget = qobject_cast<Widget::FloatWidget*>(findChild<QWidget*>(QString("widget_1")));
         if (floatWidget ) {
-            if (ui_->gridLayout) {
-                ui_->gridLayout->removeWidget(floatWidget);
+            int row = 0, col = 0;
+            if (ui_->gridLayout && getWidgetGridPosition(floatWidget, row, col)) {
+                std::cout << "Found  at grid cell (" << row << ", " << col << ")" << std::endl;
+            } 
+            else {
+                std::cerr << "❌  not found in grid layout!" << std::endl;
             }
+                ui_->gridLayout->removeWidget(floatWidget);
+                floatWidget->setGridPosition(row, col);
+            
 
             floatWidget->setFloatingState(true);
             // floatWidget->move(100, 100); // 초기 위치 설정
             floatWidget->resize(400, 300); // 크기 설정
+            // connect(floatWidget, &Widget::FloatWidget::requestDock, this, &MainWindow::handleDockRequest);
         }
         else {
             std::cerr << "❌ Custom float widget not found!" << std::endl;
@@ -104,3 +112,29 @@ MainWindow::~MainWindow() {
     delete ui_;
 }
 
+bool MainWindow::getWidgetGridPosition(QWidget* widget, int& row, int& col)
+{
+    if (!ui_->gridLayout || !widget) {
+        return false;
+    }
+    int index = ui_->gridLayout->indexOf(widget);
+    if (index != -1) {
+        int rowSpan, colSpan;
+        ui_->gridLayout->getItemPosition(index, &row, &col, &rowSpan, &colSpan);
+        return true;
+    }
+    return false;
+}
+// void MainWindow::handleDockRequest()
+// {
+//     if (floatWidget && floatWidget->isFloating()) {
+//         // 플로팅 상태 해제
+//         floatWidget->setFloatingState(false);
+//         // 원래 부모와 그리드 레이아웃으로 복원
+//         floatWidget->setParent(this);
+//         if (ui_->gridLayout) {
+//             ui_->gridLayout->addWidget(floatWidget, gridRow_, gridCol_);
+//         }
+//         std::cout << "Float widget docked back to grid cell (" << gridRow_ << ", " << gridCol_ << ")" << std::endl;
+//     }
+// }

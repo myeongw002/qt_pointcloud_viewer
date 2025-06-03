@@ -16,6 +16,10 @@ namespace Widget {
         }
     }
 
+    void ViewerPanel::setFloatWidget(FloatWidget* floatWidget) {
+        floatWidget_ = floatWidget;
+
+    }
     void ViewerPanel::setRobotComboBox(QComboBox* comboBox) {
         comboBox_ = comboBox;
         // Connect signals and slots

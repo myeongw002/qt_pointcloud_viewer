@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QCloseEvent>
 
 namespace Widget {
 class FloatWidget : public QWidget
@@ -15,9 +16,20 @@ public:
     ~FloatWidget();
     void setFloatingState(bool floating);
     bool isFloating() const { return isFloating_; }
+    void setGridPosition(int row, int col) ;
+
+signals:
+    void requestDock(); // 도킹 복원 요청 시그널
+
+protected:
+    void closeEvent(QCloseEvent *event) override; // 창 닫기 이벤트 처리
 
 private:
+    QPushButton *exampleButton_;
+    QVBoxLayout *layout_;
     bool isFloating_ = false;
+    int gridRow_ = 0; // 그리드 위치 행
+    int gridCol_ = 0; // 그리드 위치 열
 };
 } // namespace Widget
 

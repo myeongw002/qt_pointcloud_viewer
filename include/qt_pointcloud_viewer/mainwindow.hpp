@@ -7,7 +7,7 @@
 #include <thread>
 #include "pointcloud_widget.hpp"
 #include "viewer_panel.hpp"
-
+#include "float_widget.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -20,14 +20,21 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     
+
+private slots:
+    // void handleDockRequest(); // 도킹 요청 처리 슬롯
+
+    
 private:
     Ui::MainWindow *ui_;
     rclcpp::Node::SharedPtr node_;
     std::thread ros_thread_;
     Widget::PointCloudWidget *viewer_;
+    Widget::FloatWidget *floatWidget_;
     std::vector<Widget::ViewerPanel*> panels_;
     // QOpenGLWidget *openGLWidget;
     int panelCount_ = 6; // Number of panels
+    bool getWidgetGridPosition(QWidget* widget, int& row, int& col); // 위치 조회 함수
 
 };
 

@@ -7,7 +7,7 @@
 #include <string>       
 #include <QCheckBox>
 #include "pointcloud_widget.hpp" 
-
+#include "float_widget.hpp"
 
 namespace Widget{
     class ViewerPanel : public QWidget {
@@ -22,6 +22,7 @@ namespace Widget{
         void setAxisCheckBox(QCheckBox* checkBox);
         void setGridCheckBox(QCheckBox* checkBox);
         void setPanelIdx_(int idx);
+        void setFloatWidget(FloatWidget* floatWidget);
     
     private slots:
         //void startStreaming();
@@ -32,6 +33,8 @@ namespace Widget{
     
         private:
         PointCloudWidget* viewer_;
+        FloatWidget* floatWidget_;
+
         QComboBox* comboBox_;
         QLabel* label_;
         int panelIdx_ = 0; // Index for the display panel

@@ -34,40 +34,46 @@ void PointCloudWidget::setNode(rclcpp::Node::SharedPtr ros_node) {
 void PointCloudWidget::setTopicName(int index) {
     switch (index) {
         case 1:
-            topicName_ = "/sugv2/viz_global_cloud";
+            pcdTopic_ = "/tugv/viz_global_cloud";
+            pathTopic_ = "/tugv/viz_path";
             break;
         case 2:
-            topicName_ = "/mugv/viz_global_cloud";
+            pcdTopic_ = "/mugv/viz_global_cloud";
+            pathTopic_ = "/mugv/viz_path";
             break;
         case 3:
-            topicName_ = "/sugv1/viz_global_cloud";
+            pcdTopic_ = "/sugv1/viz_global_cloud";
+            pathTopic_ = "/sugv1/viz_path";
             break;
         case 4:
-            topicName_ = "/sugv2/viz_global_cloud";
+            pcdTopic_ = "/sugv2/viz_global_cloud";
+            pathTopic_ = "/sugv2/viz_path";
             break;        
         case 5:
-            topicName_ = "/suav/viz_global_cloud";
+            pcdTopic_ = "/suav/viz_global_cloud";
+            pathTopic_ = "/suav/viz_path";
             break;    
         default:
-            topicName_ = "/"; 
+            pcdTopic_ = "/";
+            pathTopic_ = "/"; 
             return;
     }
 
-    std::cout << "Topic name set to: " << topicName_ << std::endl;
+    std::cout << "Topic name set to: " << pcdTopic_ << std::endl;
 
     rclcpp::QoS qos_settings(rclcpp::KeepLast(10));
     qos_settings.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
     qos_settings.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
     
     subscription_ = this->node_->create_subscription<sensor_msgs::msg::PointCloud2>(
-        topicName_, qos_settings,
+        pcdTopic_, qos_settings,
         std::bind(&PointCloudWidget::pointCloudCallback, this, std::placeholders::_1));
     
-    std::cout << "Subscribed to " << this->topicName_ << std::endl;
+    std::cout << "Subscribed to " << this->pcdTopic_ << std::endl;
 }
 
 std::string PointCloudWidget::getTopicName() {
-    return topicName_;
+    return pcdTopic_;
 }
 
 void PointCloudWidget::setShowAxes(bool show) {
