@@ -60,5 +60,13 @@ namespace Widget {
 
     void ViewerPanel::setPanelIdx_(int idx) {
         panelIdx_ = idx;
-    }    
+    }
+    
+    PointCloudWidget* ViewerPanel::getPointCloudWidget() const {
+        return viewer_;
+    }
+
+    FloatWidget* ViewerPanel::getFloatWidget() const {
+        return floatWidget_;
+    }
 }

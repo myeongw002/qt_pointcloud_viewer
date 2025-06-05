@@ -43,12 +43,19 @@ MainWindow::MainWindow(QWidget *parent)
         for (int i = 0; i < panelCount_; ++i) {
             Widget::ViewerPanel* panel = new Widget::ViewerPanel(this);
             
+            auto* floatWidget = qobject_cast<Widget::FloatWidget*>(findChild<QWidget*>(QString("widget_%1").arg(i)));
+            if (floatWidget) {
+                panel->setFloatWidget(floatWidget);
+                floatWidget->setObjectName(QString("widget_%1").arg(i));
+                // floatWidget->setGridPosition(i / 3, i % 3); // Set grid position based on index
+            }
+
             auto* viewer = qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(QString("openGLWidget_%1").arg(i)));
             if (viewer) {
                 panel->setPointCloudWidget(viewer, node_);
                 viewer->setTopicName(i); // Set topic name based on panel index
             }
-            // auto* floatWidget = qobject_cast<Widget::FloatWidget*>(findChild<QWidget*>(QString("widget_1")));
+            
             // QLabel* label = findChild<QLabel*>(QString("label_%1").arg(i+1));
             // if (label) {
             //     panel->setStatusLabel(label);
@@ -70,38 +77,48 @@ MainWindow::MainWindow(QWidget *parent)
             panels_.push_back(panel);
         }
 
-        auto* floatWidget = qobject_cast<Widget::FloatWidget*>(findChild<QWidget*>(QString("widget_1")));
-        if (floatWidget ) {
-            floatWidget_ = floatWidget;
+        
+        auto floatWidget_2 = panels_.at(2)->getFloatWidget();
+        floatWidget_ = floatWidget_2; // Store the reference to the second float widget
+        if (floatWidget_2) {
             int row = 0, col = 0;
-            if (ui_->gridLayout && getWidgetGridPosition(floatWidget, row, col)) {
-                std::cout << "Found  at grid cell (" << row << ", " << col << ")" << std::endl;
-            } 
-            else {
-                std::cerr << "❌  not found in grid layout!" << std::endl;
-            }
-                ui_->gridLayout->removeWidget(floatWidget);
-                floatWidget->setGridPosition(row, col);
-            
-            floatWidget_->setParent(this);
-            floatWidget_->setFloatingState(false);
-            // floatWidget->move(100, 100); // 초기 위치 설정
-            // floatWidget->resize(400, 300); // 크기 설정
-            //qDebug() << "FloatWidget parent after setup:" << floatWidget_->parent();
-            connect(floatWidget_, &Widget::FloatWidget::requestDock, this, &MainWindow::handleDockRequest);
-            connect(floatWidget_, &Widget::FloatWidget::aboutToBeDeleted, this, [this]() {
-                qDebug() << "FloatWidget about to be deleted, clearing reference";
-                floatWidget_ = nullptr;
-            });
-            if (floatWidget_) {
-                qDebug() << "FloatWidget parent after setup:" << (floatWidget_->parent() ? "Valid parent" : "No parent");
+            if (ui_->gridLayout && getWidgetGridPosition(floatWidget_2, row, col)) {
+                std::cout << "Found widget_2 at grid cell (" << row << ", " << col << ")" << std::endl;
             } else {
-                qDebug() << "FloatWidget is null after setup";
+                std::cerr << "❌ widget_2 not found in grid layout!" << std::endl;
             }
+            // ui_->gridLayout->removeWidget(floatWidget_2);
+            floatWidget_2->setGridPosition(row, col);   
+            // floatWidget_2->setParent(this);
+            floatWidget_2->setFloatingState(true);
+            connect(floatWidget_2, &Widget::FloatWidget::requestDock, this, &MainWindow::handleDockRequest);
+            // connect(floatWidget_2, &Widget::FloatWidget::aboutToBeDeleted, this, [this]() {
+            //     qDebug() << "FloatWidget_2 about to be deleted, clearing reference";
+            //     // floatWidget_2 = nullptr;
+            // });
+        } else {
+            std::cerr << "❌ widget_2 not found in ViewerPanel!" << std::endl;
         }
-        else {
-            std::cerr << "❌ Custom float widget not found!" << std::endl;
-        }
+
+        // floatWidget_ = qobject_cast<Widget::FloatWidget*>(findChild<QWidget*>(QString("widget_1")));
+        // if (floatWidget_) {
+        //     int row = 0, col = 0;
+        //     if (ui_->gridLayout && getWidgetGridPosition(floatWidget_, row, col)) {
+        //         std::cout << "Found widget_1 at grid cell (" << row << ", " << col << ")" << std::endl;
+        //     } else {
+        //         std::cerr << "❌ widget_1 not found in grid layout!" << std::endl;
+        //     }
+        //     // ui_->gridLayout->removeWidget(floatWidget_);
+        //     floatWidget_->setGridPosition(row, col);
+
+        //     // floatWidget_->setParent(this);
+        //     floatWidget_->setFloatingState(true);
+        //     connect(floatWidget_, &Widget::FloatWidget::requestDock, this, &MainWindow::handleDockRequest);
+        //     connect(floatWidget_, &Widget::FloatWidget::aboutToBeDeleted, this, [this]() {
+        //         qDebug() << "FloatWidget about to be deleted, clearing reference";
+        //         floatWidget_ = nullptr;
+        //     });
+        // }
     
         
     } catch (const std::exception &e) {
@@ -141,31 +158,19 @@ bool MainWindow::getWidgetGridPosition(QWidget* widget, int& row, int& col)
 void MainWindow::handleDockRequest(const QString &widgetName, int row, int col)
 {
     qDebug() << "handleDockRequest called for" << widgetName << "at (" << row << "," << col << ")";
-    qDebug() << "floatWidget_:" << floatWidget_ << ", isFloating:" << (floatWidget_ ? floatWidget_->isFloating() : false);
-    qDebug() << "Top level widgets before:" << QApplication::topLevelWidgets();
-
-    if (floatWidget_ && floatWidget_->objectName() == widgetName && floatWidget_->isFloating()) {
-        floatWidget_->setFloatingState(false);
-        floatWidget_->setParent(this);
+    if (widgetName == "widget_2" && floatWidget_) {
+        floatWidget_->setVisible(true); // show() 대신 setVisible 사용
         if (ui_->gridLayout) {
             ui_->gridLayout->addWidget(floatWidget_, row, col);
         }
-        qDebug() << "FloatWidget parent after setParent:" << (floatWidget_->parent() ? "Valid parent" : "No parent");
-        floatWidget_->show();
-        // floatWidget_->blockSignals(true); // 신호 차단
-        // floatWidget_->setEnabled(false); // 상호작용 비활성화
         std::cout << "Float widget " << widgetName.toStdString() << " docked back to grid cell (" << row << ", " << col << ")" << std::endl;
-        // setAttribute(Qt::WA_DeleteOnClose, false);
-        // floatWidget_->hide();
     } else {
-        std::cerr << "❌ Invalid float widget state or layout for " << widgetName.toStdString() << std::endl;
+        qDebug() << "Widget not found for docking:" << widgetName;
     }
-
-    qDebug() << "Top level widgets after:" << QApplication::topLevelWidgets();
 }
 
-void MainWindow::closeEvent(QCloseEvent *event)
-{
-    qDebug() << "MainWindow closeEvent called";
-    event->ignore(); // 종료 방지 테스트
-}
+// void MainWindow::closeEvent(QCloseEvent *event)
+// {
+//     qDebug() << "MainWindow closeEvent called";
+//     // event->ignore(); // 종료 방지 테스트
+// }

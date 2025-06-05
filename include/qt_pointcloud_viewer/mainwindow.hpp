@@ -33,7 +33,7 @@ private:
     // QOpenGLWidget *openGLWidget;
     int panelCount_ = 6; // Number of panels
     bool getWidgetGridPosition(QWidget* widget, int& row, int& col); // 위치 조회 함수
-    void closeEvent(QCloseEvent *event) override; // closeEvent 선언 추가
+    // void closeEvent(QCloseEvent *event) override; // closeEvent 선언 추가
 
 };
 

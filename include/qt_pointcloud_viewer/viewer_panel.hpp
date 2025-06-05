@@ -19,10 +19,12 @@ namespace Widget{
         void setStatusLabel(QLabel* label);
         void setRobotComboBox(QComboBox* comboBox);
         void setPointCloudWidget(PointCloudWidget* viewer, rclcpp::Node::SharedPtr node = nullptr); 
+        void setFloatWidget(FloatWidget* floatWidget);
         void setAxisCheckBox(QCheckBox* checkBox);
         void setGridCheckBox(QCheckBox* checkBox);
         void setPanelIdx_(int idx);
-        void setFloatWidget(FloatWidget* floatWidget);
+        PointCloudWidget* getPointCloudWidget() const;
+        FloatWidget* getFloatWidget() const;
     
     private slots:
         //void startStreaming();

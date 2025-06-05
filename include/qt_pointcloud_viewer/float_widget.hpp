@@ -1,37 +1,38 @@
-#ifndef FLOATWIDGET_H
-#define FLOATWIDGET_H
+#ifndef FLOAT_WIDGET_HPP
+#define FLOAT_WIDGET_HPP
 
 #include <QWidget>
-#include <QPushButton>
-#include <QVBoxLayout>
-#include <QCloseEvent>
+#include <QWindow>
+#include "pointcloud_widget.hpp"
+
 
 namespace Widget {
-class FloatWidget : public QWidget
-{
-    Q_OBJECT
 
+class FloatWidget : public QWidget {
+    Q_OBJECT
 public:
     explicit FloatWidget(QWidget *parent = nullptr);
-    ~FloatWidget();
+    ~FloatWidget() override;
+
+    void setGridPosition(int row, int col);
     void setFloatingState(bool floating);
-    bool isFloating() const { return isFloating_; }
-    void setGridPosition(int row, int col) ;
 
 signals:
-    void requestDock(const QString &widgetName, int row, int col); // 인자 추가
-    void aboutToBeDeleted(); // 삭제 전 알림 추가
-    
+    void requestDock(const QString &name, int row, int col);
+    void aboutToBeDeleted();
+
 protected:
-    void closeEvent(QCloseEvent *event) override; // 창 닫기 이벤트 처리
+    void closeEvent(QCloseEvent *event) override;
 
 private:
-    QPushButton *exampleButton_;
-    QVBoxLayout *layout_;
     bool isFloating_ = false;
-    int gridRow_ = 0; // 그리드 위치 행
-    int gridCol_ = 0; // 그리드 위치 열
+    int gridRow_ = 0;
+    int gridCol_ = 0;
+    QWindow *floatingWindow_ = nullptr; // 플로팅 창으로 사용할 QWindow
+    QWidget *windowContainer_ = nullptr; // QWindow를 감싸는 QWidget
+    PointCloudWidget *pointCloudWidget_ = nullptr; // PointCloudWidget 인스턴스
 };
+
 } // namespace Widget
 
-#endif // FLOATWIDGET_H
+#endif // FLOAT_WIDGET_HPP
