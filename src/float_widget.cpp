@@ -5,11 +5,14 @@
 #include <QVBoxLayout>
 #include "pointcloud_widget.hpp"
 #include <QMainWindow>
+#include <QSizePolicy>
 
 namespace Widget {
 
 FloatWidget::FloatWidget(QWidget *parent) :
-    QWidget(parent)
+    QWidget(parent),
+    originalParent_(nullptr),
+    isRestoring_(false)
 {
     setAttribute(Qt::WA_DeleteOnClose, false);
 }
@@ -23,9 +26,6 @@ FloatWidget::~FloatWidget()
     if (windowContainer_) {
         windowContainer_->deleteLater();
     }
-    if (pointCloudWidget_) {
-        pointCloudWidget_->deleteLater();
-    }
 }
 
 void FloatWidget::setGridPosition(int row, int col)
@@ -36,40 +36,53 @@ void FloatWidget::setGridPosition(int row, int col)
 
 void FloatWidget::setFloatingState(bool floating)
 {
-    if (isFloating_ == floating) return;
+    qDebug() << "setFloatingState called with floating =" << floating << ", isFloating_ =" << isFloating_ << ", isRestoring_ =" << isRestoring_;
+    if (isFloating_ == floating || isRestoring_) return;
 
     isFloating_ = floating;
     if (floating) {
-        // 기존 QWidget 숨기기
         hide();
         qDebug() << "Hiding FloatWidget:" << this;
 
-        // 새로운 QWindow 생성
+        if (!pointCloudWidget_) {
+            qDebug() << "No PointCloudWidget available to float!";
+            return;
+        }
+
+        QSizePolicy policy = pointCloudWidget_->sizePolicy();
+        qDebug() << "PointCloudWidget SizePolicy before floating - Horizontal:" << policy.horizontalPolicy()
+                 << ", Vertical:" << policy.verticalPolicy();
+
+        originalParent_ = pointCloudWidget_->parentWidget();
+        qDebug() << "Saving original parent:" << originalParent_;
+
         if (!floatingWindow_) {
             floatingWindow_ = new QWindow();
             floatingWindow_->setFlags(Qt::Window | Qt::WindowTitleHint);
             floatingWindow_->setGeometry(100, 100, 400, 300);
             floatingWindow_->setTitle(objectName());
 
-            // QWindow을 QWidget으로 감싸기
             windowContainer_ = QWidget::createWindowContainer(floatingWindow_, nullptr);
             windowContainer_->setMinimumSize(400, 300);
 
-            // // PointCloudWidget 생성 및 추가
-            pointCloudWidget_ = new PointCloudWidget(windowContainer_);
+            pointCloudWidget_->setParent(windowContainer_);
             QVBoxLayout *layout = new QVBoxLayout(windowContainer_);
             layout->addWidget(pointCloudWidget_);
             windowContainer_->setLayout(layout);
 
+            pointCloudWidget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+            policy = pointCloudWidget_->sizePolicy();
+            qDebug() << "PointCloudWidget SizePolicy after floating - Horizontal:" << policy.horizontalPolicy()
+                     << ", Vertical:" << policy.verticalPolicy();
+
             floatingWindow_->show();
             windowContainer_->show();
+            pointCloudWidget_->show();
             qDebug() << "Created QWindow:" << floatingWindow_;
         }
 
-        // QWindow 닫기 이벤트 처리
         QObject::connect(floatingWindow_, &QWindow::visibilityChanged, this, [this](QWindow::Visibility visibility) {
             if (visibility == QWindow::Hidden) {
-                // QWindow가 닫힘
                 qDebug() << "QWindow closed, restoring FloatWidget:" << this;
                 if (floatingWindow_) {
                     floatingWindow_->deleteLater();
@@ -79,17 +92,34 @@ void FloatWidget::setFloatingState(bool floating)
                     windowContainer_->deleteLater();
                     windowContainer_ = nullptr;
                 }
-                if (pointCloudWidget_) {
-                    pointCloudWidget_->deleteLater();
-                    pointCloudWidget_ = nullptr;
+                if (pointCloudWidget_ && this->originalParent_) {
+                    isRestoring_ = true;
+                    pointCloudWidget_->setParent(this->originalParent_);
+                    qDebug() << "Restored PointCloudWidget to parent:" << this->originalParent_;
+                    // 크기 제약 초기화
+                    pointCloudWidget_->setMinimumSize(0, 0);
+                    pointCloudWidget_->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+                    pointCloudWidget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+                    QSizePolicy policy = pointCloudWidget_->sizePolicy();
+                    qDebug() << "PointCloudWidget SizePolicy on restore - Horizontal:" << policy.horizontalPolicy()
+                             << ", Vertical:" << policy.verticalPolicy();
+                    qDebug() << "PointCloudWidget geometry" << pointCloudWidget_->geometry();
+                    qDebug() << "PointCloudWidget size" << pointCloudWidget_->size();
+                    QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(this->originalParent_->layout());
+                    if (layout) {
+                        layout->removeWidget(pointCloudWidget_);
+                        delete layout;
+                    }
+                    // QGridLayout으로 대체 (MainWindow에서 이미 처리됨)
+                    isRestoring_ = false;
                 }
-                setFloatingState(false); // 플로팅 상태 해제
-                show(); // 기존 QWidget 표시
+                isFloating_ = false;
+                show();
                 emit requestDock(objectName(), gridRow_, gridCol_);
             }
         });
     } else {
-        // 플로팅 해제 시
+        qDebug() << "Restoring FloatWidget, pointCloudWidget_ =" << pointCloudWidget_ << ", originalParent_ =" << originalParent_;
         if (floatingWindow_) {
             floatingWindow_->hide();
             floatingWindow_->deleteLater();
@@ -99,20 +129,59 @@ void FloatWidget::setFloatingState(bool floating)
             windowContainer_->deleteLater();
             windowContainer_ = nullptr;
         }
-        if (pointCloudWidget_) {
-            pointCloudWidget_->deleteLater();
-            pointCloudWidget_ = nullptr;
+        if (pointCloudWidget_ && originalParent_) {
+            pointCloudWidget_->setParent(originalParent_);
+            qDebug() << "Restored PointCloudWidget to parent:" << originalParent_;
+            pointCloudWidget_->setMinimumSize(0, 0);
+            pointCloudWidget_->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+            pointCloudWidget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+            QSizePolicy policy = pointCloudWidget_->sizePolicy();
+            qDebug() << "PointCloudWidget SizePolicy on direct restore - Horizontal:" << policy.horizontalPolicy()
+                     << ", Vertical:" << policy.verticalPolicy();
+            QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(originalParent_->layout());
+            if (layout) {
+                layout->removeWidget(pointCloudWidget_);
+                delete layout;
+            }
+            // QGridLayout으로 대체 (MainWindow에서 처리)
+            pointCloudWidget_->show();
         }
-        setParent(parentWidget()); // 부모 재설정
-        show(); // 기존 QWidget 표시
+        setParent(parentWidget());
+        show();
         qDebug() << "FloatWidget restored:" << this;
     }
+}
+
+void FloatWidget::allocViewer(PointCloudWidget *viewer)
+{
+    if (pointCloudWidget_) {
+        qDebug() << "PointCloudWidget already allocated, skipping.";
+        return;
+    }
+    pointCloudWidget_ = viewer;
+    if (pointCloudWidget_) {
+        qDebug() << "PointCloudWidget allocated in FloatWidget:" << this;
+        pointCloudWidget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        QSizePolicy policy = pointCloudWidget_->sizePolicy();
+        qDebug() << "PointCloudWidget SizePolicy after alloc - Horizontal:" << policy.horizontalPolicy()
+                 << ", Vertical:" << policy.verticalPolicy();
+        qDebug() << "Float widget size:" << size();
+        qDebug() << "Viewer size:" << pointCloudWidget_->size();
+        qDebug() << "Float widget geometry:" << geometry();
+        qDebug() << "Viewer geometry:" << pointCloudWidget_->geometry();
+    } else {
+        qDebug() << "Failed to allocate PointCloudWidget in FloatWidget:" << this;
+    }
+}
+
+PointCloudWidget* FloatWidget::getPointCloudWidget() const
+{
+    return pointCloudWidget_;
 }
 
 void FloatWidget::closeEvent(QCloseEvent *event)
 {
     if (isFloating_) {
-        // 플로팅 상태에서는 QWindow가 닫히므로 여기서 처리하지 않음
         event->accept();
     } else {
         event->accept();

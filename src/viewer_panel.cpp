@@ -69,4 +69,5 @@ namespace Widget {
     FloatWidget* ViewerPanel::getFloatWidget() const {
         return floatWidget_;
     }
+
 }

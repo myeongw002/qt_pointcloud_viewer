@@ -10,6 +10,8 @@
 #include <QComboBox>    
 #include <QTextEdit>
 #include <QDebug>
+#include <QGridLayout>
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui_(new Ui::MainWindow) {
@@ -44,18 +46,22 @@ MainWindow::MainWindow(QWidget *parent)
             Widget::ViewerPanel* panel = new Widget::ViewerPanel(this);
             
             auto* floatWidget = qobject_cast<Widget::FloatWidget*>(findChild<QWidget*>(QString("widget_%1").arg(i)));
-            if (floatWidget) {
+            auto* viewer = qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(QString("openGLWidget_%1").arg(i)));
+            
+            if (floatWidget && viewer) {
+                // FloatWidget에 PointCloudWidget 전달
                 panel->setFloatWidget(floatWidget);
-                floatWidget->setObjectName(QString("widget_%1").arg(i));
-                // floatWidget->setGridPosition(i / 3, i % 3); // Set grid position based on index
+                panel->setPointCloudWidget(viewer, node_);
+                floatWidget->allocViewer(viewer);
+                viewer->setTopicName(i);
+                qDebug() << "Float widget size:" << floatWidget->size();
+                qDebug() << "Viewer size:" << viewer->size();
+                qDebug() << "Float widget geometry:" << floatWidget->geometry();
+                qDebug() << "Viewer geometry:" << viewer->geometry();
+            } else {
+                qDebug() << "Failed to find floatWidget or viewer for index:" << i;
             }
 
-            auto* viewer = qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(QString("openGLWidget_%1").arg(i)));
-            if (viewer) {
-                panel->setPointCloudWidget(viewer, node_);
-                viewer->setTopicName(i); // Set topic name based on panel index
-            }
-            
             // QLabel* label = findChild<QLabel*>(QString("label_%1").arg(i+1));
             // if (label) {
             //     panel->setStatusLabel(label);
@@ -94,7 +100,7 @@ MainWindow::MainWindow(QWidget *parent)
             connect(floatWidget_2, &Widget::FloatWidget::requestDock, this, &MainWindow::handleDockRequest);
             // connect(floatWidget_2, &Widget::FloatWidget::aboutToBeDeleted, this, [this]() {
             //     qDebug() << "FloatWidget_2 about to be deleted, clearing reference";
-            //     // floatWidget_2 = nullptr;
+                // floatWidget_2 = nullptr;
             // });
         } else {
             std::cerr << "❌ widget_2 not found in ViewerPanel!" << std::endl;
@@ -157,18 +163,46 @@ bool MainWindow::getWidgetGridPosition(QWidget* widget, int& row, int& col)
 
 void MainWindow::handleDockRequest(const QString &widgetName, int row, int col)
 {
-    qDebug() << "handleDockRequest called for" << widgetName << "at (" << row << "," << col << ")";
+    qDebug() << "handleDockRequest for" << widgetName << "at (" << row << "," << col << ")";
     if (widgetName == "widget_2" && floatWidget_) {
-        floatWidget_->setVisible(true); // show() 대신 setVisible 사용
+        floatWidget_->setVisible(true);
         if (ui_->gridLayout) {
             ui_->gridLayout->addWidget(floatWidget_, row, col);
+            
+            // FloatWidget 내부에 QGridLayout 확인 및 추가
+            QGridLayout *gridLayout = qobject_cast<QGridLayout*>(floatWidget_->layout());
+            if (!gridLayout) {
+                qDebug() << "No QGridLayout found in FloatWidget_2, creating new one";
+                QLayout *oldLayout = floatWidget_->layout();
+                if (oldLayout) {
+                    qDebug() << "Removing old layout";
+                    oldLayout->removeWidget(floatWidget_->findChild<Widget::PointCloudWidget*>());
+                    delete oldLayout;
+                }
+                gridLayout = new QGridLayout(floatWidget_);
+                gridLayout->setContentsMargins(0, 0, 0, 0);
+                gridLayout->setRowStretch(0, 1);
+                gridLayout->setColumnStretch(0, 1);
+                floatWidget_->setLayout(gridLayout);
+                if (floatWidget_->getPointCloudWidget()) {
+                    gridLayout->addWidget(floatWidget_->getPointCloudWidget(), 0, 0);
+                    qDebug() << "Added pointCloudWidget_ to QGridLayout";
+                }
+            } else {
+                qDebug() << "QGridLayout already exists in FloatWidget_2";
+            }
+
+            QSizePolicy sizePolicy = floatWidget_->sizePolicy();
+            qDebug() << "FloatWidget_2 size policy before:" << sizePolicy.horizontalPolicy() << sizePolicy.verticalPolicy();
+            floatWidget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+            sizePolicy = floatWidget_->sizePolicy();
+            qDebug() << "FloatWidget_2 size policy after:" << sizePolicy.horizontalPolicy() << sizePolicy.verticalPolicy();
+
+            qDebug() << "Added to gridLayout, floatWidget_2 size =" << floatWidget_->size();
+            qDebug() << "FloatWidget_2 geometry:" << floatWidget_->geometry();
         }
-        std::cout << "Float widget " << widgetName.toStdString() << " docked back to grid cell (" << row << ", " << col << ")" << std::endl;
-    } else {
-        qDebug() << "Widget not found for docking:" << widgetName;
     }
 }
-
 // void MainWindow::closeEvent(QCloseEvent *event)
 // {
 //     qDebug() << "MainWindow closeEvent called";

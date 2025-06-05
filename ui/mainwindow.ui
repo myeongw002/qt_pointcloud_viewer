@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1433</width>
-    <height>797</height>
+    <width>1462</width>
+    <height>830</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -42,6 +42,12 @@
    <layout class="QGridLayout" name="gridLayout">
     <item row="1" column="2">
      <widget class="Widget::FloatWidget" name="widget_1" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <layout class="QGridLayout" name="gridLayout_5">
        <property name="leftMargin">
         <number>0</number>
@@ -59,13 +65,26 @@
         <number>0</number>
        </property>
        <item row="0" column="0">
-        <widget class="Widget::PointCloudWidget" name="openGLWidget_1"/>
+        <widget class="Widget::PointCloudWidget" name="openGLWidget_1">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
     </item>
     <item row="1" column="1">
      <widget class="Widget::FloatWidget" name="widget_0" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <layout class="QGridLayout" name="gridLayout_4">
        <property name="leftMargin">
         <number>0</number>
@@ -83,13 +102,26 @@
         <number>0</number>
        </property>
        <item row="0" column="0">
-        <widget class="Widget::PointCloudWidget" name="openGLWidget_0"/>
+        <widget class="Widget::PointCloudWidget" name="openGLWidget_0">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
     </item>
     <item row="1" column="3">
      <widget class="Widget::FloatWidget" name="widget_2" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <layout class="QGridLayout" name="gridLayout_6">
        <property name="leftMargin">
         <number>0</number>
@@ -107,13 +139,26 @@
         <number>0</number>
        </property>
        <item row="0" column="0">
-        <widget class="Widget::PointCloudWidget" name="openGLWidget_2"/>
+        <widget class="Widget::PointCloudWidget" name="openGLWidget_2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
     </item>
     <item row="2" column="1">
      <widget class="Widget::FloatWidget" name="widget_3" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <layout class="QGridLayout" name="gridLayout_7">
        <property name="leftMargin">
         <number>0</number>
@@ -131,13 +176,26 @@
         <number>0</number>
        </property>
        <item row="0" column="0">
-        <widget class="Widget::PointCloudWidget" name="openGLWidget_3"/>
+        <widget class="Widget::PointCloudWidget" name="openGLWidget_3">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
     </item>
     <item row="2" column="2">
      <widget class="Widget::FloatWidget" name="widget_4" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <layout class="QGridLayout" name="gridLayout_8">
        <property name="leftMargin">
         <number>0</number>
@@ -155,13 +213,26 @@
         <number>0</number>
        </property>
        <item row="0" column="0">
-        <widget class="Widget::PointCloudWidget" name="openGLWidget_4"/>
+        <widget class="Widget::PointCloudWidget" name="openGLWidget_4">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
     </item>
     <item row="2" column="3">
      <widget class="Widget::FloatWidget" name="widget_5" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <layout class="QGridLayout" name="gridLayout_9">
        <property name="leftMargin">
         <number>0</number>
@@ -179,7 +250,14 @@
         <number>0</number>
        </property>
        <item row="0" column="0">
-        <widget class="Widget::PointCloudWidget" name="openGLWidget_5"/>
+        <widget class="Widget::PointCloudWidget" name="openGLWidget_5">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
