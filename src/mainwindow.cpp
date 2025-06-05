@@ -84,7 +84,7 @@ MainWindow::MainWindow(QWidget *parent)
                 floatWidget->setGridPosition(row, col);
             
             floatWidget_->setParent(this);
-            floatWidget_->setFloatingState(true);
+            floatWidget_->setFloatingState(false);
             // floatWidget->move(100, 100); // 초기 위치 설정
             // floatWidget->resize(400, 300); // 크기 설정
             //qDebug() << "FloatWidget parent after setup:" << floatWidget_->parent();
@@ -152,8 +152,8 @@ void MainWindow::handleDockRequest(const QString &widgetName, int row, int col)
         }
         qDebug() << "FloatWidget parent after setParent:" << (floatWidget_->parent() ? "Valid parent" : "No parent");
         floatWidget_->show();
-        floatWidget_->blockSignals(true); // 신호 차단
-        floatWidget_->setEnabled(false); // 상호작용 비활성화
+        // floatWidget_->blockSignals(true); // 신호 차단
+        // floatWidget_->setEnabled(false); // 상호작용 비활성화
         std::cout << "Float widget " << widgetName.toStdString() << " docked back to grid cell (" << row << ", " << col << ")" << std::endl;
         // setAttribute(Qt::WA_DeleteOnClose, false);
         // floatWidget_->hide();

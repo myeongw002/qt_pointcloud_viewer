@@ -2,7 +2,7 @@
 #include <QDebug>
 #include <QTimer>
 #include <QWindow>
-
+#include <QApplication>
 
 namespace Widget {
 
@@ -24,17 +24,16 @@ void FloatWidget::setFloatingState(bool floating)
     isFloating_ = floating;
     if (floating) {
         setParent(nullptr);
-        setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::WindowStaysOnTopHint);
-        // setParent(nullptr);
+        // setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::WindowStaysOnTopHint);
         // move(100, 100); // 초기 위치 설정
         resize(400, 300); // 크기 설정
-        if (QWindow *win = windowHandle()) {
-            win->setFlags(Qt::Window | Qt::WindowTitleHint | Qt::WindowStaysOnTopHint);
-        }
+        setWindowFlags(Qt::Window | Qt::WindowTitleHint);
+        setStyleSheet("border: 1px solid black; background-color: white;"); // 플로팅 시각적 효과
         show();
     } else {
         setWindowFlags(Qt::Widget);
-        setParent(parentWidget());
+        // setParent(parentWidget());
+        setStyleSheet(""); // 스타일 초기화
         show();
     }
 }
@@ -50,8 +49,16 @@ void FloatWidget::closeEvent(QCloseEvent *event)
     if (isFloating_) {
         emit requestDock(objectName(), gridRow_, gridCol_);
         emit aboutToBeDeleted();
-        // 비동기적으로 deleteLater 호출
+        hide();
+        qDebug() << "Window hidden, checking visibility:" << (windowHandle() ? windowHandle()->isVisible() : false);
+
+            // 이벤트 루프 정리
+        QApplication::processEvents();
+        qDebug() << "Events processed, windowHandle:" << windowHandle();
+
+        // 삭제 지연
         QTimer::singleShot(0, this, [this]() {
+            qDebug() << "Deleting FloatWidget after event processing" << this;
             deleteLater();
         });
         event->accept();
