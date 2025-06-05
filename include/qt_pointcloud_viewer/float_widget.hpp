@@ -20,7 +20,8 @@ public:
 
 signals:
     void requestDock(const QString &widgetName, int row, int col); // 인자 추가
-
+    void aboutToBeDeleted(); // 삭제 전 알림 추가
+    
 protected:
     void closeEvent(QCloseEvent *event) override; // 창 닫기 이벤트 처리
 

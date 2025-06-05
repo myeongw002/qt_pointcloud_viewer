@@ -72,6 +72,7 @@ MainWindow::MainWindow(QWidget *parent)
 
         auto* floatWidget = qobject_cast<Widget::FloatWidget*>(findChild<QWidget*>(QString("widget_1")));
         if (floatWidget ) {
+            floatWidget_ = floatWidget;
             int row = 0, col = 0;
             if (ui_->gridLayout && getWidgetGridPosition(floatWidget, row, col)) {
                 std::cout << "Found  at grid cell (" << row << ", " << col << ")" << std::endl;
@@ -82,12 +83,16 @@ MainWindow::MainWindow(QWidget *parent)
                 ui_->gridLayout->removeWidget(floatWidget);
                 floatWidget->setGridPosition(row, col);
             
-
-            floatWidget->setFloatingState(true);
+            floatWidget_->setParent(this);
+            floatWidget_->setFloatingState(true);
             // floatWidget->move(100, 100); // 초기 위치 설정
             // floatWidget->resize(400, 300); // 크기 설정
             //qDebug() << "FloatWidget parent after setup:" << floatWidget_->parent();
-            connect(floatWidget, &Widget::FloatWidget::requestDock, this, &MainWindow::handleDockRequest);
+            connect(floatWidget_, &Widget::FloatWidget::requestDock, this, &MainWindow::handleDockRequest);
+            connect(floatWidget_, &Widget::FloatWidget::aboutToBeDeleted, this, [this]() {
+                qDebug() << "FloatWidget about to be deleted, clearing reference";
+                floatWidget_ = nullptr;
+            });
             if (floatWidget_) {
                 qDebug() << "FloatWidget parent after setup:" << (floatWidget_->parent() ? "Valid parent" : "No parent");
             } else {
@@ -145,12 +150,22 @@ void MainWindow::handleDockRequest(const QString &widgetName, int row, int col)
         if (ui_->gridLayout) {
             ui_->gridLayout->addWidget(floatWidget_, row, col);
         }
-        qDebug() << "FloatWidget parent after setParent:" << floatWidget_->parent();
+        qDebug() << "FloatWidget parent after setParent:" << (floatWidget_->parent() ? "Valid parent" : "No parent");
         floatWidget_->show();
+        floatWidget_->blockSignals(true); // 신호 차단
+        floatWidget_->setEnabled(false); // 상호작용 비활성화
         std::cout << "Float widget " << widgetName.toStdString() << " docked back to grid cell (" << row << ", " << col << ")" << std::endl;
+        // setAttribute(Qt::WA_DeleteOnClose, false);
+        // floatWidget_->hide();
     } else {
         std::cerr << "❌ Invalid float widget state or layout for " << widgetName.toStdString() << std::endl;
     }
 
     qDebug() << "Top level widgets after:" << QApplication::topLevelWidgets();
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    qDebug() << "MainWindow closeEvent called";
+    event->ignore(); // 종료 방지 테스트
 }

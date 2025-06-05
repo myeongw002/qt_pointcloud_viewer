@@ -22,7 +22,6 @@ public:
 
 private slots:
     void handleDockRequest(const QString &widgetName, int row, int col); // 도킹 요청 처리 슬롯
-
     
 private:
     Ui::MainWindow *ui_;
@@ -34,6 +33,7 @@ private:
     // QOpenGLWidget *openGLWidget;
     int panelCount_ = 6; // Number of panels
     bool getWidgetGridPosition(QWidget* widget, int& row, int& col); // 위치 조회 함수
+    void closeEvent(QCloseEvent *event) override; // closeEvent 선언 추가
 
 };
 

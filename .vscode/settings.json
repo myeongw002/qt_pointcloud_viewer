@@ -136,6 +136,7 @@
         "filesystem": "cpp",
         "scoped_allocator": "cpp",
         "charconv": "cpp",
-        "netfwd": "cpp"
+        "netfwd": "cpp",
+        "qtimer": "cpp"
     }
 }
