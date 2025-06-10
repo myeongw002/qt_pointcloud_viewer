@@ -96,8 +96,8 @@ void MainWindow::openNewViewer()
     QOpenGLContext *share = QOpenGLContext::currentContext();
 
     // 새 ViewerContainer는 독립 창(부모 nullptr)
-    auto *vc = new Widget::ViewerContainer(dlg.robotName(), node_, share, nullptr);
-    vc->setWindowTitle(dlg.robotName());
-    vc->setAttribute(Qt::WA_DeleteOnClose);   // X 버튼→자동 소멸
-    vc->show();
+    QMetaObject::invokeMethod(this, [this, robot = dlg.robotName()] {
+        auto *wv = new Widget::ViewerWindow(robot, node_, nullptr);
+        wv->show();                       // 독립 창
+    }, Qt::QueuedConnection);
 }

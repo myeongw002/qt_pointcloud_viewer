@@ -1,5 +1,6 @@
 /* viewer_container.cpp */
 #include "viewer_container.hpp"
+#include "viewer_window.hpp"
 #include <QVBoxLayout>
 
 namespace Widget {
@@ -10,9 +11,9 @@ ViewerContainer::ViewerContainer(const QString &robot,
                                  QWidget *parent)
     : QWidget(parent)
 {
-    auto *win = new ViewerWindow(robot, node, share);
-    container_ = QWidget::createWindowContainer(win, this);
-    container_->setAttribute(Qt::WA_DeleteOnClose);
+    auto *win = new Widget::ViewerWindow(robot, node, parent);
+    // container_ = QWidget::createWindowContainer(win, this);
+    // container_->setAttribute(Qt::WA_DeleteOnClose);
 
     auto *lay = new QVBoxLayout(this);
     lay->setContentsMargins(0,0,0,0);
