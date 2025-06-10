@@ -16,13 +16,6 @@ namespace Widget {
         }
     }
 
-    void ViewerPanel::setRobotComboBox(QComboBox* comboBox) {
-        comboBox_ = comboBox;
-        // Connect signals and slots
-        connect(comboBox_, QOverload<int>::of(&QComboBox::currentIndexChanged),
-                this, &ViewerPanel::onComboBoxIndexChanged);
-    }
-
     void ViewerPanel::setAxisCheckBox(QCheckBox* checkBox) {
         // Connect signals and slots for axes visibility
         connect(checkBox, &QCheckBox::toggled, viewer_, &PointCloudWidget::setShowAxes);
@@ -31,11 +24,6 @@ namespace Widget {
     void ViewerPanel::setGridCheckBox(QCheckBox* checkBox) {
         // Connect signals and slots for grid visibility
         connect(checkBox, &QCheckBox::toggled, viewer_, &PointCloudWidget::setShowGrid);
-    }
-    void ViewerPanel::onComboBoxIndexChanged(int index) {
-        // Update the topic name based on the selected index
-        viewer_->setTopicName(index);
-        updateStatus(QString("Selected Topic: %1").arg(viewer_->getTopicName().c_str()));
     }
     
     void ViewerPanel::onAxisCheckBoxToggled(bool checked) {

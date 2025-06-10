@@ -1,9 +1,10 @@
-#include "mainwindow.hpp"
 #include "./ui_mainwindow.h"
+#include "mainwindow.hpp"
 #include "pointcloud_widget.hpp"
 #include "viewer_panel.hpp"
 #include "robot_select_dialog.hpp"
 #include "viewer_container.hpp"
+
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>

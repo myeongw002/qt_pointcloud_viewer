@@ -8,6 +8,7 @@
 #include <QTimer>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <nav_msgs/msg/path.hpp>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <glm/glm.hpp>
@@ -24,7 +25,8 @@ namespace Widget {
         ~PointCloudWidget();
         void setNode(rclcpp::Node::SharedPtr ros_node = nullptr);
         void setTopicName(int index);
-        std::string getTopicName();
+        std::string getPcdTopic();
+        std::string getPathTopic();
         void setShowAxes(bool show);
         void setShowGrid(bool show);
         void setRotationSensitivity(float sensitivity);
@@ -43,10 +45,14 @@ namespace Widget {
     private:
         // ROS2 and PCL
         pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_;
+        std::vector<geometry_msgs::msg::PoseStamped> path_;
         std::mutex cloudMutex_;
+        std::mutex pathMutex_;
         rclcpp::Node::SharedPtr node_;
-        rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
+        rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pcdSubscribtion_;
+        rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr pathSubscribtion_;
         void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+        void pathCallback(const nav_msgs::msg::Path::SharedPtr msg);
 
         // Camera and Orbit View
         glm::vec3 focusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -62,6 +68,7 @@ namespace Widget {
         glm::mat4 viewMatrix_;
         glm::mat4 projectionMatrix_;
         void drawPoints();
+        void drawPath();
         void drawAxes();
         void drawGrid();
         void drawCameraIndicator();
@@ -70,7 +77,9 @@ namespace Widget {
         bool showIndicator_ = false;
         QTimer hideTimer_;
         const int timerInterval_ = 100;
-        std::string topicName_ = "";
+        std::string pcdTopic_ = "";
+        std::string pathTopic_ = "";
+
         bool showAxes_ = false;
         bool showGrid_ = false;
     };

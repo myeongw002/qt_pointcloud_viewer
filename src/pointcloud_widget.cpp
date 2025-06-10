@@ -34,40 +34,53 @@ void PointCloudWidget::setNode(rclcpp::Node::SharedPtr ros_node) {
 void PointCloudWidget::setTopicName(int index) {
     switch (index) {
         case 1:
-            topicName_ = "/tugv/viz_global_cloud";
+            pcdTopic_ = "/tugv/viz_global_cloud";
+            pathTopic_ = "/tugv/viz_path";
             break;
         case 2:
-            topicName_ = "/mugv/viz_global_cloud";
+            pcdTopic_ = "/mugv/viz_global_cloud";
+            pathTopic_ = "/mugv/viz_path";
             break;
         case 3:
-            topicName_ = "/sugv1/viz_global_cloud";
+            pcdTopic_ = "/sugv1/viz_global_cloud";
+            pathTopic_ = "/sugv1/viz_path";
             break;
         case 4:
-            topicName_ = "/sugv2/viz_global_cloud";
+            pcdTopic_ = "/sugv2/viz_global_cloud";
+            pathTopic_ = "/sugv2/viz_path";
             break;        
         case 5:
-            topicName_ = "/suav/viz_global_cloud";
+            pcdTopic_ = "/suav/viz_global_cloud";
+            pathTopic_ = "/suav/viz_path";
             break;    
         default:
-            topicName_ = "/"; 
+            pcdTopic_ = "/"; 
+            pathTopic_ = "/";
             return;
     }
-
-    std::cout << "Topic name set to: " << topicName_ << std::endl;
 
     rclcpp::QoS qos_settings(rclcpp::KeepLast(10));
     qos_settings.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
     qos_settings.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
     
-    subscription_ = this->node_->create_subscription<sensor_msgs::msg::PointCloud2>(
-        topicName_, qos_settings,
+    pcdSubscribtion_ = this->node_->create_subscription<sensor_msgs::msg::PointCloud2>(
+        pcdTopic_, qos_settings,
         std::bind(&PointCloudWidget::pointCloudCallback, this, std::placeholders::_1));
-    
-    std::cout << "Subscribed to " << this->topicName_ << std::endl;
+    pathSubscribtion_ = this->node_->create_subscription<nav_msgs::msg::Path>(
+        pathTopic_, qos_settings,
+        std::bind(&PointCloudWidget::pathCallback, this, std::placeholders::_1));
+
+
+    std::cout << "Subscribed to pcd topic : " << this->pcdTopic_ << std::endl;
+    std::cout << "Subscribed to path topic : " << this->pathTopic_ << std::endl;
 }
 
-std::string PointCloudWidget::getTopicName() {
-    return topicName_;
+std::string PointCloudWidget::getPcdTopic() {
+    return pcdTopic_;
+}
+
+std::string PointCloudWidget::getPathTopic() {
+    return pathTopic_;
 }
 
 void PointCloudWidget::setShowAxes(bool show) {
@@ -117,6 +130,7 @@ void PointCloudWidget::paintGL() {
     glLoadMatrixf(glm::value_ptr(viewMatrix_));
 
     drawPoints();
+    drawPath();
     if (showAxes_) drawAxes();
     if (showGrid_) drawGrid();
     if (showIndicator_) drawCameraIndicator();
@@ -186,24 +200,13 @@ void PointCloudWidget::hideIndicator() {
 void PointCloudWidget::pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
     std::lock_guard<std::mutex> lock(cloudMutex_);
     pcl::fromROSMsg(*msg, *cloud_);
-
-    // if (cloud_ && !cloud_->empty()) {
-    //     float centerX = 0.0f, centerY = 0.0f, centerZ = 0.0f;
-    //     for (const auto& point : *cloud_) {
-    //         centerX += point.x;
-    //         centerY += point.y;
-    //         centerZ += point.z;
-    //     }
-    //     centerX /= cloud_->size();
-    //     centerY /= cloud_->size();
-    //     centerZ /= cloud_->size();
-    //     focusPoint_ = glm::vec3(centerX, centerY, centerZ);
-
-    //     std::cout << "Focus Point Updated: (" << centerX << ", " << centerY << ", " << centerZ << ")\n";
-    // }
-
-    // updateCameraPosition();
     update();
+}
+
+void PointCloudWidget::pathCallback(const nav_msgs::msg::Path::SharedPtr msg) {
+    std::lock_guard<std::mutex> lock(pathMutex_);
+    path_ = msg->poses; // poses 배열 복사
+    update(); // GUI 갱신
 }
 
 void PointCloudWidget::drawPoints() {
@@ -215,6 +218,21 @@ void PointCloudWidget::drawPoints() {
     for (const auto& point : *cloud_) {
         glColor3f(0.0f, 1.0f, 0.0f);
         glVertex3f(point.x, point.y, point.z);
+    }
+    glEnd();
+}
+
+void PointCloudWidget::drawPath() {
+    std::lock_guard<std::mutex> lock(pathMutex_);
+    if (path_.empty()) return;
+
+    glLineWidth(2.0f); // 선 두께 설정
+    glBegin(GL_LINE_STRIP); // 포인트를 연결하는 선
+    glColor3f(0.0f, 0.0f, 1.0f); // 파란색 경로
+
+    for (const auto& pose : path_) {
+        const auto& position = pose.pose.position;
+        glVertex3f(position.x, position.y, position.z);
     }
     glEnd();
 }

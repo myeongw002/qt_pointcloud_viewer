@@ -17,7 +17,6 @@ namespace Widget{
         ViewerPanel(QWidget* parent = nullptr);
         std::string getSelectedTopic() const;
         void setStatusLabel(QLabel* label);
-        void setRobotComboBox(QComboBox* comboBox);
         void setPointCloudWidget(PointCloudWidget* viewer, rclcpp::Node::SharedPtr node = nullptr); 
         void setAxisCheckBox(QCheckBox* checkBox);
         void setGridCheckBox(QCheckBox* checkBox);
@@ -26,7 +25,6 @@ namespace Widget{
     private slots:
         //void startStreaming();
         void updateStatus(const QString &status);
-        void onComboBoxIndexChanged(int index);   
         void onAxisCheckBoxToggled(bool checked);
         void onGridCheckBoxToggled(bool checked); 
     
