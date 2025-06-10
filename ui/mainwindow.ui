@@ -250,6 +250,7 @@ QTreeView::item {
    </attribute>
    <addaction name="actionShowPanel"/>
    <addaction name="separator"/>
+   <addaction name="actionactionNewWindow"/>
   </widget>
   <action name="actionShowPanel">
    <property name="icon">
@@ -261,6 +262,17 @@ QTreeView::item {
    </property>
    <property name="toolTip">
     <string>Show Panel</string>
+   </property>
+  </action>
+  <action name="actionactionNewWindow">
+   <property name="icon">
+    <iconset theme="zoom-in"/>
+   </property>
+   <property name="text">
+    <string>actionNewWindow</string>
+   </property>
+   <property name="toolTip">
+    <string>Open new window</string>
    </property>
   </action>
  </widget>
