@@ -2,6 +2,8 @@
 #include "./ui_mainwindow.h"
 #include "pointcloud_widget.hpp"
 #include "viewer_panel.hpp"
+#include "robot_select_dialog.hpp"
+#include "viewer_container.hpp"
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
@@ -29,6 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui_->actionShowPanel, &QAction::triggered, this, [this]() {
         ui_->dockWidget->setVisible(!ui_->dockWidget->isVisible());
     });
+    connect(ui_->actionNewViewer, &QAction::triggered, this, &MainWindow::openNewViewer);
     // if (!menuBar()) {
     //     setMenuBar(ui_->menubar);
     // }
@@ -84,3 +87,17 @@ MainWindow::~MainWindow() {
     delete ui_;
 }
 
+void MainWindow::openNewViewer()
+{
+    Widget::RobotSelectDialog dlg(this);
+    if (dlg.exec() != QDialog::Accepted) return;
+
+    // 공유 컨텍스트 = 메인 위젯 중 하나의 currentContext
+    QOpenGLContext *share = QOpenGLContext::currentContext();
+
+    // 새 ViewerContainer는 독립 창(부모 nullptr)
+    auto *vc = new Widget::ViewerContainer(dlg.robotName(), node_, share, nullptr);
+    vc->setWindowTitle(dlg.robotName());
+    vc->setAttribute(Qt::WA_DeleteOnClose);   // X 버튼→자동 소멸
+    vc->show();
+}

@@ -29,6 +29,8 @@ private:
     // QOpenGLWidget *openGLWidget;
     int panelCount_ = 6; // Number of panels
 
+    void openNewViewer();
+
 };
 
 #endif // MAINWINDOW_H
