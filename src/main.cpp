@@ -17,7 +17,8 @@ int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);    
     QApplication app(argc, argv);
 
-    qRegisterMetaType<CloudConstPtr>("CloudConstPtr");
+    qRegisterMetaType<Widget::CloudConstPtr>("CloudConstPtr");
+    qRegisterMetaType<Widget::PathConstPtr>("PathConstPtr");
     
     MainWindow window;
     window.show();

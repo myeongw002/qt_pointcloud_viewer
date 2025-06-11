@@ -88,6 +88,12 @@ void PointCloudWidget::onCloudShared(const QString& robot, CloudConstPtr cloud) 
     update();
 }
 
+void PointCloudWidget::onPathShared(const QString& robot, PathConstPtr path) {
+    std::lock_guard<std::mutex> lock(pathMutex_);
+    paths_[robot] = path;  // QHash에 저장
+    update();
+}
+
 std::string PointCloudWidget::getPcdTopic() {
     return pcdTopic_;
 }
@@ -266,19 +272,50 @@ void PointCloudWidget::drawPoints() {
 
 void PointCloudWidget::drawPath() {
     std::lock_guard<std::mutex> lock(pathMutex_);
-    if (path_.empty()) return;
-
-    glLineWidth(2.0f); // 선 두께 설정
-    glBegin(GL_LINE_STRIP); // 포인트를 연결하는 선
-    glColor3f(0.0f, 0.0f, 1.0f); // 파란색 경로
-
-    for (const auto& pose : path_) {
-        const auto& position = pose.pose.position;
-        glVertex3f(position.x, position.y, position.z);
+    
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    
+    for (auto it = paths_.cbegin(); it != paths_.cend(); ++it) {
+        const QString& robotName = it.key();
+        
+        // COMBINED가 아닌 경우 해당 로봇만 그리기
+        if (robotName_ != "COMBINED" && robotName != robotName_) {
+            continue;
+        }
+        
+        const auto& path = it.value();  // PathConstPtr (vector)
+        
+        if (!path.empty()) {  // vector이므로 .empty() 사용
+            // 로봇별 색상 설정
+            if (robotName == "TUGV") {
+                glColor3f(1.0f, 0.0f, 0.0f); // 빨강
+            } else if (robotName == "MUGV") {
+                glColor3f(0.0f, 1.0f, 0.0f); // 초록
+            } else {
+                glColor3f(0.0f, 0.0f, 1.0f); // 파랑
+            }
+            
+            // 경로 그리기
+            for (size_t i = 1; i < path.size(); ++i) {
+                const auto& prev_pose = path[i-1];
+                const auto& curr_pose = path[i];
+                
+                // 이전 점
+                glVertex3f(prev_pose.pose.position.x, 
+                          prev_pose.pose.position.y, 
+                          prev_pose.pose.position.z);
+                
+                // 현재 점
+                glVertex3f(curr_pose.pose.position.x, 
+                          curr_pose.pose.position.y, 
+                          curr_pose.pose.position.z);
+            }
+        }
     }
+    
     glEnd();
 }
-
 void PointCloudWidget::drawAxes() {
     glBegin(GL_LINES);
     glColor3f(1.0f, 0.0f, 0.0f);

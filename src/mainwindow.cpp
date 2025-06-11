@@ -25,25 +25,17 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     ui_->dockWidget->setVisible(false);
+
     connect(ui_->actionShowPanel, &QAction::triggered, this, [this]() {
         ui_->dockWidget->setVisible(!ui_->dockWidget->isVisible());
     });
     connect(ui_->actionNewViewer, &QAction::triggered, this, &MainWindow::openNewViewer);
-    // if (!menuBar()) {
-    //     setMenuBar(ui_->menubar);
-    // }
-    // ui_->menubar->setNativeMenuBar(false);
-    node_ = rclcpp::Node::make_shared("qt_pointcloud_viewer");
+
+
     broker_ = std::make_shared<DataBroker>(
                 QStringList{"TUGV","MUGV","SUGV1","SUGV2","SUAV"},
                 this);          // this = QObject parent
 
-
-    // auto viewer0_ = findChild<Widget::PointCloudWidget*>("openGLWidget_0");
-    // viewer0_->setRobot("");
-    // connect(broker_.get(), &DataBroker::cloudArrived,
-    //     viewer0_,        &Widget::PointCloudWidget::onCloudShared,
-    //     Qt::QueuedConnection);
 
     try {
         for (int i = 0; i < panelCount_; ++i) {
@@ -51,12 +43,15 @@ MainWindow::MainWindow(QWidget *parent)
             
             auto* viewer = qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(QString("openGLWidget_%1").arg(i)));
             if (viewer) {
-                panel->setPointCloudWidget(viewer, node_);
+                panel->setPointCloudWidget(viewer, broker_);
                 // viewer->setTopicName(i); // Set topic name based on panel index
                 static const QStringList robots = {"COMBINED","TUGV","MUGV","SUGV1","SUGV2","SUAV"};
                 viewer->setRobot(robots[i]);
                 connect(broker_.get(), &DataBroker::cloudArrived,
                         viewer, &Widget::PointCloudWidget::onCloudShared,
+                        Qt::QueuedConnection);
+                connect(broker_.get(), &DataBroker::pathArrived,
+                        viewer, &Widget::PointCloudWidget::onPathShared,
                         Qt::QueuedConnection);
             }
             // QLabel* label = findChild<QLabel*>(QString("label_%1").arg(i+1));
@@ -113,6 +108,9 @@ void MainWindow::openNewViewer()
         pcw->setRobot(robotName);
         connect(broker_.get(), &DataBroker::cloudArrived,
                 pcw,    &Widget::PointCloudWidget::onCloudShared,
+                Qt::QueuedConnection);
+        connect(broker_.get(), &DataBroker::pathArrived,
+                pcw,    &Widget::PointCloudWidget::onPathShared,
                 Qt::QueuedConnection);
         win->show();
     }, Qt::QueuedConnection);

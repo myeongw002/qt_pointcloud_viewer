@@ -20,6 +20,7 @@
 namespace Widget {
     using Cloud      = pcl::PointCloud<pcl::PointXYZI>;
     using CloudConstPtr = Cloud::ConstPtr;           // boost::shared_ptr<const Cloud>
+    using PathConstPtr = std::vector<geometry_msgs::msg::PoseStamped>; // 경로 타입 정의
     
     class PointCloudWidget : public QOpenGLWidget, protected QOpenGLFunctions {
         Q_OBJECT
@@ -39,7 +40,7 @@ namespace Widget {
     
     public slots:
         void onCloudShared(const QString& robot, CloudConstPtr cloud);
-        // void onPathShared(const QString& robot, const std::vector<geometry_msgs::msg::PoseStamped>& path);
+        void onPathShared(const QString& robot, PathConstPtr path); // 타입 수정
 
     protected:
         void initializeGL() override;
@@ -56,6 +57,8 @@ namespace Widget {
         pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_;
         std::vector<geometry_msgs::msg::PoseStamped> path_;
         QHash<QString, CloudConstPtr> clouds_; // 여러 토픽 합치기용
+        QHash<QString, PathConstPtr> paths_; // 여러 토픽 합치기용
+
         QString robotName_ = "COMBINED";
         std::mutex cloudMutex_;
         std::mutex pathMutex_;
@@ -96,7 +99,7 @@ namespace Widget {
     };
 }
 
-Q_DECLARE_METATYPE(Widget::CloudConstPtr)                // ★ 1줄 추가
-
+Q_DECLARE_METATYPE(Widget::CloudConstPtr)                // 클라우드 타입 등록 추가
+Q_DECLARE_METATYPE(Widget::PathConstPtr)                 // 경로 타입 등록 추가
 
 #endif // POINTCLOUD_WIDGET_H
