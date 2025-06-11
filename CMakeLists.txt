@@ -30,6 +30,7 @@ add_executable(${PROJECT_NAME}
     src/robot_select_dialog.cpp
     src/viewer_container.cpp
     src/viewer_window.cpp
+    src/data_broker.cpp
     ${UI_HEADERS}  # 생성된 UI 헤더 추가
 )
 
@@ -39,7 +40,8 @@ set(MOC_HEADERS include/${PROJECT_NAME}/mainwindow.hpp
     include/${PROJECT_NAME}/viewer_panel.hpp
     include/${PROJECT_NAME}/robot_select_dialog.hpp
     include/${PROJECT_NAME}/viewer_container.hpp
-    include/${PROJECT_NAME}/viewer_window.hpp)
+    include/${PROJECT_NAME}/viewer_window.hpp
+    include/${PROJECT_NAME}/data_broker.hpp)
 qt5_wrap_cpp(MOC_SRCS ${MOC_HEADERS})
 
 target_include_directories(${PROJECT_NAME} PUBLIC

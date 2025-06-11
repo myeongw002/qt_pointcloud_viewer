@@ -16,8 +16,10 @@ int main(int argc, char *argv[]) {
     
     rclcpp::init(argc, argv);    
     QApplication app(argc, argv);
-    MainWindow window;
+
+    qRegisterMetaType<CloudConstPtr>("CloudConstPtr");
     
+    MainWindow window;
     window.show();
     
     app_ptr = &app;  // 전역 포인터에 QApplication 객체 저장

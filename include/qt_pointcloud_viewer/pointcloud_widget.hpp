@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QTimer>
+#include <QObject>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <nav_msgs/msg/path.hpp>
@@ -17,6 +18,9 @@
 #include <mutex>
 
 namespace Widget {
+    using Cloud      = pcl::PointCloud<pcl::PointXYZI>;
+    using CloudConstPtr = Cloud::ConstPtr;           // boost::shared_ptr<const Cloud>
+    
     class PointCloudWidget : public QOpenGLWidget, protected QOpenGLFunctions {
         Q_OBJECT
     
@@ -31,6 +35,11 @@ namespace Widget {
         void setShowGrid(bool show);
         void setRotationSensitivity(float sensitivity);
         void setFocusPoint(const glm::vec3& focus);
+        void setRobot(const QString& robot);
+    
+    public slots:
+        void onCloudShared(const QString& robot, CloudConstPtr cloud);
+        // void onPathShared(const QString& robot, const std::vector<geometry_msgs::msg::PoseStamped>& path);
 
     protected:
         void initializeGL() override;
@@ -46,6 +55,8 @@ namespace Widget {
         // ROS2 and PCL
         pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_;
         std::vector<geometry_msgs::msg::PoseStamped> path_;
+        QHash<QString, CloudConstPtr> clouds_; // 여러 토픽 합치기용
+        QString robotName_ = "COMBINED";
         std::mutex cloudMutex_;
         std::mutex pathMutex_;
         rclcpp::Node::SharedPtr node_;
@@ -84,5 +95,8 @@ namespace Widget {
         bool showGrid_ = false;
     };
 }
+
+Q_DECLARE_METATYPE(Widget::CloudConstPtr)                // ★ 1줄 추가
+
 
 #endif // POINTCLOUD_WIDGET_H

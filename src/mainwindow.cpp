@@ -24,10 +24,6 @@ MainWindow::MainWindow(QWidget *parent)
         std::cerr << "❌ Unknown Exception in setupUi()" << std::endl;
     }
 
-    // ui_->toolBar->setStyleSheet(
-    //         "QToolButton {padding: 10px; }"
-    // );
-
     ui_->dockWidget->setVisible(false);
     connect(ui_->actionShowPanel, &QAction::triggered, this, [this]() {
         ui_->dockWidget->setVisible(!ui_->dockWidget->isVisible());
@@ -38,7 +34,17 @@ MainWindow::MainWindow(QWidget *parent)
     // }
     // ui_->menubar->setNativeMenuBar(false);
     node_ = rclcpp::Node::make_shared("qt_pointcloud_viewer");
-    
+    broker_ = std::make_shared<DataBroker>(
+                QStringList{"TUGV","MUGV","SUGV1","SUGV2","SUAV"},
+                this);          // this = QObject parent
+
+
+    // auto viewer0_ = findChild<Widget::PointCloudWidget*>("openGLWidget_0");
+    // viewer0_->setRobot("");
+    // connect(broker_.get(), &DataBroker::cloudArrived,
+    //     viewer0_,        &Widget::PointCloudWidget::onCloudShared,
+    //     Qt::QueuedConnection);
+
     try {
         for (int i = 0; i < panelCount_; ++i) {
             Widget::ViewerPanel* panel = new Widget::ViewerPanel(this);
@@ -46,7 +52,12 @@ MainWindow::MainWindow(QWidget *parent)
             auto* viewer = qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(QString("openGLWidget_%1").arg(i)));
             if (viewer) {
                 panel->setPointCloudWidget(viewer, node_);
-                viewer->setTopicName(i); // Set topic name based on panel index
+                // viewer->setTopicName(i); // Set topic name based on panel index
+                static const QStringList robots = {"COMBINED","TUGV","MUGV","SUGV1","SUGV2","SUAV"};
+                viewer->setRobot(robots[i]);
+                connect(broker_.get(), &DataBroker::cloudArrived,
+                        viewer, &Widget::PointCloudWidget::onCloudShared,
+                        Qt::QueuedConnection);
             }
             // QLabel* label = findChild<QLabel*>(QString("label_%1").arg(i+1));
             // if (label) {
@@ -77,7 +88,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     
 
-    ros_thread_ = std::thread([this]() { rclcpp::spin(node_); });
+    ros_thread_ = std::thread([this](){ rclcpp::spin(broker_); });
 }
 
 MainWindow::~MainWindow() {
@@ -93,12 +104,17 @@ void MainWindow::openNewViewer()
     Widget::RobotSelectDialog dlg(this);
     if (dlg.exec() != QDialog::Accepted) return;
 
-    // 공유 컨텍스트 = 메인 위젯 중 하나의 currentContext
-    QOpenGLContext *share = QOpenGLContext::currentContext();
-
-    // 새 ViewerContainer는 독립 창(부모 nullptr)
-    QMetaObject::invokeMethod(this, [this, robot = dlg.robotName()] {
-        auto *wv = new Widget::ViewerWindow(robot, node_, nullptr);
-        wv->show();                       // 독립 창
+    // Store the robot name before the lambda
+    QString robotName = dlg.robotName();
+    
+    QMetaObject::invokeMethod(this, [this, robotName]{
+        auto* win = new Widget::ViewerWindow(robotName, node_, nullptr);
+        auto* pcw = win->findChild<Widget::PointCloudWidget*>();
+        pcw->setRobot(robotName);
+        connect(broker_.get(), &DataBroker::cloudArrived,
+                pcw,    &Widget::PointCloudWidget::onCloudShared,
+                Qt::QueuedConnection);
+        win->show();
     }, Qt::QueuedConnection);
 }
+    

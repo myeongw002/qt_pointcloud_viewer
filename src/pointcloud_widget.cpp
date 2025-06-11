@@ -1,6 +1,7 @@
 #include "pointcloud_widget.hpp"
 #include <pcl_conversions/pcl_conversions.h>
 #include <iostream>
+#include <QDebug>
 
 namespace Widget {
 
@@ -30,6 +31,11 @@ void PointCloudWidget::setNode(rclcpp::Node::SharedPtr ros_node) {
 
     updateCameraPosition();
 }
+
+void PointCloudWidget::setRobot(const QString& robot) {
+    robotName_ = robot;
+}
+
 
 void PointCloudWidget::setTopicName(int index) {
     switch (index) {
@@ -73,6 +79,13 @@ void PointCloudWidget::setTopicName(int index) {
 
     std::cout << "Subscribed to pcd topic : " << this->pcdTopic_ << std::endl;
     std::cout << "Subscribed to path topic : " << this->pathTopic_ << std::endl;
+}
+
+void PointCloudWidget::onCloudShared(const QString& robot, CloudConstPtr cloud) {
+    // qDebug() << "Received cloud for robot:" << robot;
+    std::lock_guard<std::mutex> lock(cloudMutex_);
+    clouds_[robot] = cloud; // 여러 로봇의 클라우드 저장
+    update();
 }
 
 std::string PointCloudWidget::getPcdTopic() {
@@ -211,13 +224,42 @@ void PointCloudWidget::pathCallback(const nav_msgs::msg::Path::SharedPtr msg) {
 
 void PointCloudWidget::drawPoints() {
     std::lock_guard<std::mutex> lock(cloudMutex_);
-    if (!cloud_ || cloud_->empty()) return;
 
     glPointSize(2.0f);
     glBegin(GL_POINTS);
-    for (const auto& point : *cloud_) {
-        glColor3f(0.0f, 1.0f, 0.0f);
-        glVertex3f(point.x, point.y, point.z);
+
+    for (auto it = clouds_.cbegin(); it != clouds_.cend(); ++it) {
+        const QString& robotName = it.key();
+        
+        // COMBINED인 경우 모든 로봇의 점을 그리고, 아니면 해당 로봇만 그리기
+        if (robotName_ != "COMBINED" && robotName != robotName_) {
+            continue; // 현재 로봇과 일치하지 않으면 건너뛰기
+        }
+        
+        const auto& cloud = it.value();
+
+        if (cloud && !cloud->empty()) {
+            // qDebug() << "Drawing cloud for robot:" << robotName;
+            
+            // 로봇별로 다른 색상 설정 (선택사항)
+            if (robotName == "TUGV") {
+                glColor3f(1.0f, 0.0f, 0.0f); // 빨강
+            } else if (robotName == "MUGV") {
+                glColor3f(0.0f, 1.0f, 0.0f); // 초록
+            } else if (robotName == "SUGV1") {
+                glColor3f(0.0f, 0.0f, 1.0f); // 파랑
+            } else if (robotName == "SUGV2") {
+                glColor3f(1.0f, 1.0f, 0.0f); // 노랑
+            } else if (robotName == "SUAV") {
+                glColor3f(1.0f, 0.0f, 1.0f); // 자홍
+            } else {
+                glColor3f(0.0f, 1.0f, 0.0f); // 기본 초록
+            }
+            
+            for (const auto& point : cloud->points) {
+                glVertex3f(point.x, point.y, point.z);
+            }
+        }
     }
     glEnd();
 }

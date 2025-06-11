@@ -8,7 +8,7 @@ RobotSelectDialog::RobotSelectDialog(QWidget *parent)
     : QDialog(parent), list_(new QListWidget)
 {
     setWindowTitle("Select Robot");
-    list_->addItems({"TUGV","MUGV","SUGV1","SUGV2","SUAV"});
+    list_->addItems({"COMBINED","TUGV","MUGV","SUGV1","SUGV2","SUAV"});
     list_->setCurrentRow(0);
 
     auto *btn = new QPushButton("Open Viewer");
