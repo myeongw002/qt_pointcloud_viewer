@@ -9,11 +9,8 @@ namespace Widget {
         label_ = label;
     }
 
-    void ViewerPanel::setPointCloudWidget(PointCloudWidget* viewer, rclcpp::Node::SharedPtr node) {
+    void ViewerPanel::setPointCloudWidget(PointCloudWidget* viewer) {
         viewer_ = viewer;
-        if (node) {
-            viewer_->setNode(node);
-        }
     }
 
     void ViewerPanel::setAxisCheckBox(QCheckBox* checkBox) {

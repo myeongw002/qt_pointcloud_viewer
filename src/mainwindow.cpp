@@ -43,7 +43,7 @@ MainWindow::MainWindow(QWidget *parent)
             
             auto* viewer = qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(QString("openGLWidget_%1").arg(i)));
             if (viewer) {
-                panel->setPointCloudWidget(viewer, broker_);
+                panel->setPointCloudWidget(viewer);
                 // viewer->setTopicName(i); // Set topic name based on panel index
                 static const QStringList robots = {"COMBINED","TUGV","MUGV","SUGV1","SUGV2","SUAV"};
                 viewer->setRobot(robots[i]);

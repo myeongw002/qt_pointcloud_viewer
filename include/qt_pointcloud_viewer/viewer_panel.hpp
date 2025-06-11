@@ -17,7 +17,7 @@ namespace Widget{
         ViewerPanel(QWidget* parent = nullptr);
         std::string getSelectedTopic() const;
         void setStatusLabel(QLabel* label);
-        void setPointCloudWidget(PointCloudWidget* viewer, rclcpp::Node::SharedPtr node = nullptr); 
+        void setPointCloudWidget(PointCloudWidget* viewer); 
         void setAxisCheckBox(QCheckBox* checkBox);
         void setGridCheckBox(QCheckBox* checkBox);
         void setPanelIdx_(int idx);

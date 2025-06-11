@@ -18,8 +18,8 @@ ViewerWindow::ViewerWindow(const QString &robot,
     lay->setContentsMargins(0,0,0,0);
 
     pcw_ = new Widget::PointCloudWidget;
-    pcw_->setNode(node);
-    pcw_->setTopicName(robotToTopic(robot));
+    // pcw_->setNode(node);
+    // pcw_->setTopicName(robotToTopic(robot));
     lay->addWidget(pcw_);
 
     setCentralWidget(central);

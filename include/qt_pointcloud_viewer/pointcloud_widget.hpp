@@ -7,20 +7,18 @@
 #include <QWheelEvent>
 #include <QTimer>
 #include <QObject>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/point_cloud2.hpp>
-#include <nav_msgs/msg/path.hpp>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <mutex>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 
 namespace Widget {
-    using Cloud      = pcl::PointCloud<pcl::PointXYZI>;
-    using CloudConstPtr = Cloud::ConstPtr;           // boost::shared_ptr<const Cloud>
-    using PathConstPtr = std::vector<geometry_msgs::msg::PoseStamped>; // 경로 타입 정의
+    using Cloud = pcl::PointCloud<pcl::PointXYZI>;
+    using CloudConstPtr = Cloud::ConstPtr;
+    using PathConstPtr = std::vector<geometry_msgs::msg::PoseStamped>;
     
     class PointCloudWidget : public QOpenGLWidget, protected QOpenGLFunctions {
         Q_OBJECT
@@ -28,10 +26,8 @@ namespace Widget {
     public:
         explicit PointCloudWidget(QWidget *parent = nullptr);
         ~PointCloudWidget();
-        void setNode(rclcpp::Node::SharedPtr ros_node = nullptr);
-        void setTopicName(int index);
-        std::string getPcdTopic();
-        std::string getPathTopic();
+        
+        // UI 제어 함수들 (여전히 사용)
         void setShowAxes(bool show);
         void setShowGrid(bool show);
         void setRotationSensitivity(float sensitivity);
@@ -39,10 +35,12 @@ namespace Widget {
         void setRobot(const QString& robot);
     
     public slots:
+        // 데이터 수신 슬롯들 (여전히 사용)
         void onCloudShared(const QString& robot, CloudConstPtr cloud);
-        void onPathShared(const QString& robot, PathConstPtr path); // 타입 수정
+        void onPathShared(const QString& robot, PathConstPtr path);
 
     protected:
+        // OpenGL 렌더링 (여전히 사용)
         void initializeGL() override;
         void paintGL() override;
         void resizeGL(int w, int h) override;
@@ -53,32 +51,25 @@ namespace Widget {
         void hideIndicator();
 
     private:
-        // ROS2 and PCL
-        pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_;
-        std::vector<geometry_msgs::msg::PoseStamped> path_;
-        QHash<QString, CloudConstPtr> clouds_; // 여러 토픽 합치기용
-        QHash<QString, PathConstPtr> paths_; // 여러 토픽 합치기용
-
+        // 멀티 로봇 데이터 (여전히 사용)
+        QHash<QString, CloudConstPtr> clouds_;
+        QHash<QString, PathConstPtr> paths_;
         QString robotName_ = "COMBINED";
         std::mutex cloudMutex_;
         std::mutex pathMutex_;
-        rclcpp::Node::SharedPtr node_;
-        rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pcdSubscribtion_;
-        rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr pathSubscribtion_;
-        void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-        void pathCallback(const nav_msgs::msg::Path::SharedPtr msg);
 
-        // Camera and Orbit View
+        // 카메라 제어 (여전히 사용)
+        glm::mat4 rvizToOpenGLMatrix_; // RViz 좌표를 OpenGL로 변환하는 행렬
         glm::vec3 focusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
         float distance_ = 10.0f;
         float yaw_ = 0.0f;
         float pitch_ = 0.0f;
-        float rotationSensitivity_ = 0.5f;
+        float rotationSensitivity_ = 0.3f;
         glm::vec3 cameraPos_;
         QPoint lastMousePos_;
         void updateCameraPosition();
 
-        // Rendering
+        // 렌더링 (여전히 사용)
         glm::mat4 viewMatrix_;
         glm::mat4 projectionMatrix_;
         void drawPoints();
@@ -86,20 +77,18 @@ namespace Widget {
         void drawAxes();
         void drawGrid();
         void drawCameraIndicator();
+        void setupRvizCoordinateTransform();
 
-        // Indicator and UI
+        // UI 상태 (여전히 사용)
         bool showIndicator_ = false;
         QTimer hideTimer_;
         const int timerInterval_ = 100;
-        std::string pcdTopic_ = "";
-        std::string pathTopic_ = "";
-
-        bool showAxes_ = false;
-        bool showGrid_ = false;
+        bool showAxes_ = true;
+        bool showGrid_ = true;
     };
 }
 
-Q_DECLARE_METATYPE(Widget::CloudConstPtr)                // 클라우드 타입 등록 추가
-Q_DECLARE_METATYPE(Widget::PathConstPtr)                 // 경로 타입 등록 추가
+Q_DECLARE_METATYPE(Widget::CloudConstPtr)
+Q_DECLARE_METATYPE(Widget::PathConstPtr)
 
 #endif // POINTCLOUD_WIDGET_H
