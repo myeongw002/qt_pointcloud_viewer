@@ -15,6 +15,9 @@
 #include <pcl/point_types.h>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 
+class QPainter;
+class QPaintEvent;
+
 namespace Widget {
     using Cloud = pcl::PointCloud<pcl::PointXYZI>;
     using CloudConstPtr = Cloud::ConstPtr;
@@ -78,17 +81,27 @@ namespace Widget {
         void drawGrid();
         void drawCameraIndicator();
         void setupRvizCoordinateTransform();
+        void paintEvent(QPaintEvent* event);
+        void drawRobotLabel(QPainter& painter);
 
         // UI 상태 (여전히 사용)
         bool showIndicator_ = false;
         QTimer hideTimer_;
         const int timerInterval_ = 100;
-        bool showAxes_ = true;
+        bool showAxes_ = false;
         bool showGrid_ = false;
         float gridSize_ = 10.0f;
         float gridSpacing_ = 1.0f;
         float axesLength_ = 1.0f;
         float axesRadius_ = 0.05f;
+        glm::vec3 robotPointsColor_ = glm::vec3(0.0f, 1.0f, 0.0f); // 로봇 포인트 색상
+
+        //Painter 설정
+        const int fontSize_ = 10; // 폰트 크기
+        const int circleSize_ = 12;
+        const int circleMargin_ = 5;     // 원과 텍스트 사이 간격
+        const int horizontalMargin_ = 8;      // 좌우 여백
+        const int verticalMargin_ = 4;    // 상하 여백
     };
 }
 

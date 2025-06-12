@@ -2,6 +2,15 @@
 #include "shape_helper.hpp"
 #include <iostream>
 #include <QDebug>
+#include <QEvent>
+#include <QPainter>
+#include <QPaintEvent>
+#include <QPen>
+#include <QBrush>
+#include <QFont>
+#include <QColor>
+#include <QRect>
+
 
 namespace Widget {
 
@@ -91,6 +100,7 @@ void PointCloudWidget::paintGL() {
     if (showAxes_) drawAxes();
     if (showGrid_) drawGrid();
     if (showIndicator_) drawCameraIndicator();
+
 }
 
 void PointCloudWidget::updateCameraPosition() {
@@ -306,19 +316,31 @@ void PointCloudWidget::drawAxes() {
 }
 
 void PointCloudWidget::drawGrid() {
-    glColor3f(0.3f, 0.3f, 0.3f);
+    glColor3f(0.3f, 0.3f, 0.3f);  // 회색 그리드
+    glLineWidth(1.0f);
+    
     glBegin(GL_LINES);
     
-    // XY 평면 그리드 (ROS 기준: X=forward, Y=left)
-    for (float i = -gridSize_; i <= gridSize_; i += gridSize_) {
-        // Y 방향 선들 (OpenGL -X 방향)
-        glVertex3f(-gridSize_, 0.0f, -i);  // X 라인
-        glVertex3f(gridSize_, 0.0f, -i);
-        
-        // X 방향 선들 (OpenGL -Z 방향)  
-        glVertex3f(-i, 0.0f, -gridSize_);  // Y 라인
-        glVertex3f(-i, 0.0f, gridSize_);
+    // gridSize_: 그리드 전체 크기 (예: 10.0f = 10x10 영역)
+    // gridSpacing_: 그리드 선 간격 (예: 1.0f = 1미터마다 선)
+    
+    float halfSize = gridSize_ / 2.0f;  // 중심에서 양쪽으로 그리드 크기
+    
+    // X축 방향 선들 (Y축을 따라 그어지는 선들)
+    for (float x = -halfSize; x <= halfSize; x += gridSpacing_) {
+        // ROS 좌표계 기준으로 그리고 OpenGL로 변환
+        // ROS: X축 선 = Y축을 따라 그어지는 선
+        glVertex3f(-halfSize, 0.0f, -x);  // 시작점 (ROS Y → OpenGL -X)
+        glVertex3f(halfSize, 0.0f, -x);   // 끝점   (ROS Y → OpenGL -X)
     }
+    
+    // Y축 방향 선들 (X축을 따라 그어지는 선들)  
+    for (float y = -halfSize; y <= halfSize; y += gridSpacing_) {
+        // ROS: Y축 선 = X축을 따라 그어지는 선
+        glVertex3f(-y, 0.0f, -halfSize);  // 시작점 (ROS X → OpenGL -Z)
+        glVertex3f(-y, 0.0f, halfSize);   // 끝점   (ROS X → OpenGL -Z)
+    }
+    
     glEnd();
 }
 
@@ -336,5 +358,82 @@ void PointCloudWidget::drawCameraIndicator() {
     
     glEnable(GL_DEPTH_TEST);
 }
+
+void PointCloudWidget::paintEvent(QPaintEvent* event) {
+    // 1단계: 먼저 OpenGL 렌더링 수행
+    QOpenGLWidget::paintEvent(event);
+    
+    // 2단계: QPainter로 2D 오버레이 그리기
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+    
+    // 로봇 정보 라벨 그리기
+    drawRobotLabel(painter);
+}
+
+void PointCloudWidget::drawRobotLabel(QPainter& painter) {
+    // 로봇별 색상과 이름 결정 (먼저 실행)
+    QString robotText;
+    QColor robotColor;
+    
+    if (robotName_ == "TUGV") {
+        robotText = "TUGV";
+        robotColor = QColor(255, 0, 0);
+    } else if (robotName_ == "MUGV") {
+        robotText = "MUGV";
+        robotColor = QColor(0, 255, 0);
+    } else if (robotName_ == "SUGV1") {
+        robotText = "SUGV1";
+        robotColor = QColor(0, 0, 255);
+    } else if (robotName_ == "SUGV2") {
+        robotText = "SUGV2";
+        robotColor = QColor(255, 255, 0);
+    } else if (robotName_ == "SUAV") {
+        robotText = "SUAV";
+        robotColor = QColor(255, 0, 255);
+    } else if (robotName_ == "COMBINED") {
+        robotText = "ALL ROBOTS";
+        robotColor = QColor(255, 255, 255);
+    }
+    
+    // 폰트 설정 및 텍스트 크기 측정
+    painter.setFont(QFont("Arial", fontSize_, QFont::Bold));
+    QFontMetrics fm(painter.font());
+    
+    // 텍스트 크기 계산
+    QRect textBounds = fm.boundingRect(robotText);
+    int textWidth = textBounds.width();
+    int textHeight = fm.height();
+    
+
+    
+    int boxWidth = horizontalMargin_ + circleSize_ + circleMargin_ + textWidth + horizontalMargin_;
+    int boxHeight = std::max(circleSize_ + verticalMargin_ * 2, textHeight + verticalMargin_ * 2);
+    
+    // 동적 크기의 배경 박스
+    QRect labelRect(10, 10, boxWidth, boxHeight);
+    painter.fillRect(labelRect, QColor(0, 0, 0, 150));
+    
+    // 테두리
+    painter.setPen(QPen(Qt::white, 2));
+    painter.drawRect(labelRect);
+    
+    // 박스 중앙 Y 좌표 계산
+    int boxCenterY = labelRect.top() + labelRect.height() / 2;
+    
+    // 색상 인디케이터 원 (중앙 정렬)
+    painter.setBrush(robotColor);
+    painter.setPen(Qt::NoPen);
+    int circleX = labelRect.left() + horizontalMargin_;
+    painter.drawEllipse(circleX, boxCenterY - circleSize_/2, circleSize_, circleSize_);
+    
+    // 로봇 이름 텍스트 (중앙 정렬)
+    painter.setPen(Qt::white);
+    int textX = circleX + circleSize_ + circleMargin_;
+    int textY = boxCenterY + fm.ascent()/2 - fm.descent()/2;  // 정확한 중앙 정렬
+    
+    painter.drawText(textX, textY, robotText);
+}
+
 
 } // namespace Widget
