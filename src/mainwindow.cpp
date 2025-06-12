@@ -4,13 +4,12 @@
 #include "viewer_panel.hpp"
 #include "robot_select_dialog.hpp"
 #include "viewer_container.hpp"
-
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
 #include <QVector3D>
 #include <QComboBox>    
- #include <QTextEdit>
+#include <QTextEdit>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui_(new Ui::MainWindow) {

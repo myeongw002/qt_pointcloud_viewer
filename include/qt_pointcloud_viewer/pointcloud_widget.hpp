@@ -84,7 +84,11 @@ namespace Widget {
         QTimer hideTimer_;
         const int timerInterval_ = 100;
         bool showAxes_ = true;
-        bool showGrid_ = true;
+        bool showGrid_ = false;
+        float gridSize_ = 10.0f;
+        float gridSpacing_ = 1.0f;
+        float axesLength_ = 1.0f;
+        float axesRadius_ = 0.05f;
     };
 }
 

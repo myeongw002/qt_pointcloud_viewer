@@ -1,4 +1,5 @@
 #include "pointcloud_widget.hpp"
+#include "shape_helper.hpp"
 #include <iostream>
 #include <QDebug>
 
@@ -56,7 +57,9 @@ void PointCloudWidget::setFocusPoint(const glm::vec3& focus) {
 void PointCloudWidget::initializeGL() {
     initializeOpenGLFunctions();
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    bool blendWasEnabled = glIsEnabled(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
 }
 
 void PointCloudWidget::resizeGL(int w, int h) {
@@ -273,25 +276,33 @@ void PointCloudWidget::drawPath() {
 }
 
 void PointCloudWidget::drawAxes() {
-    glBegin(GL_LINES);
     
-    // ROS 표준 좌표축 (REP-103)
-    // X축: 빨간색, 앞방향 (OpenGL에서는 -Z)
-    glColor3f(1.0f, 0.0f, 0.0f); 
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(0.0f, 0.0f, -1.0f); // X(forward) → -Z
+    // X축: 빨간색 실린더
+    ShapeHelper::SimpleShape::drawCylinder(
+        glm::vec3(0, 0, -axesLength_/2),  // 중심점
+        glm::vec3(0, 0, -1),             // 방향 (ROS X → OpenGL -Z)
+        axesLength_, 
+        axesRadius_, 
+        glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)     // 빨간색
+    );
     
-    // Y축: 초록색, 왼쪽 (OpenGL에서는 -X)
-    glColor3f(0.0f, 1.0f, 0.0f);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(-1.0f, 0.0f, 0.0f); // Y(left) → -X
+    // Y축: 초록색 실린더
+    ShapeHelper::SimpleShape::drawCylinder(
+        glm::vec3(-axesLength_/2, 0, 0),
+        glm::vec3(-1, 0, 0),             // ROS Y → OpenGL -X
+        axesLength_,
+        axesRadius_,
+        glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)     // 초록색
+    );
     
-    // Z축: 파란색, 위쪽 (OpenGL에서도 +Y)
-    glColor3f(0.0f, 0.0f, 1.0f);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(0.0f, 1.0f, 0.0f); // Z(up) → Y
-    
-    glEnd();
+    // Z축: 파란색 실린더
+    ShapeHelper::SimpleShape::drawCylinder(
+        glm::vec3(0, axesLength_/2, 0),
+        glm::vec3(0, 1, 0),              // ROS Z → OpenGL Y
+        axesLength_,
+        axesRadius_,
+        glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)     // 파란색
+    );
 }
 
 void PointCloudWidget::drawGrid() {
@@ -299,70 +310,30 @@ void PointCloudWidget::drawGrid() {
     glBegin(GL_LINES);
     
     // XY 평면 그리드 (ROS 기준: X=forward, Y=left)
-    for (float i = -10.0f; i <= 10.0f; i += 1.0f) {
+    for (float i = -gridSize_; i <= gridSize_; i += gridSize_) {
         // Y 방향 선들 (OpenGL -X 방향)
-        glVertex3f(-10.0f, 0.0f, -i);  // X 라인
-        glVertex3f(10.0f, 0.0f, -i);
+        glVertex3f(-gridSize_, 0.0f, -i);  // X 라인
+        glVertex3f(gridSize_, 0.0f, -i);
         
         // X 방향 선들 (OpenGL -Z 방향)  
-        glVertex3f(-i, 0.0f, -10.0f);  // Y 라인
-        glVertex3f(-i, 0.0f, 10.0f);
+        glVertex3f(-i, 0.0f, -gridSize_);  // Y 라인
+        glVertex3f(-i, 0.0f, gridSize_);
     }
     glEnd();
 }
 
 void PointCloudWidget::drawCameraIndicator() {
-    glDisable(GL_DEPTH_TEST);
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-
-    // focusPoint_는 이미 OpenGL 좌표계 값이므로 직접 사용
-    glTranslatef(focusPoint_.x, focusPoint_.y, focusPoint_.z);
-
-    float cylinderRadius = 0.3f;
-    float cylinderHeight = 0.1f;
-    float alpha = 0.7f;
-    int segments = 30;
-
-    glColor4f(1.0f, 1.0f, 0.0f, alpha); 
+    glDisable(GL_DEPTH_TEST);  // 투명 객체는 깊이 테스트 비활성화
     
-    // Top Disk (ROS Z축 기준으로 위쪽, OpenGL에서는 Y축)
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3f(0.0f, cylinderHeight / 2.0f, 0.0f);
-    for (int i = 0; i <= segments; ++i) {
-        float angle = 2.0f * M_PI * float(i) / float(segments);
-        float x = cylinderRadius * cos(angle);
-        float z = cylinderRadius * sin(angle);
-        glVertex3f(x, cylinderHeight / 2.0f, z);
-    }
-    glEnd();
-
-    // Bottom Disk (ROS Z축 기준으로 아래쪽, OpenGL에서는 -Y축)
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3f(0.0f, -cylinderHeight / 2.0f, 0.0f);
-    for (int i = 0; i <= segments; ++i) {
-        float angle = 2.0f * M_PI * float(i) / float(segments);
-        float x = cylinderRadius * cos(angle);
-        float z = cylinderRadius * sin(angle);
-        glVertex3f(x, -cylinderHeight / 2.0f, z);
-    }
-    glEnd();
-
-    // Side Surface (ROS Z축 방향으로 연결되는 측면, OpenGL에서는 Y축)
-    glBegin(GL_QUAD_STRIP);
-    for (int i = 0; i <= segments; ++i) {
-        float angle = 2.0f * M_PI * float(i) / float(segments);
-        float x = cylinderRadius * cos(angle);
-        float z = cylinderRadius * sin(angle);
-
-        // 아래쪽 점
-        glVertex3f(x, -cylinderHeight / 2.0f, z);
-        // 위쪽 점  
-        glVertex3f(x, cylinderHeight / 2.0f, z);
-    }
-    glEnd();
-
-    glPopMatrix();
+    // 투명한 노란색 실린더
+    ShapeHelper::SimpleShape::drawCylinder(
+        focusPoint_,                           // 위치
+        glm::vec3(0, 1, 0),                   // 위쪽 방향
+        0.1f,                                 // 높이
+        0.3f,                                 // 반지름
+        glm::vec4(1.0f, 1.0f, 0.0f, 0.7f)    // 투명한 노란색 (70% 불투명)
+    );
+    
     glEnable(GL_DEPTH_TEST);
 }
 

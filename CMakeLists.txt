@@ -31,6 +31,7 @@ add_executable(${PROJECT_NAME}
     src/viewer_container.cpp
     src/viewer_window.cpp
     src/data_broker.cpp
+    src/shape_helper.cpp
     ${UI_HEADERS}  # 생성된 UI 헤더 추가
 )
 
