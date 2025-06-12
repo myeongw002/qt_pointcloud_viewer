@@ -135,7 +135,6 @@ void PointCloudWidget::paintGL() {
     // 탑뷰 모드에서는 별도 처리
     if (isTopView_) {
         // 탑뷰에서는 updateTopViewCamera에서 계산된 viewMatrix_ 사용
-        // 추가 계산 없이 그대로 사용
     } else {
         // 일반 모드에서만 뷰 매트릭스 재계산
         glm::vec3 openglUpVector = glm::vec3(0, 1, 0);
@@ -147,8 +146,12 @@ void PointCloudWidget::paintGL() {
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixf(glm::value_ptr(viewMatrix_));
 
+    // 기존 그리기 함수들
     drawPoints();
     drawPath();
+    
+    // 현재 위치 표시 추가 (경로 다음에 그려서 위에 보이도록)
+    if (showPosition_) drawPositions();
     if (showAxes_) drawAxes();
     if (showGrid_) drawGrid();
     if (showIndicator_) drawCameraIndicator();
@@ -430,32 +433,17 @@ void PointCloudWidget::drawPath() {
 }
 
 void PointCloudWidget::drawAxes() {
+    // 원점에 ROS 표준 축 그리기
+    glm::vec3 origin = glm::vec3(0.0f, 0.01f, 0.0f);
+    glm::mat4 identityMatrix = glm::mat4(1.0f);
     
-    // X축: 빨간색 실린더
-    ShapeHelper::SimpleShape::drawCylinder(
-        glm::vec3(0, 0, -axesLength_/2),  // 중심점
-        glm::vec3(0, 0, -1),             // 방향 (ROS X → OpenGL -Z)
-        axesLength_, 
-        axesRadius_, 
-        glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)     // 빨간색
-    );
-    
-    // Y축: 초록색 실린더
-    ShapeHelper::SimpleShape::drawCylinder(
-        glm::vec3(-axesLength_/2, 0, 0),
-        glm::vec3(-1, 0, 0),             // ROS Y → OpenGL -X
-        axesLength_,
-        axesRadius_,
-        glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)     // 초록색
-    );
-    
-    // Z축: 파란색 실린더
-    ShapeHelper::SimpleShape::drawCylinder(
-        glm::vec3(0, axesLength_/2, 0),
-        glm::vec3(0, 1, 0),              // ROS Z → OpenGL Y
-        axesLength_,
-        axesRadius_,
-        glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)     // 파란색
+    // ✅ ROS 표준 축 그리기 (빨간색=앞, 초록색=왼쪽, 파란색=위)
+    ShapeHelper::SimpleShape::drawRosAxes(
+        origin,           // 원점 위치
+        identityMatrix,   // 회전 없음
+        axesLength_,      // 축 길이
+        axesRadius_,      // 축 두께
+        true              // 원뿔 화살표 포함
     );
 }
 
@@ -579,6 +567,113 @@ void PointCloudWidget::drawRobotLabel(QPainter& painter) {
     int textY = boxCenterY + fm.ascent()/2 - fm.descent()/2;
     
     painter.drawText(textX, textY, robotText);
+}
+
+void PointCloudWidget::setShowPosition(bool show) {
+    showPosition_ = show;
+    update();
+}
+
+void PointCloudWidget::setPositionRadius(float radius) {
+    if (radius >= 0.1f && radius <= 2.0f) {
+        currentPositionRadius_ = radius;
+        update();
+    }
+}
+
+void PointCloudWidget::setPositionMarkerType(PositionMarkerType type) {
+    positionMarkerType_ = type;
+    update();
+}
+
+void PointCloudWidget::drawCylinderMarker(const glm::vec3& position, const glm::vec3& robotColor, const QString& robotName) {
+    // 기본 실린더 마커 그리기
+    ShapeHelper::SimpleShape::drawCylinder(
+        position + glm::vec3(0, currentPositionHeight_/2, 0),  // 위치 (바닥에서 약간 위)
+        glm::vec3(0, 1, 0),                                    // 위쪽 방향
+        currentPositionHeight_,                                // 높이
+        currentPositionRadius_,                                // 반지름
+        glm::vec4(robotColor.x, robotColor.y, robotColor.z, 0.8f)  // 약간 투명
+    );
+    
+    // 상단에 더 밝은 색상의 작은 원 추가 (더 눈에 띄게)
+    ShapeHelper::SimpleShape::drawCylinder(
+        position + glm::vec3(0, currentPositionHeight_ + 0.05f, 0),
+        glm::vec3(0, 1, 0),
+        0.05f,                                                 // 얇은 원판
+        currentPositionRadius_ * 0.7f,                         // 더 작은 반지름
+        glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)                    // 흰색 (눈에 띄게)
+    );
+    
+}
+
+// pointcloud_widget.cpp에서 ROS 축 사용
+void PointCloudWidget::drawPositionAxes(const glm::vec3& position, const glm::quat& orientation, const QString& robotName) {
+    float axesLength = positionAxesLength_;
+    float axesRadius = positionAxesRadius_;
+    
+    if (robotName == "SUAV") {
+        axesLength *= 1.2f;
+    } else if (robotName == "SUGV1" || robotName == "SUGV2") {
+        axesLength *= 0.8f;
+    }
+    
+    glm::vec3 axesStart = position + glm::vec3(0, 0.05f, 0);
+    
+    // ✅ ROS 축 그리기 (로봇의 방향 표시)
+    ShapeHelper::SimpleShape::drawRosAxes(axesStart, orientation, axesLength, axesRadius, true);
+}
+void PointCloudWidget::drawPositions() {
+    if (!showPosition_) return;
+    
+    std::lock_guard<std::mutex> lock(pathMutex_);
+    
+    for (auto it = paths_.cbegin(); it != paths_.cend(); ++it) {
+        const QString& robotName = it.key();
+        
+        // 현재 선택된 로봇만 표시하거나 COMBINED 모드에서 모든 로봇 표시
+        if (robotName_ != "COMBINED" && robotName != robotName_) {
+            continue;
+        }
+        
+        const auto& path = it.value();
+        
+        // 경로가 있고 비어있지 않은 경우
+        if (!path.empty()) {
+            // 가장 최근 위치 (경로의 마지막 점)
+            const auto& currentPose = path.back();
+            
+            // ROS 좌표를 OpenGL 좌표로 변환
+            glm::vec3 position(
+                -currentPose.pose.position.y,  // ROS Y → OpenGL -X
+                currentPose.pose.position.z,   // ROS Z → OpenGL Y
+                -currentPose.pose.position.x   // ROS X → OpenGL -Z
+            );
+            
+            // 로봇의 방향 정보 추출 (쿼터니언)
+            auto quat = currentPose.pose.orientation;
+            glm::quat orientation(quat.w, quat.x, quat.y, quat.z);
+            
+            // 로봇별 색상 가져오기
+            glm::vec3 robotColor;
+            if (robotName_ == "COMBINED") {
+                robotColor = getRobotPathColor(robotName);
+            } else {
+                robotColor = getRobotPathColor(robotName_);
+            }
+            
+            // 마커 유형에 따라 다른 그리기 방식 적용
+            switch (positionMarkerType_) {
+                case PositionMarkerType::CYLINDER:
+                    drawCylinderMarker(position, robotColor, robotName);
+                    break;
+                    
+                case PositionMarkerType::AXES:
+                    drawPositionAxes(position, orientation, robotName);
+                    break;
+            }
+        }
+    }
 }
 
 

@@ -25,8 +25,7 @@ ViewerWindow::ViewerWindow(const QString &robot,
     setCentralWidget(central);
 }
 
-int ViewerWindow::robotToTopic(const QString &r)
-{
+int ViewerWindow::robotToTopic(const QString &r) {
     const QMap<QString,int> map{
         {"TUGV", 1},
         {"MUGV", 2},
