@@ -92,7 +92,17 @@ void PointCloudWidget::onCloudShared(const QString& robot, CloudConstPtr cloud) 
 void PointCloudWidget::onPathShared(const QString& robot, PathConstPtr path) {
     std::lock_guard<std::mutex> lock(pathMutex_);
     paths_[robot] = path;
-    update();
+    
+    // ✅ 카메라 인디케이터가 이 로봇에 고정되어 있으면 위치 업데이트
+    if (lockIndicatorToCurrentPosition_ && indicatorTargetRobot_ == robot) {
+        // 메인 스레드에서 업데이트 실행 (스레드 안전)
+        QMetaObject::invokeMethod(this, [this]() {
+            updateIndicatorPosition();
+            update();
+        }, Qt::QueuedConnection);
+    } else {
+        update();
+    }
 }
 
 void PointCloudWidget::setShowAxes(bool show) {
@@ -121,6 +131,7 @@ void PointCloudWidget::initializeGL() {
     bool blendWasEnabled = glIsEnabled(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
+    setLockIndicatorToCurrentPosition(true);  // 기본적으로 현재 위치에 고정
 }
 
 void PointCloudWidget::resizeGL(int w, int h) {
@@ -242,8 +253,6 @@ void PointCloudWidget::resetCamera() {
     update();
 }
 
-
-
 void PointCloudWidget::mousePressEvent(QMouseEvent *event) {
     lastMousePos_ = event->pos();
     showIndicator_ = true;
@@ -279,7 +288,7 @@ void PointCloudWidget::mouseMoveEvent(QMouseEvent *event) {
         }
         
         update();
-    } else if (event->buttons() & Qt::MiddleButton) {
+    } else if (event->buttons() & Qt::MiddleButton && !lockIndicatorToCurrentPosition_) {
         // ✅ 탑뷰 모드 체크 추가!
         float deltaX = (event->x() - lastMousePos_.x()) * 0.02f;
         float deltaY = (event->y() - lastMousePos_.y()) * 0.02f;
@@ -607,7 +616,7 @@ void PointCloudWidget::drawCylinderMarker(const glm::vec3& position, const glm::
     
 }
 
-// pointcloud_widget.cpp에서 ROS 축 사용
+// pointcloud_widget.cpp에 ROS 축 사용
 void PointCloudWidget::drawPositionAxes(const glm::vec3& position, const glm::quat& orientation, const QString& robotName) {
     float axesLength = positionAxesLength_;
     float axesRadius = positionAxesRadius_;
@@ -676,5 +685,89 @@ void PointCloudWidget::drawPositions() {
     }
 }
 
+// pointcloud_widget.cpp에 함수들 추가
 
+void PointCloudWidget::setLockIndicatorToCurrentPosition(bool lock) {
+    lockIndicatorToCurrentPosition_ = lock;
+    
+    if (lock) {
+        // 잠금 활성화 시 현재 선택된 로봇을 타겟으로 설정
+        if (robotName_ != "COMBINED") {
+            indicatorTargetRobot_ = robotName_;
+        } else {
+            // COMBINED 모드에서는 첫 번째 로봇을 타겟으로
+            if (!paths_.isEmpty()) {
+                indicatorTargetRobot_ = paths_.begin().key();
+            }
+        }
+        
+        // 즉시 위치 업데이트
+        updateIndicatorPosition();
+        showIndicator_ = true;
+    } else {
+        // 잠금 해제 시 타겟 초기화
+        indicatorTargetRobot_ = "";
+        showIndicator_ = false;
+    }
+    
+    update();
+}
+
+void PointCloudWidget::setIndicatorTargetRobot(const QString& robot) {
+    indicatorTargetRobot_ = robot;
+    
+    if (lockIndicatorToCurrentPosition_ && !robot.isEmpty()) {
+        updateIndicatorPosition();
+        showIndicator_ = true;
+        update();
+    }
+}
+
+void PointCloudWidget::updateIndicatorPosition() {
+    if (!lockIndicatorToCurrentPosition_ || indicatorTargetRobot_.isEmpty()) {
+        return;
+    }
+    
+    glm::vec3 currentPos = getCurrentRobotPosition(indicatorTargetRobot_);
+    
+    // 유효한 위치가 있으면 포커스 포인트를 해당 위치로 설정
+    if (hasValidCurrentPosition(indicatorTargetRobot_)) {
+        lastKnownPosition_ = currentPos;
+        
+        // 탑뷰 모드가 아닐 때만 포커스 포인트 변경
+        if (!isTopView_) {
+            focusPoint_ = currentPos;
+            updateCameraPosition();
+        } else {
+            // 탑뷰에서는 카메라 위치만 변경
+            focusPoint_ = currentPos;
+            updateTopViewCamera();
+        }
+    }
+}
+
+glm::vec3 PointCloudWidget::getCurrentRobotPosition(const QString& robot) const {
+    std::lock_guard<std::mutex> lock(pathMutex_);
+    
+    auto it = paths_.find(robot);
+    if (it != paths_.end() && !it.value().empty()) {
+        const auto& currentPose = it.value().back();
+        
+        // ✅ drawPositions()와 동일한 좌표 변환 로직
+        return glm::vec3(
+            -currentPose.pose.position.y,  // ROS Y → OpenGL -X
+            currentPose.pose.position.z,   // ROS Z → OpenGL Y
+            -currentPose.pose.position.x   // ROS X → OpenGL -Z
+        );
+    }
+    
+    return lastKnownPosition_;  // 데이터가 없으면 마지막 알려진 위치 반환
+}
+
+bool PointCloudWidget::hasValidCurrentPosition(const QString& robot) const {
+    std::lock_guard<std::mutex> lock(pathMutex_);
+    
+    auto it = paths_.find(robot);
+    return (it != paths_.end() && !it.value().empty());
+}
 } // namespace Widget

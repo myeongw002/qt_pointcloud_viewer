@@ -57,7 +57,9 @@ namespace Widget {
         // 데이터 수신 슬롯들 (여전히 사용)
         void onCloudShared(const QString& robot, CloudConstPtr cloud);
         void onPathShared(const QString& robot, PathConstPtr path);
-
+        void setLockIndicatorToCurrentPosition(bool lock);
+        void setIndicatorTargetRobot(const QString& robot);
+        
     protected:
         // OpenGL 렌더링 (여전히 사용)
         void initializeGL() override;
@@ -74,8 +76,8 @@ namespace Widget {
         QString robotName_ = "";
         QHash<QString, CloudConstPtr> clouds_;
         QHash<QString, PathConstPtr> paths_;
-        std::mutex cloudMutex_;
-        std::mutex pathMutex_;
+        mutable std::mutex cloudMutex_;   // ✅ mutable 추가
+        mutable std::mutex pathMutex_;    // ✅ mutable 추가
 
         // 카메라 제어 
         glm::mat4 rvizToOpenGLMatrix_; // RViz 좌표를 OpenGL로 변환하는 행렬
@@ -156,6 +158,16 @@ namespace Widget {
         const int circleMargin_ = 5;     // 원과 텍스트 사이 간격
         const int horizontalMargin_ = 8;      // 좌우 여백
         const int verticalMargin_ = 4;    // 상하 여백
+
+        // 카메라 인디케이터 관련 변수
+        bool lockIndicatorToCurrentPosition_ = true;  // 현재 위치에 고정 여부
+        QString indicatorTargetRobot_ = "";            // 추적할 로봇 이름
+        glm::vec3 lastKnownPosition_ = glm::vec3(0.0f, 0.0f, 0.0f);  // 마지막 알려진 위치
+
+        void updateIndicatorPosition();
+        glm::vec3 getCurrentRobotPosition(const QString& robot) const;
+        bool hasValidCurrentPosition(const QString& robot) const;
+
     };
 }
 
