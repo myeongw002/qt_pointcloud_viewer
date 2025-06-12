@@ -36,6 +36,18 @@ namespace Widget {
         void setRotationSensitivity(float sensitivity);
         void setFocusPoint(const glm::vec3& focus);
         void setRobot(const QString& robot);
+        // 탑뷰 제어 함수 추가
+        void setTopView(bool enable);
+        bool isTopView() const { return isTopView_; }
+        void resetCamera();
+        // 색상 설정/가져오기 함수들
+        void setRobotPointsColor(const QString& robot, const glm::vec3& color);
+        void setRobotPathColor(const QString& robot, const glm::vec3& color);
+        glm::vec3 getRobotPointsColor(const QString& robot) const;
+        glm::vec3 getRobotPathColor(const QString& robot) const;
+        
+        // 모든 로봇 색상 초기화
+        void resetAllColorsToDefault();
     
     public slots:
         // 데이터 수신 슬롯들 (여전히 사용)
@@ -70,7 +82,21 @@ namespace Widget {
         float rotationSensitivity_ = 0.3f;
         glm::vec3 cameraPos_;
         QPoint lastMousePos_;
+        // 탑뷰 관련 변수 추가
+        bool isTopView_ = true;
+        float topViewHeight_ = 20.0f;       // 탑뷰 높이
+        float topViewZoom_ = 1.0f;          // 탑뷰 줌 레벨
+        
+        // 일반 뷰 복원용 백업 변수들
+        float backupDistance_ = 10.0f;
+        float backupYaw_ = 0.0f;
+        float backupPitch_ = 0.0f;
+        glm::vec3 backupFocusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
+
         void updateCameraPosition();
+        void updateTopViewCamera();
+        void backupCameraState();
+        void restoreCameraState();
 
         // 렌더링 (여전히 사용)
         glm::mat4 viewMatrix_;
@@ -84,19 +110,25 @@ namespace Widget {
         void paintEvent(QPaintEvent* event);
         void drawRobotLabel(QPainter& painter);
 
+
         // UI 상태 (여전히 사용)
         bool showIndicator_ = false;
         QTimer hideTimer_;
         const int timerInterval_ = 100;
         bool showAxes_ = false;
-        bool showGrid_ = false;
-        float gridSize_ = 10.0f;
-        float gridSpacing_ = 1.0f;
+        bool showGrid_ = true;
+        int planeCellCount_ = 10;
+        float cellSize_ = 1.0f;
+        float gridLineWidth_ = 0.1f;
         float axesLength_ = 1.0f;
         float axesRadius_ = 0.05f;
-        glm::vec3 robotPointsColor_ = glm::vec3(0.0f, 1.0f, 0.0f); // 로봇 포인트 색상
+        // 로봇별 색상 관리
+        QHash<QString, glm::vec3> robotPointsColors_;
+        QHash<QString, glm::vec3> robotPathColors_;
+        void initializeDefaultColors();
 
         //Painter 설정
+        bool showRobotLabel_ = true; // 로봇 이름 표시 여부
         const int fontSize_ = 10; // 폰트 크기
         const int circleSize_ = 12;
         const int circleMargin_ = 5;     // 원과 텍스트 사이 간격

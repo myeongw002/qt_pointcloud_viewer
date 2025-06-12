@@ -18,8 +18,10 @@ PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
     lastMousePos_ = QPoint(0, 0);
     showIndicator_ = false;
     connect(&hideTimer_, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
-    setupRvizCoordinateTransform();
     updateCameraPosition();
+    
+    // 기본 색상들 초기화
+    initializeDefaultColors();
 }
 
 PointCloudWidget::~PointCloudWidget() {
@@ -27,8 +29,58 @@ PointCloudWidget::~PointCloudWidget() {
     doneCurrent();
 }
 
+void PointCloudWidget::initializeDefaultColors() {
+    // 기본 포인트 색상들
+    robotPointsColors_["TUGV"] = glm::vec3(1.0f, 0.0f, 0.0f);    // 빨간색
+    robotPointsColors_["MUGV"] = glm::vec3(0.0f, 1.0f, 0.0f);    // 초록색
+    robotPointsColors_["SUGV1"] = glm::vec3(0.0f, 0.0f, 1.0f);   // 파란색
+    robotPointsColors_["SUGV2"] = glm::vec3(1.0f, 1.0f, 0.0f);   // 노란색
+    robotPointsColors_["SUAV"] = glm::vec3(1.0f, 0.0f, 1.0f);    // 보라색
+    robotPointsColors_["DEFAULT"] = glm::vec3(0.0f, 1.0f, 0.0f); // 기본 초록색
+    
+    // 기본 경로 색상들 (포인트보다 살짝 밝게)
+    robotPathColors_["TUGV"] = glm::vec3(1.0f, 0.5f, 0.5f);     // 연한 빨간색
+    robotPathColors_["MUGV"] = glm::vec3(0.5f, 1.0f, 0.5f);     // 연한 초록색
+    robotPathColors_["SUGV1"] = glm::vec3(0.5f, 0.5f, 1.0f);    // 연한 파란색
+    robotPathColors_["SUGV2"] = glm::vec3(1.0f, 1.0f, 0.5f);    // 연한 노란색
+    robotPathColors_["SUAV"] = glm::vec3(1.0f, 0.5f, 1.0f);     // 연한 보라색
+    robotPathColors_["DEFAULT"] = glm::vec3(0.5f, 1.0f, 0.5f);  // 기본 연한 초록색
+}
+
 void PointCloudWidget::setRobot(const QString& robot) {
     robotName_ = robot;
+    update();  // setDefaultColor 호출 제거
+}
+
+// 기존 setDefaultColor 함수 삭제하고 새로운 함수들로 대체
+
+void PointCloudWidget::setRobotPointsColor(const QString& robot, const glm::vec3& color) {
+    robotPointsColors_[robot] = color;
+    update();
+}
+
+void PointCloudWidget::setRobotPathColor(const QString& robot, const glm::vec3& color) {
+    robotPathColors_[robot] = color;
+    update();
+}
+
+glm::vec3 PointCloudWidget::getRobotPointsColor(const QString& robot) const {
+    if (robotPointsColors_.contains(robot)) {
+        return robotPointsColors_[robot];
+    }
+    return robotPointsColors_["DEFAULT"];  // 기본값 반환
+}
+
+glm::vec3 PointCloudWidget::getRobotPathColor(const QString& robot) const {
+    if (robotPathColors_.contains(robot)) {
+        return robotPathColors_[robot];
+    }
+    return robotPathColors_["DEFAULT"];  // 기본값 반환
+}
+
+void PointCloudWidget::resetAllColorsToDefault() {
+    initializeDefaultColors();
+    update();
 }
 
 void PointCloudWidget::onCloudShared(const QString& robot, CloudConstPtr cloud) {
@@ -80,15 +132,15 @@ void PointCloudWidget::resizeGL(int w, int h) {
 void PointCloudWidget::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // ROS 좌표계의 Z축(위쪽)을 OpenGL Y축으로 변환
-    glm::vec3 rosUpVector = glm::vec3(0, 0, 1);  // ROS Z축 (위쪽)
-    glm::vec3 openglUpVector = glm::vec3(0, 1, 0);  // OpenGL은 Y축이 위
-
-    viewMatrix_ = glm::lookAt(
-        cameraPos_,
-        focusPoint_,
-        openglUpVector  // OpenGL 기준 up vector
-    );
+    // 탑뷰 모드에서는 별도 처리
+    if (isTopView_) {
+        // 탑뷰에서는 updateTopViewCamera에서 계산된 viewMatrix_ 사용
+        // 추가 계산 없이 그대로 사용
+    } else {
+        // 일반 모드에서만 뷰 매트릭스 재계산
+        glm::vec3 openglUpVector = glm::vec3(0, 1, 0);
+        viewMatrix_ = glm::lookAt(cameraPos_, focusPoint_, openglUpVector);
+    }
 
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(glm::value_ptr(projectionMatrix_));
@@ -100,7 +152,6 @@ void PointCloudWidget::paintGL() {
     if (showAxes_) drawAxes();
     if (showGrid_) drawGrid();
     if (showIndicator_) drawCameraIndicator();
-
 }
 
 void PointCloudWidget::updateCameraPosition() {
@@ -118,13 +169,77 @@ void PointCloudWidget::updateCameraPosition() {
     cameraPos_ = focusPoint_ + glm::vec3(openglX, openglY, openglZ);
 }
 
-void PointCloudWidget::setupRvizCoordinateTransform() {
-    // RViz (x 앞, y 왼쪽, z 위) → OpenGL (x 오른쪽, y 위, z 안쪽) 변환
-    // y와 z 교환, z 반전
-    rvizToOpenGLMatrix_ = glm::mat4(1.0f);
-    rvizToOpenGLMatrix_ = glm::rotate(rvizToOpenGLMatrix_, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // z → y
-    rvizToOpenGLMatrix_ = glm::rotate(rvizToOpenGLMatrix_, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // y → -z
+void PointCloudWidget::setTopView(bool enable) {
+    if (isTopView_ == enable) return;
+    
+    if (enable) {
+        // 일반 뷰 → 탑뷰 전환
+        backupCameraState();
+        isTopView_ = true;
+        
+        // 탑뷰 카메라 설정
+        pitch_ = 90.0f;  // 정확히 아래를 보도록
+        yaw_ = 0.0f;      // 북쪽 방향
+        distance_ = topViewHeight_;
+        
+        updateTopViewCamera();
+    } else {
+        // 탑뷰 → 일반 뷰 전환
+        isTopView_ = false;
+        restoreCameraState();
+        updateCameraPosition();
+    }
+    
+    update();
 }
+
+void PointCloudWidget::backupCameraState() {
+    backupDistance_ = distance_;
+    backupYaw_ = yaw_;
+    backupPitch_ = pitch_;
+    backupFocusPoint_ = focusPoint_;
+}
+
+void PointCloudWidget::restoreCameraState() {
+    distance_ = backupDistance_;
+    yaw_ = backupYaw_;
+    pitch_ = backupPitch_;
+    focusPoint_ = backupFocusPoint_;
+}
+
+void PointCloudWidget::updateTopViewCamera() {
+    // 탑뷰용 카메라 위치 계산 (yaw 회전 적용)
+    float yawRad = glm::radians(yaw_);
+    
+    // yaw에 따른 up 벡터 계산 (Z축 중심 회전)
+    glm::vec3 up = glm::vec3(-sin(yawRad), 0.0f, -cos(yawRad));
+    
+    // 카메라는 항상 포커스 지점 바로 위에 위치
+    cameraPos_ = focusPoint_ + glm::vec3(0.0f, topViewHeight_, 0.0f);
+    
+    // 뷰 매트릭스 계산 (yaw 회전이 적용된 up 벡터 사용)
+    viewMatrix_ = glm::lookAt(cameraPos_, focusPoint_, up);
+}
+
+void PointCloudWidget::resetCamera() {
+    if (isTopView_) {
+        // 탑뷰 모드에서는 탑뷰 기본값으로 리셋
+        focusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
+        topViewHeight_ = 20.0f;
+        topViewZoom_ = 1.0f;
+        updateTopViewCamera();
+    } else {
+        // 일반 모드에서는 일반 기본값으로 리셋
+        focusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
+        distance_ = 10.0f;
+        yaw_ = 0.0f;
+        pitch_ = 0.0f;
+        updateCameraPosition();
+    }
+    update();
+}
+
+
 
 void PointCloudWidget::mousePressEvent(QMouseEvent *event) {
     lastMousePos_ = event->pos();
@@ -135,43 +250,72 @@ void PointCloudWidget::mousePressEvent(QMouseEvent *event) {
 
 void PointCloudWidget::mouseMoveEvent(QMouseEvent *event) {
     if (event->buttons() & Qt::LeftButton) {
-        float deltaX = event->x() - lastMousePos_.x();
-        float deltaY = event->y() - lastMousePos_.y();
-
-        // ROS 좌표계 기준 회전
-        // 마우스 X 이동 = ROS Yaw 회전 (Z축 중심)
-        // 마우스 Y 이동 = ROS Pitch 회전 (Y축 중심)
-        yaw_ -= deltaX * rotationSensitivity_;    // 좌우: Yaw (Z축 회전)
-        pitch_ += deltaY * rotationSensitivity_;  // 상하: Pitch (Y축 회전)
-
-        // Pitch 제한 (ROS 기준: -90도(아래) ~ +90도(위))
-        pitch_ = std::max(-89.9f, std::min(89.9f, pitch_));
+        QPoint delta = event->pos() - lastMousePos_;
         
-        lastMousePos_ = event->pos();
-        showIndicator_ = true;
-        updateCameraPosition();
+        if (isTopView_) {
+            // 탑뷰 모드: yaw만 조절 가능, pitch는 90도로 고정
+            float sensitivity = rotationSensitivity_;
+            yaw_ -= delta.x() * sensitivity;
+            pitch_ = 90.0f;  // 탑뷰에서는 피치 고정
+            
+            // 360도 순환
+            if (yaw_ > 360.0f) yaw_ -= 360.0f;
+            if (yaw_ < -360.0f) yaw_ += 360.0f;
+            
+            updateTopViewCamera();
+        } else {
+            // 일반 모드: 기존 회전 제어
+            float sensitivity = rotationSensitivity_;
+            yaw_ -= delta.x() * sensitivity;
+            pitch_ += delta.y() * sensitivity;
+            
+            // 피치 제한 (완전히 뒤집히지 않도록)
+            pitch_ = glm::clamp(pitch_, -89.0f, 89.0f);
+            
+            updateCameraPosition();
+        }
+        
         update();
-        
     } else if (event->buttons() & Qt::MiddleButton) {
+        // ✅ 탑뷰 모드 체크 추가!
         float deltaX = (event->x() - lastMousePos_.x()) * 0.02f;
         float deltaY = (event->y() - lastMousePos_.y()) * 0.02f;
 
-        // OpenGL 좌표계에서 카메라 방향 벡터 계산
-        glm::vec3 cameraDir = glm::normalize(cameraPos_ - focusPoint_);
-        
-        // OpenGL 좌표계 기준으로 right, up 벡터 계산
-        glm::vec3 openglUp = glm::vec3(0, 1, 0);  // OpenGL Y축 (위쪽)
-        glm::vec3 openglRight = glm::normalize(glm::cross(openglUp, cameraDir)); // 오른쪽
-        glm::vec3 openglActualUp = glm::cross(cameraDir, openglRight); // 실제 위쪽
-        
-        // 포커스 포인트 이동 (OpenGL 좌표계에서 직접)
-        focusPoint_ += -(openglRight * deltaX) + (openglActualUp * deltaY);
+        if (isTopView_) {
+            // 탑뷰에서는 더 직관적인 팬 이동
+            float panSensitivity = 0.03f * topViewHeight_;
+            
+            // 화면 이동을 월드 좌표 이동으로 변환 (yaw 고려)
+            float cosYaw = cos(glm::radians(yaw_));
+            float sinYaw = sin(glm::radians(yaw_));
+            
+            // 카메라 방향에 따른 이동 보정
+            float worldDeltaX = -(deltaX * cosYaw - deltaY * sinYaw);
+            float worldDeltaZ = -(deltaX * sinYaw + deltaY * cosYaw);
+            
+            focusPoint_.x += worldDeltaX * panSensitivity;
+            focusPoint_.z += worldDeltaZ * panSensitivity;
+            
+            // ✅ 탑뷰 전용 카메라 업데이트 호출
+            updateTopViewCamera();
+        } else {
+            // 일반 모드에서는 기존 팬 이동
+            glm::vec3 cameraDir = glm::normalize(cameraPos_ - focusPoint_);
+            glm::vec3 openglUp = glm::vec3(0, 1, 0);
+            glm::vec3 openglRight = glm::normalize(glm::cross(openglUp, cameraDir));
+            glm::vec3 openglActualUp = glm::cross(cameraDir, openglRight);
+            
+            focusPoint_ += -(openglRight * deltaX) + (openglActualUp * deltaY);
+            
+            // ✅ 일반 모드 카메라 업데이트 호출
+            updateCameraPosition();
+        }
 
-        lastMousePos_ = event->pos();
         showIndicator_ = true;
-        updateCameraPosition();
         update();
     }
+    
+    lastMousePos_ = event->pos();
 }
 
 void PointCloudWidget::mouseReleaseEvent(QMouseEvent *event) {
@@ -180,11 +324,26 @@ void PointCloudWidget::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void PointCloudWidget::wheelEvent(QWheelEvent *event) {
-    distance_ -= event->angleDelta().y() * 0.01f;
-    distance_ = std::max(1.0f, distance_);
-    updateCameraPosition();
+    float delta = event->angleDelta().y() / 120.0f;
+    
+    if (isTopView_) {
+        // 탑뷰 모드: 높이 조절 (줌)
+        float zoomFactor = 1.0f + delta * 0.1f;
+        topViewHeight_ *= zoomFactor;
+        topViewHeight_ = glm::clamp(topViewHeight_, 2.0f, 100.0f);
+        
+        updateTopViewCamera();  // ✅ 탑뷰 전용 업데이트
+    } else {
+        // 일반 모드: 기존 거리 조절
+        distance_ -= event->angleDelta().y() * 0.01f;
+        distance_ = std::max(1.0f, distance_);
+        
+        updateCameraPosition();  // ✅ 일반 모드 업데이트
+    }
+    
     update();
 }
+
 
 void PointCloudWidget::hideIndicator() {
     showIndicator_ = false;
@@ -207,27 +366,21 @@ void PointCloudWidget::drawPoints() {
         const auto& cloud = it.value();
 
         if (cloud && !cloud->empty()) {
-            // 로봇별 색상 설정
-            if (robotName == "TUGV") {
-                glColor3f(1.0f, 0.0f, 0.0f);
-            } else if (robotName == "MUGV") {
-                glColor3f(0.0f, 1.0f, 0.0f);
-            } else if (robotName == "SUGV1") {
-                glColor3f(0.0f, 0.0f, 1.0f);
-            } else if (robotName == "SUGV2") {
-                glColor3f(1.0f, 1.0f, 0.0f);
-            } else if (robotName == "SUAV") {
-                glColor3f(1.0f, 0.0f, 1.0f);
+            // 동적 색상 가져오기
+            glm::vec3 color;
+            
+            if (robotName_ == "COMBINED") {
+                // COMBINED 모드: 각 로봇의 설정된 색상 사용
+                color = getRobotPointsColor(robotName);
             } else {
-                glColor3f(0.0f, 1.0f, 0.0f);
+                // 단일 로봇 모드: 현재 로봇의 설정된 색상 사용
+                color = getRobotPointsColor(robotName_);
             }
             
+            glColor3f(color.x, color.y, color.z);
+            
             for (const auto& point : cloud->points) {
-                // ROS → OpenGL 좌표 변환
-                // ROS: (x=forward, y=left, z=up) → OpenGL: (x=right, y=up, z=back)
-                glVertex3f(-point.y,  // ROS Y(left) → OpenGL -X(right)
-                          point.z,   // ROS Z(up) → OpenGL Y(up)  
-                          -point.x); // ROS X(forward) → OpenGL -Z(back)
+                glVertex3f(-point.y, point.z, -point.x);
             }
         }
     }
@@ -250,34 +403,25 @@ void PointCloudWidget::drawPath() {
         const auto& path = it.value();
         
         if (!path.empty()) {
-            // 로봇별 색상 설정 (동일)
-            if (robotName == "TUGV") {
-                glColor3f(1.0f, 0.0f, 0.0f);
-            } else if (robotName == "MUGV") {
-                glColor3f(0.0f, 1.0f, 0.0f);
-            } else if (robotName == "SUGV1") {
-                glColor3f(0.0f, 0.0f, 1.0f);
-            } else if (robotName == "SUGV2") {
-                glColor3f(1.0f, 1.0f, 0.0f);
-            } else if (robotName == "SUAV") {
-                glColor3f(1.0f, 0.0f, 1.0f);
+            // 동적 색상 가져오기
+            glm::vec3 color;
+            
+            if (robotName_ == "COMBINED") {
+                // COMBINED 모드: 각 로봇의 설정된 경로 색상 사용
+                color = getRobotPathColor(robotName);
             } else {
-                glColor3f(0.0f, 1.0f, 0.0f);
+                // 단일 로봇 모드: 현재 로봇의 설정된 경로 색상 사용
+                color = getRobotPathColor(robotName_);
             }
+            
+            glColor3f(color.x, color.y, color.z);
             
             for (size_t i = 1; i < path.size(); ++i) {
                 const auto& prev_pose = path[i-1];
                 const auto& curr_pose = path[i];
                 
-                // 이전 점 (ROS → OpenGL 변환)
-                glVertex3f(-prev_pose.pose.position.y,  // Y → -X
-                          prev_pose.pose.position.z,   // Z → Y
-                          -prev_pose.pose.position.x); // X → -Z
-                
-                // 현재 점 (ROS → OpenGL 변환)
-                glVertex3f(-curr_pose.pose.position.y,  // Y → -X
-                          curr_pose.pose.position.z,   // Z → Y
-                          -curr_pose.pose.position.x); // X → -Z
+                glVertex3f(-prev_pose.pose.position.y, prev_pose.pose.position.z, -prev_pose.pose.position.x);
+                glVertex3f(-curr_pose.pose.position.y, curr_pose.pose.position.z, -curr_pose.pose.position.x);
             }
         }
     }
@@ -316,32 +460,38 @@ void PointCloudWidget::drawAxes() {
 }
 
 void PointCloudWidget::drawGrid() {
-    glColor3f(0.3f, 0.3f, 0.3f);  // 회색 그리드
-    glLineWidth(1.0f);
+    // planeCellCount_: 한 축의 셀 개수 (예: 20 = 20x20 그리드)
+    // cellSize_: 각 셀의 크기 (예: 1.0f = 1미터)
     
+    // 전체 그리드 크기 계산
+    float totalSize = planeCellCount_ * cellSize_;
+    float halfSize = totalSize / 2.0f;
+    
+    // 마이너 그리드 (각 셀 경계)
+    glColor3f(0.3f, 0.3f, 0.3f);  // 어두운 회색
+    glLineWidth(gridLineWidth_);
     glBegin(GL_LINES);
     
-    // gridSize_: 그리드 전체 크기 (예: 10.0f = 10x10 영역)
-    // gridSpacing_: 그리드 선 간격 (예: 1.0f = 1미터마다 선)
-    
-    float halfSize = gridSize_ / 2.0f;  // 중심에서 양쪽으로 그리드 크기
-    
-    // X축 방향 선들 (Y축을 따라 그어지는 선들)
-    for (float x = -halfSize; x <= halfSize; x += gridSpacing_) {
-        // ROS 좌표계 기준으로 그리고 OpenGL로 변환
-        // ROS: X축 선 = Y축을 따라 그어지는 선
-        glVertex3f(-halfSize, 0.0f, -x);  // 시작점 (ROS Y → OpenGL -X)
-        glVertex3f(halfSize, 0.0f, -x);   // 끝점   (ROS Y → OpenGL -X)
+    // X축 방향 선들 (cellSize_ 간격)
+    for (int i = 0; i <= planeCellCount_; ++i) {
+        float pos = -halfSize + (i * cellSize_);
+        
+        // ROS 좌표계에서 OpenGL로 변환
+        glVertex3f(-halfSize, 0.0f, -pos);  // 시작점
+        glVertex3f(halfSize, 0.0f, -pos);   // 끝점
     }
     
-    // Y축 방향 선들 (X축을 따라 그어지는 선들)  
-    for (float y = -halfSize; y <= halfSize; y += gridSpacing_) {
-        // ROS: Y축 선 = X축을 따라 그어지는 선
-        glVertex3f(-y, 0.0f, -halfSize);  // 시작점 (ROS X → OpenGL -Z)
-        glVertex3f(-y, 0.0f, halfSize);   // 끝점   (ROS X → OpenGL -Z)
+    // Y축 방향 선들 (cellSize_ 간격)
+    for (int i = 0; i <= planeCellCount_; ++i) {
+        float pos = -halfSize + (i * cellSize_);
+        
+        glVertex3f(-pos, 0.0f, -halfSize);  // 시작점
+        glVertex3f(-pos, 0.0f, halfSize);   // 끝점
     }
-    
     glEnd();
+
+    // 라인 두께 원복
+    glLineWidth(1.0f);
 }
 
 void PointCloudWidget::drawCameraIndicator() {
@@ -368,69 +518,65 @@ void PointCloudWidget::paintEvent(QPaintEvent* event) {
     painter.setRenderHint(QPainter::Antialiasing);
     
     // 로봇 정보 라벨 그리기
-    drawRobotLabel(painter);
+    if (showRobotLabel_) drawRobotLabel(painter);
 }
 
 void PointCloudWidget::drawRobotLabel(QPainter& painter) {
-    // 로봇별 색상과 이름 결정 (먼저 실행)
     QString robotText;
     QColor robotColor;
     
     if (robotName_ == "TUGV") {
         robotText = "TUGV";
-        robotColor = QColor(255, 0, 0);
+        glm::vec3 color = getRobotPointsColor("TUGV");
+        robotColor = QColor(color.x * 255, color.y * 255, color.z * 255);
     } else if (robotName_ == "MUGV") {
         robotText = "MUGV";
-        robotColor = QColor(0, 255, 0);
+        glm::vec3 color = getRobotPointsColor("MUGV");
+        robotColor = QColor(color.x * 255, color.y * 255, color.z * 255);
     } else if (robotName_ == "SUGV1") {
         robotText = "SUGV1";
-        robotColor = QColor(0, 0, 255);
+        glm::vec3 color = getRobotPointsColor("SUGV1");
+        robotColor = QColor(color.x * 255, color.y * 255, color.z * 255);
     } else if (robotName_ == "SUGV2") {
         robotText = "SUGV2";
-        robotColor = QColor(255, 255, 0);
+        glm::vec3 color = getRobotPointsColor("SUGV2");
+        robotColor = QColor(color.x * 255, color.y * 255, color.z * 255);
     } else if (robotName_ == "SUAV") {
         robotText = "SUAV";
-        robotColor = QColor(255, 0, 255);
+        glm::vec3 color = getRobotPointsColor("SUAV");
+        robotColor = QColor(color.x * 255, color.y * 255, color.z * 255);
     } else if (robotName_ == "COMBINED") {
         robotText = "ALL ROBOTS";
         robotColor = QColor(255, 255, 255);
     }
     
-    // 폰트 설정 및 텍스트 크기 측정
+    // 나머지 라벨 그리기 코드는 동일...
     painter.setFont(QFont("Arial", fontSize_, QFont::Bold));
     QFontMetrics fm(painter.font());
     
-    // 텍스트 크기 계산
     QRect textBounds = fm.boundingRect(robotText);
     int textWidth = textBounds.width();
     int textHeight = fm.height();
     
-
-    
     int boxWidth = horizontalMargin_ + circleSize_ + circleMargin_ + textWidth + horizontalMargin_;
     int boxHeight = std::max(circleSize_ + verticalMargin_ * 2, textHeight + verticalMargin_ * 2);
     
-    // 동적 크기의 배경 박스
     QRect labelRect(10, 10, boxWidth, boxHeight);
     painter.fillRect(labelRect, QColor(0, 0, 0, 150));
     
-    // 테두리
     painter.setPen(QPen(Qt::white, 2));
     painter.drawRect(labelRect);
     
-    // 박스 중앙 Y 좌표 계산
     int boxCenterY = labelRect.top() + labelRect.height() / 2;
     
-    // 색상 인디케이터 원 (중앙 정렬)
     painter.setBrush(robotColor);
     painter.setPen(Qt::NoPen);
     int circleX = labelRect.left() + horizontalMargin_;
     painter.drawEllipse(circleX, boxCenterY - circleSize_/2, circleSize_, circleSize_);
     
-    // 로봇 이름 텍스트 (중앙 정렬)
     painter.setPen(Qt::white);
     int textX = circleX + circleSize_ + circleMargin_;
-    int textY = boxCenterY + fm.ascent()/2 - fm.descent()/2;  // 정확한 중앙 정렬
+    int textY = boxCenterY + fm.ascent()/2 - fm.descent()/2;
     
     painter.drawText(textX, textY, robotText);
 }
