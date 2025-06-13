@@ -9,6 +9,7 @@
 #include "pointcloud_widget.hpp"
 #include "viewer_panel.hpp"
 #include "data_broker.hpp"
+#include "control_tree_widget.hpp"
 
 
 
@@ -25,7 +26,11 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    
+
+private slots:
+    void openNewViewer();
+    void onControlTabChanged(int index);
+
 private:
     Ui::MainWindow *ui_;
     rclcpp::Node::SharedPtr node_;
@@ -33,11 +38,18 @@ private:
     std::thread ros_thread_;
     Widget::PointCloudWidget *viewer_;
     std::vector<Widget::ViewerPanel*> panels_;
-    // QOpenGLWidget *openGLWidget;
-    int panelCount_ = 6; // Number of panels
-
-    void openNewViewer();
-
+    const int panelCount_ = 6;
+    QTabWidget* controlTabWidget_ = nullptr;           // 제어 탭 위젯
+    QDockWidget* controlDockWidget_ = nullptr;         // 제어 독 위젯
+    QHash<QString, Widget::ControlTreeWidget*> controlTrees_;  // 로봇별 TreeWidget들
+    QHash<QString, Widget::PointCloudWidget*> pointCloudWidgets_;  // 로봇별 위젯들
+    
+    void setupPointCloudWidgets();
+    void setupViewerPanels();
+    void setupControlPanel();
+    void createControlTrees();
+    Widget::PointCloudWidget* getWidgetByName(const QString& robotName);
+    void connectControlSignals();
 };
 
 #endif // MAINWINDOW_H

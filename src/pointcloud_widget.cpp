@@ -115,6 +115,11 @@ void PointCloudWidget::setShowGrid(bool show) {
     update();
 }
 
+void PointCloudWidget::setShowRobotLabel(bool show) {
+    showRobotLabel_ = show;
+    update();
+}
+
 void PointCloudWidget::setRotationSensitivity(float sensitivity) {
     rotationSensitivity_ = sensitivity;
 }
@@ -131,7 +136,7 @@ void PointCloudWidget::initializeGL() {
     bool blendWasEnabled = glIsEnabled(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
-    setLockIndicatorToCurrentPosition(true);  // 기본적으로 현재 위치에 고정
+    setLockIndicatorToCurrentPosition(false);  // 기본적으로 현재 위치에 고정
 }
 
 void PointCloudWidget::resizeGL(int w, int h) {
@@ -519,63 +524,88 @@ void PointCloudWidget::paintEvent(QPaintEvent* event) {
 }
 
 void PointCloudWidget::drawRobotLabel(QPainter& painter) {
-    QString robotText;
-    QColor robotColor;
-    
     if (robotName_ == "TUGV") {
-        robotText = "TUGV";
+        QString robotText = "TUGV";
         glm::vec3 color = getRobotPointsColor("TUGV");
-        robotColor = QColor(color.x * 255, color.y * 255, color.z * 255);
+        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
+        drawSingleLabel(painter, robotText, robotColor, QPoint(10, 10));
+        
     } else if (robotName_ == "MUGV") {
-        robotText = "MUGV";
+        QString robotText = "MUGV";
         glm::vec3 color = getRobotPointsColor("MUGV");
-        robotColor = QColor(color.x * 255, color.y * 255, color.z * 255);
+        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
+        drawSingleLabel(painter, robotText, robotColor, QPoint(10, 10));
+        
     } else if (robotName_ == "SUGV1") {
-        robotText = "SUGV1";
+        QString robotText = "SUGV1";
         glm::vec3 color = getRobotPointsColor("SUGV1");
-        robotColor = QColor(color.x * 255, color.y * 255, color.z * 255);
+        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
+        drawSingleLabel(painter, robotText, robotColor, QPoint(10, 10));
+        
     } else if (robotName_ == "SUGV2") {
-        robotText = "SUGV2";
+        QString robotText = "SUGV2";
         glm::vec3 color = getRobotPointsColor("SUGV2");
-        robotColor = QColor(color.x * 255, color.y * 255, color.z * 255);
+        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
+        drawSingleLabel(painter, robotText, robotColor, QPoint(10, 10));
+        
     } else if (robotName_ == "SUAV") {
-        robotText = "SUAV";
+        QString robotText = "SUAV";
         glm::vec3 color = getRobotPointsColor("SUAV");
-        robotColor = QColor(color.x * 255, color.y * 255, color.z * 255);
+        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
+        drawSingleLabel(painter, robotText, robotColor, QPoint(10, 10));
+        
     } else if (robotName_ == "COMBINED") {
-        robotText = "ALL ROBOTS";
-        robotColor = QColor(255, 255, 255);
+        // ✅ COMBINED 모드: 모든 로봇 라벨 표시
+        QStringList robots = {"TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
+        
+        for (int i = 0; i < robots.size(); ++i) {
+            QString robotName = robots[i];
+            glm::vec3 color = getRobotPointsColor(robotName);
+            QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
+            
+            int yOffset = 10 + i * 40;  // 40픽셀씩 아래로
+            drawSingleLabel(painter, robotName, robotColor, QPoint(10, yOffset));
+        }
     }
-    
-    // 나머지 라벨 그리기 코드는 동일...
+}
+
+void PointCloudWidget::drawSingleLabel(QPainter& painter, const QString& text, const QColor& robotColor, const QPoint& position) {
     painter.setFont(QFont("Arial", fontSize_, QFont::Bold));
     QFontMetrics fm(painter.font());
     
-    QRect textBounds = fm.boundingRect(robotText);
+    QRect textBounds = fm.boundingRect(text);
     int textWidth = textBounds.width();
     int textHeight = fm.height();
     
     int boxWidth = horizontalMargin_ + circleSize_ + circleMargin_ + textWidth + horizontalMargin_;
     int boxHeight = std::max(circleSize_ + verticalMargin_ * 2, textHeight + verticalMargin_ * 2);
     
-    QRect labelRect(10, 10, boxWidth, boxHeight);
-    painter.fillRect(labelRect, QColor(0, 0, 0, 150));
+    QRect labelRect(position.x(), position.y(), boxWidth, boxHeight);
     
-    painter.setPen(QPen(Qt::white, 2));
+    // ✅ 배경색 명시적으로 설정 (이전 상태에 영향받지 않도록)
+    painter.setBrush(QBrush(QColor(0, 0, 0, 100)));  // 검정 배경 강제 설정
+    painter.setPen(Qt::NoPen);  // 테두리 없음
+    painter.fillRect(labelRect, QColor(0, 0, 0, 100));
+    
+    // 테두리 그리기
+    painter.setBrush(Qt::NoBrush);  // ✅ brush 초기화
+    painter.setPen(QPen(Qt::white, 1));
     painter.drawRect(labelRect);
     
     int boxCenterY = labelRect.top() + labelRect.height() / 2;
     
-    painter.setBrush(robotColor);
+    // ✅ 색상 원 그리기 (brush 명시적 설정)
+    painter.setBrush(QBrush(robotColor));  // 로봇 색상으로 brush 설정
     painter.setPen(Qt::NoPen);
     int circleX = labelRect.left() + horizontalMargin_;
     painter.drawEllipse(circleX, boxCenterY - circleSize_/2, circleSize_, circleSize_);
     
+    // ✅ 텍스트 그리기 전에 brush 초기화
+    painter.setBrush(Qt::NoBrush);
     painter.setPen(Qt::white);
     int textX = circleX + circleSize_ + circleMargin_;
     int textY = boxCenterY + fm.ascent()/2 - fm.descent()/2;
-    
-    painter.drawText(textX, textY, robotText);
+    painter.drawText(textX, textY, text);
 }
 
 void PointCloudWidget::setShowPosition(bool show) {
@@ -769,5 +799,42 @@ bool PointCloudWidget::hasValidCurrentPosition(const QString& robot) const {
     
     auto it = paths_.find(robot);
     return (it != paths_.end() && !it.value().empty());
+}
+
+// ✅ 로봇의 현재 위치 가져오기 (수정된 버전)
+glm::vec3 PointCloudWidget::getRobotCurrentPosition(const QString& robotName) {
+    // ✅ 이미 구현된 getCurrentRobotPosition 함수를 직접 사용
+    return getCurrentRobotPosition(robotName);
+}
+
+// ✅ 특정 위치로 카메라 점프 (수정된 버전)
+void PointCloudWidget::jumpToPosition(const glm::vec3& position) {
+    // ✅ focusPoint_를 지정된 위치로 설정
+    focusPoint_ = position;
+    
+    // ✅ 탑뷰 모드와 일반 모드에 따라 카메라 업데이트
+    if (isTopView_) {
+        updateTopViewCamera();
+    } else {
+        updateCameraPosition();
+    }
+    
+    std::cout << "📷 Camera jumped to position: (" 
+              << position.x << ", " << position.y << ", " << position.z << ")" << std::endl;
+    
+    update();  // 화면 갱신
+}
+
+// ✅ 로봇 위치로 카메라 점프 (수정된 버전)
+void PointCloudWidget::jumpToRobotPosition(const QString& robotName) {
+    glm::vec3 robotPos = getRobotCurrentPosition(robotName);
+    
+    // ✅ 유효한 위치인지 확인
+    if (hasValidCurrentPosition(robotName)) {
+        jumpToPosition(robotPos);
+        std::cout << "📷 Camera jumped to " << robotName.toStdString() << " position" << std::endl;
+    } else {
+        std::cerr << "❌ No valid position found for robot: " << robotName.toStdString() << std::endl;
+    }
 }
 } // namespace Widget

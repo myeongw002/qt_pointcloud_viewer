@@ -40,23 +40,23 @@
 </string>
    </property>
    <layout class="QGridLayout" name="gridLayout">
+    <item row="1" column="2">
+     <widget class="Widget::PointCloudWidget" name="openGLWidget_5"/>
+    </item>
+    <item row="0" column="2">
+     <widget class="Widget::PointCloudWidget" name="openGLWidget_2"/>
+    </item>
+    <item row="1" column="1">
+     <widget class="Widget::PointCloudWidget" name="openGLWidget_4"/>
+    </item>
     <item row="0" column="0">
      <widget class="Widget::PointCloudWidget" name="openGLWidget_0"/>
     </item>
     <item row="1" column="0">
-     <widget class="Widget::PointCloudWidget" name="openGLWidget_2"/>
-    </item>
-    <item row="1" column="1">
      <widget class="Widget::PointCloudWidget" name="openGLWidget_3"/>
     </item>
     <item row="0" column="1">
      <widget class="Widget::PointCloudWidget" name="openGLWidget_1"/>
-    </item>
-    <item row="0" column="2">
-     <widget class="Widget::PointCloudWidget" name="openGLWidget_4"/>
-    </item>
-    <item row="1" column="2">
-     <widget class="Widget::PointCloudWidget" name="openGLWidget_5"/>
     </item>
    </layout>
   </widget>
@@ -146,52 +146,7 @@ margin: 0px;
         <attribute name="title">
          <string>All</string>
         </attribute>
-        <layout class="QGridLayout" name="gridLayout_2">
-         <item row="0" column="0">
-          <widget class="QTreeWidget" name="treeWidget">
-           <property name="styleSheet">
-            <string notr="true">QTreeWidget {
-    margin: 0px;
-    padding: 0px;
-}
-QTreeView::item {
-    padding: 0px;
-    margin: 0px;
-}
-</string>
-           </property>
-           <column>
-            <property name="text">
-             <string>Option</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Value</string>
-            </property>
-           </column>
-           <item>
-            <property name="text">
-             <string>Robot</string>
-            </property>
-            <property name="text">
-             <string>All</string>
-            </property>
-            <property name="flags">
-             <set>ItemIsSelectable|ItemIsEditable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled|ItemIsTristate</set>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>New Item</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </item>
-          </widget>
-         </item>
-        </layout>
+        <layout class="QGridLayout" name="gridLayout_2"/>
        </widget>
        <widget class="QWidget" name="tab_1">
         <attribute name="title">

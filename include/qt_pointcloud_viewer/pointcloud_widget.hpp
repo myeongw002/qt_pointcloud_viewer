@@ -52,6 +52,11 @@ namespace Widget {
         
         // 모든 로봇 색상 초기화
         void resetAllColorsToDefault();
+
+        // ✅ 새로 추가할 함수들
+        glm::vec3 getRobotCurrentPosition(const QString& robotName);
+        void jumpToPosition(const glm::vec3& position);
+        void jumpToRobotPosition(const QString& robotName);
     
     public slots:
         // 데이터 수신 슬롯들 (여전히 사용)
@@ -114,7 +119,7 @@ namespace Widget {
         void drawCameraIndicator();
         void paintEvent(QPaintEvent* event);
         void drawRobotLabel(QPainter& painter);
-        
+        void drawSingleLabel(QPainter& painter, const QString& text, const QColor& color, const QPoint& pos);
         // UI 상태 
         bool showIndicator_ = false;
         QTimer hideTimer_;
@@ -160,13 +165,14 @@ namespace Widget {
         const int verticalMargin_ = 4;    // 상하 여백
 
         // 카메라 인디케이터 관련 변수
-        bool lockIndicatorToCurrentPosition_ = true;  // 현재 위치에 고정 여부
+        bool lockIndicatorToCurrentPosition_ = false;  // 현재 위치에 고정 여부
         QString indicatorTargetRobot_ = "";            // 추적할 로봇 이름
         glm::vec3 lastKnownPosition_ = glm::vec3(0.0f, 0.0f, 0.0f);  // 마지막 알려진 위치
 
         void updateIndicatorPosition();
         glm::vec3 getCurrentRobotPosition(const QString& robot) const;
         bool hasValidCurrentPosition(const QString& robot) const;
+
 
     };
 }
