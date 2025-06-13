@@ -5,16 +5,30 @@
 #include "robot_select_dialog.hpp"
 #include "viewer_container.hpp"
 #include "control_tree_widget.hpp"
+#include "debug_console_widget.hpp"
+
+// ✅ Qt 위젯 헤더들 추가
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
 #include <QVector3D>
 #include <QComboBox>    
 #include <QTextEdit>
+#include <QDebug>
+#include <QMenuBar>        // ✅ QMenuBar 헤더 추가
+#include <QMenu>           // ✅ QMenu 헤더 추가
+#include <QAction>         // ✅ QAction 헤더 추가 (이미 있을 수 있음)
+#include <QDockWidget>     // ✅ QDockWidget 헤더 추가
+#include <QKeySequence>    // ✅ QKeySequence 헤더 추가
+#include <QTabWidget>      // ✅ QTabWidget 헤더 추가
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui_(new Ui::MainWindow) {
-
+    : QMainWindow(parent)
+    , ui_(new Ui::MainWindow)  // ✅ ui_ 초기화 수정
+    , debugConsole_(nullptr)
+    , debugConsoleDock_(nullptr)
+    , debugConsoleAction_(nullptr)
+{
     try {
         std::cout << "Setting up UI..." << std::endl;
         ui_->setupUi(this);
@@ -24,6 +38,9 @@ MainWindow::MainWindow(QWidget *parent)
         
         // ✅ 제어 패널 설정
         setupControlPanel();
+        
+        // ✅ 디버그 콘솔 설정 추가
+        setupDebugConsole();
         
     } catch (const std::exception &e) {
         std::cerr << "❌ Exception in setupUi(): " << e.what() << std::endl;
@@ -47,6 +64,11 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 MainWindow::~MainWindow() {
+    // 디버그 콘솔 정리
+    if (debugConsole_) {
+        delete debugConsole_;
+    }
+    
     if (ros_thread_.joinable()) {
         rclcpp::shutdown();
         ros_thread_.join();
@@ -269,4 +291,188 @@ void MainWindow::openNewViewer()
                 Qt::QueuedConnection);
         win->show();
     }, Qt::QueuedConnection);
+}
+
+// 디버그 콘솔 설정
+void MainWindow::setupDebugConsole() {
+    // 디버그 콘솔 위젯 생성
+    debugConsole_ = new Widget::DebugConsoleWidget(this);
+    
+    // 도킹 위젯으로 감싸기
+    debugConsoleDock_ = new QDockWidget("Debug Console", this);
+    debugConsoleDock_->setWidget(debugConsole_);
+    debugConsoleDock_->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::RightDockWidgetArea);
+    
+    // 메인 윈도우에 도킹 위젯 추가
+    addDockWidget(Qt::BottomDockWidgetArea, debugConsoleDock_);
+    
+    // 초기에는 숨김
+    debugConsoleDock_->hide();
+    
+    // ✅ 메뉴바 처리 개선
+    QMenuBar* mainMenuBar = menuBar();  // 메뉴바 포인터 얻기
+    
+    if (mainMenuBar) {
+        // View 메뉴 찾기 또는 생성
+        QMenu* viewMenu = nullptr;
+        
+        // 기존 메뉴들 중에서 View 메뉴 찾기
+        QList<QAction*> menuActions = mainMenuBar->actions();
+        for (QAction* action : menuActions) {
+            if (action->text() == "View" || action->text() == "&View") {
+                viewMenu = action->menu();
+                break;
+            }
+        }
+        
+        // View 메뉴가 없으면 새로 생성
+        if (!viewMenu) {
+            viewMenu = mainMenuBar->addMenu("&View");
+            qDebug() << "✅ Created new View menu";
+        } else {
+            qDebug() << "✅ Found existing View menu";
+        }
+        
+        // 디버그 콘솔 토글 액션 추가
+        debugConsoleAction_ = viewMenu->addAction("&Debug Console");
+        debugConsoleAction_->setCheckable(true);
+        debugConsoleAction_->setShortcut(QKeySequence("F12"));
+        debugConsoleAction_->setStatusTip("Show/hide debug console (F12)");
+        
+        connect(debugConsoleAction_, &QAction::triggered, 
+                this, &MainWindow::toggleDebugConsole);
+                
+        qDebug() << "✅ Debug console action added to View menu";
+    } else {
+        qDebug() << "❌ Could not access menu bar";
+    }
+    
+    // 도킹 위젯 표시/숨김과 액션 상태 동기화
+    connect(debugConsoleDock_, &QDockWidget::visibilityChanged, 
+            [this](bool visible) {
+        if (debugConsoleAction_) {
+            debugConsoleAction_->setChecked(visible);
+        }
+        qDebug() << "🖥️ Debug console visibility:" << (visible ? "SHOWN" : "HIDDEN");
+    });
+    
+    qDebug() << "✅ Debug console setup completed";
+}
+
+void MainWindow::toggleDebugConsole() {
+    if (debugConsoleDock_) {
+        if (debugConsoleDock_->isVisible()) {
+            debugConsoleDock_->hide();
+            qDebug() << "🖥️ Debug console hidden";
+        } else {
+            debugConsoleDock_->show();
+            debugConsoleDock_->raise();  // 앞으로 가져오기
+            qDebug() << "🖥️ Debug console shown";
+        }
+    } else {
+        qDebug() << "❌ Debug console dock widget not found";
+    }
+}
+
+// ✅ 추가 디버그 콘솔 슬롯들 구현
+void MainWindow::showDebugConsole() {
+    if (debugConsoleDock_) {
+        debugConsoleDock_->show();
+        debugConsoleDock_->raise();
+        qDebug() << "🖥️ Debug console shown (explicit)";
+    }
+}
+
+void MainWindow::hideDebugConsole() {
+    if (debugConsoleDock_) {
+        debugConsoleDock_->hide();
+        qDebug() << "🖥️ Debug console hidden (explicit)";
+    }
+}
+
+// ✅ 유틸리티 함수들 구현
+void MainWindow::updateStatusBar(const QString& message) {
+    if (statusBar()) {
+        statusBar()->showMessage(message, 3000);  // 3초간 표시
+        qDebug() << "📊 Status:" << message;
+    }
+}
+
+void MainWindow::logToConsole(const QString& message, Widget::DebugConsoleWidget::LogLevel level) {
+    if (debugConsole_) {
+        debugConsole_->appendLog(message, level);
+    } else {
+        // 폴백: qDebug로 출력
+        switch (level) {
+            case Widget::DebugConsoleWidget::DEBUG:
+                qDebug() << message;
+                break;
+            case Widget::DebugConsoleWidget::INFO:
+                qInfo() << message;
+                break;
+            case Widget::DebugConsoleWidget::WARNING:
+                qWarning() << message;
+                break;
+            case Widget::DebugConsoleWidget::CRITICAL:
+                qCritical() << message;
+                break;
+        }
+    }
+}
+
+Widget::PointCloudWidget* MainWindow::findPointCloudWidget(const QString& objectName) {
+    return qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(objectName));
+}
+
+// ✅ 설정 관리 함수들 구현
+void MainWindow::saveSettings() {
+    // QSettings로 창 상태 저장
+    // 나중에 구현
+    qDebug() << "💾 Settings saved";
+}
+
+void MainWindow::loadSettings() {
+    // QSettings로 창 상태 복원
+    // 나중에 구현
+    qDebug() << "📂 Settings loaded";
+}
+
+void MainWindow::resetToDefaultLayout() {
+    // 기본 레이아웃으로 리셋
+    if (debugConsoleDock_) {
+        debugConsoleDock_->hide();
+    }
+    if (controlDockWidget_) {
+        controlDockWidget_->show();
+    }
+    qDebug() << "🔄 Layout reset to default";
+}
+
+// ✅ 이벤트 오버라이드들
+void MainWindow::closeEvent(QCloseEvent* event) {
+    saveSettings();
+    QMainWindow::closeEvent(event);
+}
+
+void MainWindow::resizeEvent(QResizeEvent* event) {
+    QMainWindow::resizeEvent(event);
+    updateStatusBar(QString("Window resized to %1x%2")
+                   .arg(event->size().width())
+                   .arg(event->size().height()));
+}
+
+void MainWindow::showEvent(QShowEvent* event) {
+    QMainWindow::showEvent(event);
+    loadSettings();
+}
+
+void MainWindow::keyPressEvent(QKeyEvent* event) {
+    // F12 키로 디버그 콘솔 토글
+    if (event->key() == Qt::Key_F12) {
+        toggleDebugConsole();
+        event->accept();
+        return;
+    }
+    
+    QMainWindow::keyPressEvent(event);
 }

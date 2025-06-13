@@ -2,6 +2,7 @@
 #include "control_tree_widget.hpp"
 #include <QApplication>
 #include <QStyle>
+#include <QDebug>  // ✅ qDebug 사용을 위해 추가
 
 namespace Widget {
 
@@ -158,7 +159,7 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
     // 로봇별 색상 설정
     auto colorsSubGroup = new QTreeWidgetItem(parent, {"🎨 Robot Colors"});
     
-    for (int i = 0; i < ROBOT_NAMES.size(); ++i) {
+    for (int i = 1; i < ROBOT_NAMES.size(); ++i) {
         const QString& robot = ROBOT_NAMES[i];
         const QString& colorHex = ROBOT_COLORS[i];
         QColor color(colorHex);
@@ -221,26 +222,63 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
 }
 
 void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
-    // 마커 타입 선택
-    auto markerTypeItem = new QTreeWidgetItem(parent, {"Position Marker Type"});
-    auto markerCombo = new QComboBox();
-    markerCombo->addItems({"Cylinder", "Axes"});
-    markerCombo->setCurrentText("Axes");
-    connect(markerCombo, QOverload<const QString&>::of(&QComboBox::currentTextChanged), 
-            [this](const QString& type) {
+    // ✅ 포인트 클라우드 표시 체크박스 (qDebug 사용)
+    auto showPointsItem = new QTreeWidgetItem(parent, {"Show Points"});
+    QCheckBox* showPointsCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
-            // ✅ PositionMarkerType이 정의되지 않은 경우 일단 주석 처리
-            // if (type == "Cylinder") {
-            //     targetWidget_->setPositionMarkerType(PositionMarkerType::CYLINDER);
-            // } else {
-            //     targetWidget_->setPositionMarkerType(PositionMarkerType::AXES);
-            // }
-            
-            // ✅ 임시로 문자열로 처리하거나 다른 방법 사용
-            // targetWidget_->setPositionMarkerType(type);
+            targetWidget_->setShowPoints(checked);
+            qDebug() << "🎯 Points display:" << (checked ? "ON" : "OFF");
         }
     });
-    setItemWidget(markerTypeItem, 1, markerCombo);
+    setItemWidget(showPointsItem, 1, showPointsCheck);
+    
+    // ✅ 경로 표시 체크박스 (qDebug 사용)
+    auto showPathItem = new QTreeWidgetItem(parent, {"Show Path"});
+    QCheckBox* showPathCheck = createCheckBox(true, [this](bool checked) {
+        if (targetWidget_) {
+            targetWidget_->setShowPath(checked);
+            qDebug() << "📍 Path display:" << (checked ? "ON" : "OFF");
+        }
+    });
+    setItemWidget(showPathItem, 1, showPathCheck);
+    
+    // 위치 마커 표시
+    auto showPositionItem = new QTreeWidgetItem(parent, {"Show Position"});
+    auto showPositionCheck = createCheckBox(true, [this](bool checked) {
+        if (targetWidget_) {
+            targetWidget_->setShowPosition(checked);
+            qDebug() << "📍 Position display:" << (checked ? "ON" : "OFF");
+        }
+    });
+    setItemWidget(showPositionItem, 1, showPositionCheck);
+    
+    // ✅ 포인트 크기 슬라이더 (qDebug 사용)
+    auto pointSizeItem = new QTreeWidgetItem(parent, {"Point Size"});
+    auto pointSizeSlider = new QSlider(Qt::Horizontal);
+    pointSizeSlider->setRange(5, 100);  // 0.5 ~ 10.0 (×10)
+    pointSizeSlider->setValue(20);      // 기본값 2.0
+    connect(pointSizeSlider, &QSlider::valueChanged, [this](int value) {
+        if (targetWidget_) {
+            float size = value / 10.0f;
+            targetWidget_->setPointSize(size);
+            qDebug() << "🔍 Point size:" << size;
+        }
+    });
+    setItemWidget(pointSizeItem, 1, pointSizeSlider);
+    
+    // ✅ 경로 두께 슬라이더 (qDebug 사용)
+    auto pathWidthItem = new QTreeWidgetItem(parent, {"Path Width"});
+    auto pathWidthSlider = new QSlider(Qt::Horizontal);
+    pathWidthSlider->setRange(5, 100);  // 0.5 ~ 10.0 (×10)
+    pathWidthSlider->setValue(30);      // 기본값 3.0
+    connect(pathWidthSlider, &QSlider::valueChanged, [this](int value) {
+        if (targetWidget_) {
+            float width = value / 10.0f;
+            targetWidget_->setPathWidth(width);
+            qDebug() << "📏 Path width:" << width;
+        }
+    });
+    setItemWidget(pathWidthItem, 1, pathWidthSlider);
     
     // 마커 크기 조절
     auto markerSizeItem = new QTreeWidgetItem(parent, {"Marker Size"});
@@ -249,8 +287,9 @@ void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
     sizeSlider->setValue(30);
     connect(sizeSlider, &QSlider::valueChanged, [this](int value) {
         if (targetWidget_) {
-            float size = value / 100.0f;
-            targetWidget_->setPositionRadius(size);
+            float radius = value / 100.0f;
+            targetWidget_->setPositionRadius(radius);
+            qDebug() << "📍 Marker radius:" << radius;
         }
     });
     setItemWidget(markerSizeItem, 1, sizeSlider);
@@ -264,6 +303,7 @@ void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
         if (targetWidget_) {
             float sensitivity = value / 100.0f;
             targetWidget_->setRotationSensitivity(sensitivity);
+            qDebug() << "🔄 Rotation sensitivity:" << sensitivity;
         }
     });
     setItemWidget(sensitivityItem, 1, sensitivitySlider);
@@ -293,7 +333,7 @@ void ControlTreeWidget::addCameraControls(QTreeWidgetItem* parent) {
 
 PointCloudWidget* ControlTreeWidget::findRobotWidget(const QString& robotName) {
     if (!mainWindow_) {
-        std::cerr << "❌ MainWindow reference not set!" << std::endl;
+        qDebug() << "❌ MainWindow reference not set!";
         return nullptr;
     }
     
@@ -321,15 +361,13 @@ PointCloudWidget* ControlTreeWidget::findRobotWidget(const QString& robotName) {
         );
         
         if (widget) {
-            std::cout << "✅ Found widget for " << robotName.toStdString() 
-                      << " at openGLWidget_" << widgetIndex << std::endl;
+            qDebug() << "✅ Found widget for" << robotName << "at openGLWidget_" << widgetIndex;
             return widget;
         } else {
-            std::cerr << "❌ Could not find openGLWidget_" << widgetIndex 
-                      << " for " << robotName.toStdString() << std::endl;
+            qDebug() << "❌ Could not find openGLWidget_" << widgetIndex << "for" << robotName;
         }
     } else {
-        std::cerr << "❌ Invalid robot name: " << robotName.toStdString() << std::endl;
+        qDebug() << "❌ Invalid robot name:" << robotName;
     }
     
     return nullptr;
@@ -341,7 +379,7 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
     auto lockCheck = createCheckBox(false, [this](bool checked) {
         if (targetWidget_) {
             targetWidget_->setLockIndicatorToCurrentPosition(checked);
-            std::cout << "🔒 Lock indicator: " << (checked ? "ON" : "OFF") << std::endl;
+            qDebug() << "🔒 Lock indicator:" << (checked ? "ON" : "OFF");
         }
     });
     setItemWidget(lockIndicatorItem, 1, lockCheck);
@@ -356,7 +394,7 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
     
     connect(targetRobotCombo_, QOverload<const QString&>::of(&QComboBox::currentTextChanged), 
             [this](const QString& robot) {
-        std::cout << "🎯 Target robot combo changed to: " << robot.toStdString() << std::endl;
+        qDebug() << "🎯 Target robot combo changed to:" << robot;
         
         // ✅ COMBINED 모드에서는 개별 위젯과 COMBINED 위젯 모두에 설정
         if (robotName_ == "COMBINED") {
@@ -364,29 +402,29 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
             auto* robotWidget = findRobotWidget(robot);
             if (robotWidget) {
                 robotWidget->setIndicatorTargetRobot(robot);  // ✅ 개별 위젯에 설정
-                std::cout << "🎯 Individual widget target changed to: " << robot.toStdString() << std::endl;
+                qDebug() << "🎯 Individual widget target changed to:" << robot;
             }
             
             // 2. COMBINED 위젯에도 설정
             if (targetWidget_) {
                 targetWidget_->setIndicatorTargetRobot(robot);  // ✅ COMBINED 위젯에도 설정
-                std::cout << "🎯 COMBINED widget target changed to: " << robot.toStdString() << std::endl;
+                qDebug() << "🎯 COMBINED widget target changed to:" << robot;
             }
         } else if (targetWidget_) {
             // 일반 모드에서는 현재 위젯에만 설정
             targetWidget_->setIndicatorTargetRobot(robot);
-            std::cout << "🎯 Target robot changed to: " << robot.toStdString() << std::endl;
+            qDebug() << "🎯 Target robot changed to:" << robot;
         }
     });
     setItemWidget(targetRobotItem, 1, targetRobotCombo_);
     
-    // ✅ Quick Jump 버튼들 (수정된 버전)
+    // ✅ Quick Jump 버튼들 (qDebug 사용)
     auto jumpGroup = new QTreeWidgetItem(parent, {"🎯 Quick Jump"});
     
     for (const QString& robot : realRobots) {
         auto jumpItem = new QTreeWidgetItem(jumpGroup, {"Jump to " + robot});
         auto jumpBtn = createButton("Go", [this, robot]() {
-            std::cout << "🚀 Quick jump to " << robot.toStdString() << " initiated..." << std::endl;
+            qDebug() << "🚀 Quick jump to" << robot << "initiated...";
             
             PointCloudWidget* activeWidget = nullptr;
             
@@ -394,26 +432,26 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
             if (robotName_ == "COMBINED") {
                 activeWidget = findRobotWidget(robot);  // ✅ 매번 새로 찾기
                 if (!activeWidget) {
-                    std::cerr << "❌ Could not find individual widget for " << robot.toStdString() << std::endl;
+                    qDebug() << "❌ Could not find individual widget for" << robot;
                     return;
                 }
-                std::cout << "📡 Found individual widget for " << robot.toStdString() << " in COMBINED mode" << std::endl;
+                qDebug() << "📡 Found individual widget for" << robot << "in COMBINED mode";
             } else {
                 activeWidget = targetWidget_;
                 if (!activeWidget) {
-                    std::cerr << "❌ No target widget for quick jump!" << std::endl;
+                    qDebug() << "❌ No target widget for quick jump!";
                     return;
                 }
             }
             
             // ✅ 1. 개별 위젯에 타겟 로봇 설정 (강제로 설정)
             activeWidget->setIndicatorTargetRobot(robot);
-            std::cout << "🎯 Set target robot " << robot.toStdString() << " on individual widget" << std::endl;
+            qDebug() << "🎯 Set target robot" << robot << "on individual widget";
             
             // ✅ 2. COMBINED 모드에서는 COMBINED 위젯에도 타겟 설정
             if (robotName_ == "COMBINED" && targetWidget_) {
                 targetWidget_->setIndicatorTargetRobot(robot);
-                std::cout << "🎯 Set target robot " << robot.toStdString() << " on COMBINED widget" << std::endl;
+                qDebug() << "🎯 Set target robot" << robot << "on COMBINED widget";
             }
             
             // ✅ 3. 개별 위젯에서 로봇 위치 가져오기
@@ -424,20 +462,19 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
                 // 개별 위젯에서 로봇의 현재 위치 가져오기
                 robotPosition = activeWidget->getRobotCurrentPosition(robot);
                 positionFound = true;
-                std::cout << "📍 Robot " << robot.toStdString() 
-                         << " position: (" << robotPosition.x << ", " 
-                         << robotPosition.y << ", " << robotPosition.z << ")" << std::endl;
+                qDebug() << "📍 Robot" << robot << "position: (" 
+                         << robotPosition.x << "," << robotPosition.y << "," << robotPosition.z << ")";
             }
             
             // ✅ 4. 카메라 이동
             if (robotName_ == "COMBINED" && positionFound && targetWidget_) {
                 // COMBINED 위젯의 카메라를 로봇 위치로 이동
                 targetWidget_->jumpToPosition(robotPosition);
-                std::cout << "📷 COMBINED camera jumped to " << robot.toStdString() << " position" << std::endl;
+                qDebug() << "📷 COMBINED camera jumped to" << robot << "position";
             } else if (activeWidget) {
                 // 일반 모드에서는 기존 방식 사용
                 activeWidget->jumpToRobotPosition(robot);
-                std::cout << "📷 Individual camera jumped to " << robot.toStdString() << " position" << std::endl;
+                qDebug() << "📷 Individual camera jumped to" << robot << "position";
             }
             
             // ✅ 5. 위치 고정 활성화
@@ -445,13 +482,13 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
             
             if (robotName_ == "COMBINED" && targetWidget_) {
                 targetWidget_->setLockIndicatorToCurrentPosition(true);
-                std::cout << "🔗 COMBINED widget also locked to " << robot.toStdString() << std::endl;
+                qDebug() << "🔗 COMBINED widget also locked to" << robot;
             }
             
             // ✅ 6. 콤보박스도 업데이트 (멤버 변수 사용)
             if (targetRobotCombo_ && targetRobotCombo_->currentText() != robot) {
                 targetRobotCombo_->setCurrentText(robot);  // UI 동기화
-                std::cout << "🔄 Updated combo box to: " << robot.toStdString() << std::endl;
+                qDebug() << "🔄 Updated combo box to:" << robot;
             }
             
             // ✅ 7. 안전한 타이머로 자동 해제 (3초 후)
@@ -461,12 +498,12 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
             connect(autoReleaseTimer, &QTimer::timeout, [this, autoReleaseTimer, robot, activeWidget]() {
                 if (activeWidget) {
                     activeWidget->setLockIndicatorToCurrentPosition(false);
-                    std::cout << "🔓 Auto-release lock for " << robot.toStdString() << std::endl;
+                    qDebug() << "🔓 Auto-release lock for" << robot;
                 }
                 
                 if (robotName_ == "COMBINED" && targetWidget_) {
                     targetWidget_->setLockIndicatorToCurrentPosition(false);
-                    std::cout << "🔓 Auto-release lock for COMBINED widget" << std::endl;
+                    qDebug() << "🔓 Auto-release lock for COMBINED widget";
                 }
                 
                 autoReleaseTimer->deleteLater();
@@ -474,13 +511,13 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
             
             autoReleaseTimer->start(3000);
             
-            std::cout << "✅ Quick jump to " << robot.toStdString() << " completed!" << std::endl;
+            qDebug() << "✅ Quick jump to" << robot << "completed!";
         });
         
         setItemWidget(jumpItem, 1, jumpBtn);
     }
     
-    // ✅ 전체 리셋 버튼 (COMBINED 모드 지원)
+    // ✅ 전체 리셋 버튼 (qDebug 사용)
     auto resetIndicatorItem = new QTreeWidgetItem(parent, {"Reset Indicator"});
     auto resetBtn = createButton("Reset", [this]() {
         // 개별 위젯들 리셋
@@ -493,14 +530,14 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
                     robotWidget->setIndicatorTargetRobot("TUGV");  // 기본값으로 리셋
                 }
             }
-            std::cout << "🔄 All individual robot indicators reset to default state" << std::endl;
+            qDebug() << "🔄 All individual robot indicators reset to default state";
         }
         
         // 현재 위젯도 리셋
         if (targetWidget_) {
             targetWidget_->setLockIndicatorToCurrentPosition(false);
             targetWidget_->setIndicatorTargetRobot("TUGV");  // 기본값으로 리셋
-            std::cout << "🔄 Current widget indicator reset to default state" << std::endl;
+            qDebug() << "🔄 Current widget indicator reset to default state";
         }
     });
     setItemWidget(resetIndicatorItem, 1, resetBtn);
