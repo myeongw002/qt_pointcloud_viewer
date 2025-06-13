@@ -23,13 +23,14 @@ public:
     explicit DebugConsoleWidget(QWidget* parent = nullptr);
     ~DebugConsoleWidget();
 
-    // 로그 레벨 열거형
+    // Log level enumeration
     enum LogLevel {
         DEBUG = 0,
         INFO = 1,
         WARNING = 2,
         CRITICAL = 3
     };
+    Q_ENUM(LogLevel)  // Register enum with Qt meta system
 
 public slots:
     void appendLog(const QString& message, LogLevel level = INFO);
@@ -49,7 +50,7 @@ private:
     QColor getLogLevelColor(LogLevel level);
 
 private:
-    // UI 컴포넌트들
+    // UI components
     QTextEdit* consoleTextEdit_;
     QPushButton* clearButton_;
     QPushButton* saveButton_;
@@ -58,16 +59,19 @@ private:
     QComboBox* logLevelCombo_;
     QLabel* statusLabel_;
 
-    // 설정값들
+    // Settings
     bool autoScroll_;
     LogLevel currentLogLevel_;
     int maxLogLines_;
 
-    // Qt 메시지 핸들러 관련
+    // Qt message handler related
     static DebugConsoleWidget* instance_;
     QtMessageHandler previousHandler_;
 };
 
 } // namespace Widget
+
+// Register LogLevel for use with QMetaObject::invokeMethod
+Q_DECLARE_METATYPE(Widget::DebugConsoleWidget::LogLevel)
 
 #endif // DEBUG_CONSOLE_WIDGET_H

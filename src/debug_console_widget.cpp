@@ -7,6 +7,7 @@
 #include <QFont>
 #include <QFontMetrics>
 #include <QDebug>
+#include <QThread>
 
 namespace Widget {
 
@@ -27,12 +28,17 @@ DebugConsoleWidget::DebugConsoleWidget(QWidget* parent)
     , previousHandler_(nullptr)
 {
     instance_ = this;
+    
+    // Register LogLevel metatype for Qt's meta system
+    qRegisterMetaType<Widget::DebugConsoleWidget::LogLevel>("LogLevel");
+    qRegisterMetaType<Widget::DebugConsoleWidget::LogLevel>("Widget::DebugConsoleWidget::LogLevel");
+    
     setupUI();
     setupMessageHandler();
     
-    // 환영 메시지
-    appendLog("🚀 Debug Console initialized", INFO);
-    appendLog("📍 Ready to receive debug messages", INFO);
+    // Welcome messages
+    appendLog("Debug Console initialized", INFO);
+    appendLog("Ready to receive debug messages", INFO);
 }
 
 DebugConsoleWidget::~DebugConsoleWidget() {
@@ -44,13 +50,13 @@ void DebugConsoleWidget::setupUI() {
     setWindowTitle("Debug Console");
     resize(800, 400);
     
-    // 메인 레이아웃
+    // Main layout
     auto* mainLayout = new QVBoxLayout(this);
     
-    // 상단 컨트롤 패널
+    // Top control panel
     auto* controlLayout = new QHBoxLayout();
     
-    // 로그 레벨 선택
+    // Log level selection
     auto* levelLabel = new QLabel("Log Level:");
     logLevelCombo_ = new QComboBox();
     logLevelCombo_->addItems({"Debug", "Info", "Warning", "Critical"});
@@ -58,30 +64,30 @@ void DebugConsoleWidget::setupUI() {
     connect(logLevelCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &DebugConsoleWidget::onLogLevelChanged);
     
-    // 자동 스크롤 체크박스
+    // Auto scroll checkbox
     autoScrollCheckBox_ = new QCheckBox("Auto Scroll");
     autoScrollCheckBox_->setChecked(autoScroll_);
     connect(autoScrollCheckBox_, &QCheckBox::toggled,
             this, &DebugConsoleWidget::onAutoScrollToggled);
     
-    // 단어 줄바꿈 체크박스
+    // Word wrap checkbox
     wordWrapCheckBox_ = new QCheckBox("Word Wrap");
     wordWrapCheckBox_->setChecked(false);
     connect(wordWrapCheckBox_, &QCheckBox::toggled,
             this, &DebugConsoleWidget::onWordWrapToggled);
     
-    // 버튼들
+    // Buttons
     clearButton_ = new QPushButton("Clear");
     saveButton_ = new QPushButton("Save to File");
     
     connect(clearButton_, &QPushButton::clicked, this, &DebugConsoleWidget::clearConsole);
     connect(saveButton_, &QPushButton::clicked, this, &DebugConsoleWidget::saveToFile);
     
-    // 상태 라벨
+    // Status label
     statusLabel_ = new QLabel("Ready");
     statusLabel_->setStyleSheet("color: green; font-weight: bold;");
     
-    // 컨트롤 레이아웃에 추가
+    // Add to control layout
     controlLayout->addWidget(levelLabel);
     controlLayout->addWidget(logLevelCombo_);
     controlLayout->addWidget(autoScrollCheckBox_);
@@ -91,7 +97,7 @@ void DebugConsoleWidget::setupUI() {
     controlLayout->addWidget(saveButton_);
     controlLayout->addWidget(statusLabel_);
     
-    // 콘솔 텍스트 에디터
+    // Console text editor
     consoleTextEdit_ = new QTextEdit();
     consoleTextEdit_->setReadOnly(true);
     consoleTextEdit_->setFont(QFont("Consolas", 9));
@@ -104,27 +110,27 @@ void DebugConsoleWidget::setupUI() {
         "}"
     );
     
-    // 메인 레이아웃에 추가
+    // Add to main layout
     mainLayout->addLayout(controlLayout);
     mainLayout->addWidget(consoleTextEdit_);
     
-    // 마진 설정
+    // Set margins
     mainLayout->setContentsMargins(5, 5, 5, 5);
     controlLayout->setContentsMargins(0, 0, 0, 0);
 }
 
 void DebugConsoleWidget::setupMessageHandler() {
-    // 이전 핸들러 저장
+    // Store previous handler
     previousHandler_ = qInstallMessageHandler(nullptr);
     
-    // 새로운 핸들러 설치
+    // Install new handler
     qInstallMessageHandler([](QtMsgType type, const QMessageLogContext& context, const QString& msg) {
-        // 이전 핸들러가 있으면 호출
+        // Call previous handler if exists
         if (DebugConsoleWidget::instance_ && DebugConsoleWidget::instance_->previousHandler_) {
             DebugConsoleWidget::instance_->previousHandler_(type, context, msg);
         }
         
-        // 콘솔에 메시지 추가
+        // Add message to console
         if (DebugConsoleWidget::instance_) {
             LogLevel level = INFO;
             switch (type) {
@@ -135,12 +141,19 @@ void DebugConsoleWidget::setupMessageHandler() {
                 case QtFatalMsg:    level = CRITICAL; break;
             }
             
-            // GUI 스레드에서 실행되도록 큐에 추가
-            QMetaObject::invokeMethod(DebugConsoleWidget::instance_, 
-                                    "appendLog", 
-                                    Qt::QueuedConnection,
-                                    Q_ARG(QString, msg),
-                                    Q_ARG(LogLevel, level));
+            // Use direct call instead of QMetaObject::invokeMethod to avoid type registration issues
+            // Check if we're in the GUI thread
+            if (QThread::currentThread() == QApplication::instance()->thread()) {
+                // Direct call if in GUI thread
+                DebugConsoleWidget::instance_->appendLog(msg, level);
+            } else {
+                // Use queued connection for cross-thread calls
+                QMetaObject::invokeMethod(DebugConsoleWidget::instance_, 
+                                        [=]() {
+                                            DebugConsoleWidget::instance_->appendLog(msg, level);
+                                        }, 
+                                        Qt::QueuedConnection);
+            }
         }
     });
 }
@@ -150,42 +163,42 @@ void DebugConsoleWidget::restoreMessageHandler() {
 }
 
 void DebugConsoleWidget::appendLog(const QString& message, LogLevel level) {
-    // 로그 레벨 필터링
+    // Filter by log level
     if (level < currentLogLevel_) {
         return;
     }
     
-    // 최대 라인 수 체크
+    // Check maximum line count
     if (consoleTextEdit_->document()->blockCount() > maxLogLines_) {
-        // 처음 100줄 삭제
+        // Remove first 100 lines
         QTextCursor cursor = consoleTextEdit_->textCursor();
         cursor.movePosition(QTextCursor::Start);
         for (int i = 0; i < 100; ++i) {
             cursor.select(QTextCursor::BlockUnderCursor);
             cursor.removeSelectedText();
-            cursor.deleteChar(); // 줄바꿈 문자 삭제
+            cursor.deleteChar(); // Remove newline character
         }
     }
     
-    // 포맷된 메시지 생성
+    // Generate formatted message
     QString formattedMessage = formatLogMessage(message, level);
     
-    // HTML로 색상 적용
+    // Apply color with HTML
     QColor color = getLogLevelColor(level);
     QString htmlMessage = QString("<span style='color: %1;'>%2</span>")
                           .arg(color.name())
                           .arg(formattedMessage.toHtmlEscaped());
     
-    // 텍스트 추가
+    // Add text
     consoleTextEdit_->append(htmlMessage);
     
-    // 자동 스크롤
+    // Auto scroll
     if (autoScroll_) {
         QScrollBar* scrollBar = consoleTextEdit_->verticalScrollBar();
         scrollBar->setValue(scrollBar->maximum());
     }
     
-    // 상태 업데이트
+    // Update status
     int totalLines = consoleTextEdit_->document()->blockCount();
     statusLabel_->setText(QString("Lines: %1").arg(totalLines));
 }
@@ -206,10 +219,10 @@ QString DebugConsoleWidget::formatLogMessage(const QString& message, LogLevel le
 
 QColor DebugConsoleWidget::getLogLevelColor(LogLevel level) {
     switch (level) {
-        case DEBUG:    return QColor("#888888");  // 회색
-        case INFO:     return QColor("#ffffff");  // 흰색
-        case WARNING:  return QColor("#ffaa00");  // 주황색
-        case CRITICAL: return QColor("#ff4444");  // 빨간색
+        case DEBUG:    return QColor("#888888");  // Gray
+        case INFO:     return QColor("#ffffff");  // White
+        case WARNING:  return QColor("#ffaa00");  // Orange
+        case CRITICAL: return QColor("#ff4444");  // Red
         default:       return QColor("#ffffff");
     }
 }
@@ -217,7 +230,7 @@ QColor DebugConsoleWidget::getLogLevelColor(LogLevel level) {
 void DebugConsoleWidget::clearConsole() {
     consoleTextEdit_->clear();
     statusLabel_->setText("Cleared");
-    appendLog("🧹 Console cleared", INFO);
+    appendLog("Console cleared", INFO);
 }
 
 void DebugConsoleWidget::saveToFile() {
@@ -236,7 +249,7 @@ void DebugConsoleWidget::saveToFile() {
             file.close();
             
             statusLabel_->setText("Saved to file");
-            appendLog(QString("💾 Log saved to: %1").arg(fileName), INFO);
+            appendLog(QString("Log saved to: %1").arg(fileName), INFO);
         } else {
             QMessageBox::warning(this, "Error", "Could not save file!");
         }
@@ -245,18 +258,18 @@ void DebugConsoleWidget::saveToFile() {
 
 void DebugConsoleWidget::onAutoScrollToggled(bool enabled) {
     autoScroll_ = enabled;
-    appendLog(QString("🔄 Auto scroll: %1").arg(enabled ? "ON" : "OFF"), DEBUG);
+    appendLog(QString("Auto scroll: %1").arg(enabled ? "ON" : "OFF"), DEBUG);
 }
 
 void DebugConsoleWidget::onLogLevelChanged(int level) {
     currentLogLevel_ = static_cast<LogLevel>(level);
     QString levelName = logLevelCombo_->currentText();
-    appendLog(QString("📊 Log level changed to: %1").arg(levelName), DEBUG);
+    appendLog(QString("Log level changed to: %1").arg(levelName), DEBUG);
 }
 
 void DebugConsoleWidget::onWordWrapToggled(bool enabled) {
     consoleTextEdit_->setLineWrapMode(enabled ? QTextEdit::WidgetWidth : QTextEdit::NoWrap);
-    appendLog(QString("📝 Word wrap: %1").arg(enabled ? "ON" : "OFF"), DEBUG);
+    appendLog(QString("Word wrap: %1").arg(enabled ? "ON" : "OFF"), DEBUG);
 }
 
 } // namespace Widget
