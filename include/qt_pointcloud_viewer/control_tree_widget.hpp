@@ -44,6 +44,7 @@ private:
     QString robotName_;
     PointCloudWidget* targetWidget_;
     QMainWindow* mainWindow_;
+    QComboBox* targetRobotCombo_;  // 타겟 로봇 선택 콤보박스
     
     // 트리 그룹 아이템들
     QTreeWidgetItem* viewGroup_;

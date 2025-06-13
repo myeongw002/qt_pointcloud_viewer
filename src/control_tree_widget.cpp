@@ -314,18 +314,22 @@ PointCloudWidget* ControlTreeWidget::findRobotWidget(const QString& robotName) {
         widgetIndex = 5;
     }
     
-    if (widgetIndex > 0) {  // COMBINED(0)이 아닌 경우만
-        auto* widget = mainWindow_->findChild<PointCloudWidget*>(
-            QString("openGLWidget_%1").arg(widgetIndex)
+    // ✅ 수정: 모든 유효한 인덱스에 대해 처리
+    if (widgetIndex >= 0) {  // ✅ >= 0으로 변경
+        auto* widget = qobject_cast<PointCloudWidget*>(
+            mainWindow_->findChild<QWidget*>(QString("openGLWidget_%1").arg(widgetIndex))
         );
         
         if (widget) {
-            std::cout << "✅ Found individual widget for " << robotName.toStdString() 
-                      << " at index " << widgetIndex << std::endl;
+            std::cout << "✅ Found widget for " << robotName.toStdString() 
+                      << " at openGLWidget_" << widgetIndex << std::endl;
             return widget;
         } else {
-            std::cerr << "❌ Could not find widget for " << robotName.toStdString() << std::endl;
+            std::cerr << "❌ Could not find openGLWidget_" << widgetIndex 
+                      << " for " << robotName.toStdString() << std::endl;
         }
+    } else {
+        std::cerr << "❌ Invalid robot name: " << robotName.toStdString() << std::endl;
     }
     
     return nullptr;
@@ -344,31 +348,39 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
     
     // 추적 대상 로봇 선택
     auto targetRobotItem = new QTreeWidgetItem(parent, {"Target Robot"});
-    auto targetCombo = new QComboBox();
+    targetRobotCombo_ = new QComboBox();  // ✅ 멤버 변수에 저장
     
-    // ✅ COMBINED 제외한 실제 로봇들만 추가
     QStringList realRobots = {"TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
-    targetCombo->addItems(realRobots);
-    targetCombo->setCurrentText("TUGV");
+    targetRobotCombo_->addItems(realRobots);
+    targetRobotCombo_->setCurrentText("TUGV");
     
-    connect(targetCombo, QOverload<const QString&>::of(&QComboBox::currentTextChanged), 
+    connect(targetRobotCombo_, QOverload<const QString&>::of(&QComboBox::currentTextChanged), 
             [this](const QString& robot) {
-        // ✅ COMBINED 모드에서는 개별 위젯에 설정
+        std::cout << "🎯 Target robot combo changed to: " << robot.toStdString() << std::endl;
+        
+        // ✅ COMBINED 모드에서는 개별 위젯과 COMBINED 위젯 모두에 설정
         if (robotName_ == "COMBINED") {
+            // 1. 개별 위젯에 설정
             auto* robotWidget = findRobotWidget(robot);
             if (robotWidget) {
-                robotWidget->setIndicatorTargetRobot(robot);
-                std::cout << "🎯 Target robot changed to: " << robot.toStdString() 
-                         << " (via individual widget)" << std::endl;
+                robotWidget->setIndicatorTargetRobot(robot);  // ✅ 개별 위젯에 설정
+                std::cout << "🎯 Individual widget target changed to: " << robot.toStdString() << std::endl;
+            }
+            
+            // 2. COMBINED 위젯에도 설정
+            if (targetWidget_) {
+                targetWidget_->setIndicatorTargetRobot(robot);  // ✅ COMBINED 위젯에도 설정
+                std::cout << "🎯 COMBINED widget target changed to: " << robot.toStdString() << std::endl;
             }
         } else if (targetWidget_) {
+            // 일반 모드에서는 현재 위젯에만 설정
             targetWidget_->setIndicatorTargetRobot(robot);
             std::cout << "🎯 Target robot changed to: " << robot.toStdString() << std::endl;
         }
     });
-    setItemWidget(targetRobotItem, 1, targetCombo);
+    setItemWidget(targetRobotItem, 1, targetRobotCombo_);
     
-    // ✅ 즉시 이동 버튼들 (COMBINED 위젯 카메라 점프 추가)
+    // ✅ Quick Jump 버튼들 (수정된 버전)
     auto jumpGroup = new QTreeWidgetItem(parent, {"🎯 Quick Jump"});
     
     for (const QString& robot : realRobots) {
@@ -378,14 +390,14 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
             
             PointCloudWidget* activeWidget = nullptr;
             
-            // ✅ COMBINED 모드에서는 개별 로봇 위젯 찾기
+            // ✅ COMBINED 모드에서는 항상 해당 로봇의 개별 위젯 찾기
             if (robotName_ == "COMBINED") {
-                activeWidget = findRobotWidget(robot);
+                activeWidget = findRobotWidget(robot);  // ✅ 매번 새로 찾기
                 if (!activeWidget) {
                     std::cerr << "❌ Could not find individual widget for " << robot.toStdString() << std::endl;
                     return;
                 }
-                std::cout << "📡 Using individual widget for " << robot.toStdString() << " in COMBINED mode" << std::endl;
+                std::cout << "📡 Found individual widget for " << robot.toStdString() << " in COMBINED mode" << std::endl;
             } else {
                 activeWidget = targetWidget_;
                 if (!activeWidget) {
@@ -394,11 +406,18 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
                 }
             }
             
-            // ✅ 1. 먼저 타겟 로봇 설정
+            // ✅ 1. 개별 위젯에 타겟 로봇 설정 (강제로 설정)
             activeWidget->setIndicatorTargetRobot(robot);
+            std::cout << "🎯 Set target robot " << robot.toStdString() << " on individual widget" << std::endl;
             
-            // ✅ 2. 개별 위젯에서 로봇 위치 가져오기 (COMBINED 모드용)
-            glm::vec3 robotPosition(0.0f, 0.0f, 0.0f);  // 기본값
+            // ✅ 2. COMBINED 모드에서는 COMBINED 위젯에도 타겟 설정
+            if (robotName_ == "COMBINED" && targetWidget_) {
+                targetWidget_->setIndicatorTargetRobot(robot);
+                std::cout << "🎯 Set target robot " << robot.toStdString() << " on COMBINED widget" << std::endl;
+            }
+            
+            // ✅ 3. 개별 위젯에서 로봇 위치 가져오기
+            glm::vec3 robotPosition(0.0f, 0.0f, 0.0f);
             bool positionFound = false;
             
             if (robotName_ == "COMBINED") {
@@ -410,7 +429,7 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
                          << robotPosition.y << ", " << robotPosition.z << ")" << std::endl;
             }
             
-            // ✅ 3. 해당 로봇의 현재 위치로 카메라 이동
+            // ✅ 4. 카메라 이동
             if (robotName_ == "COMBINED" && positionFound && targetWidget_) {
                 // COMBINED 위젯의 카메라를 로봇 위치로 이동
                 targetWidget_->jumpToPosition(robotPosition);
@@ -421,38 +440,38 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
                 std::cout << "📷 Individual camera jumped to " << robot.toStdString() << " position" << std::endl;
             }
             
-            // ✅ 4. 잠시 위치 고정 활성화
+            // ✅ 5. 위치 고정 활성화
             activeWidget->setLockIndicatorToCurrentPosition(true);
             
-            // ✅ 5. COMBINED 모드에서는 COMBINED 위젯도 업데이트
             if (robotName_ == "COMBINED" && targetWidget_) {
-                targetWidget_->setIndicatorTargetRobot(robot);
                 targetWidget_->setLockIndicatorToCurrentPosition(true);
                 std::cout << "🔗 COMBINED widget also locked to " << robot.toStdString() << std::endl;
             }
             
-            // ✅ 6. 안전한 타이머로 자동 해제 (3초 후)
+            // ✅ 6. 콤보박스도 업데이트 (멤버 변수 사용)
+            if (targetRobotCombo_ && targetRobotCombo_->currentText() != robot) {
+                targetRobotCombo_->setCurrentText(robot);  // UI 동기화
+                std::cout << "🔄 Updated combo box to: " << robot.toStdString() << std::endl;
+            }
+            
+            // ✅ 7. 안전한 타이머로 자동 해제 (3초 후)
             QTimer* autoReleaseTimer = new QTimer();
             autoReleaseTimer->setSingleShot(true);
             
-            // 타이머 콜백 연결
             connect(autoReleaseTimer, &QTimer::timeout, [this, autoReleaseTimer, robot, activeWidget]() {
                 if (activeWidget) {
                     activeWidget->setLockIndicatorToCurrentPosition(false);
                     std::cout << "🔓 Auto-release lock for " << robot.toStdString() << std::endl;
                 }
                 
-                // COMBINED 모드에서는 COMBINED 위젯도 해제
                 if (robotName_ == "COMBINED" && targetWidget_) {
                     targetWidget_->setLockIndicatorToCurrentPosition(false);
                     std::cout << "🔓 Auto-release lock for COMBINED widget" << std::endl;
                 }
                 
-                // 타이머 정리
                 autoReleaseTimer->deleteLater();
             });
             
-            // 3초 후 실행
             autoReleaseTimer->start(3000);
             
             std::cout << "✅ Quick jump to " << robot.toStdString() << " completed!" << std::endl;
