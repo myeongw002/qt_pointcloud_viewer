@@ -1,4 +1,5 @@
 #include "viewer_window.hpp"
+#include "viewer_settings_manager.hpp"
 #include <QVBoxLayout>
 #include <pcl_conversions/pcl_conversions.h>
 
@@ -14,15 +15,22 @@ ViewerWindow::ViewerWindow(const QString &robot,
     resize(800, 600);
 
     auto *central = new QWidget;
-    auto *lay     = new QVBoxLayout(central);
+    auto *lay = new QVBoxLayout(central);
     lay->setContentsMargins(0,0,0,0);
 
     pcw_ = new Widget::PointCloudWidget;
-    // pcw_->setNode(node);
-    // pcw_->setTopicName(robotToTopic(robot));
+    pcw_->setRobot(robot);
+    
+    // Apply synchronized settings
+    Widget::ViewerSettingsManager::instance()->synchronizeSettings(pcw_, robot);
+    
     lay->addWidget(pcw_);
-
     setCentralWidget(central);
+    
+    // Setup cleanup when window closes
+    connect(this, &QObject::destroyed, [this]() {
+        Widget::ViewerSettingsManager::instance()->unregisterWidget(pcw_);
+    });
 }
 
 int ViewerWindow::robotToTopic(const QString &r) {

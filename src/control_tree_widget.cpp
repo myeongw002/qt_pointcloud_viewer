@@ -1,5 +1,6 @@
 // mainwindow.cpp
 #include "control_tree_widget.hpp"
+#include "viewer_settings_manager.hpp"
 #include <QApplication>
 #include <QStyle>
 #include <QDebug>
@@ -115,35 +116,60 @@ void ControlTreeWidget::addViewControls(QTreeWidgetItem* parent) {
     // 탑뷰 모드 토글
     auto topViewItem = new QTreeWidgetItem(parent, {"Top View Mode"});
     auto topViewCheck = createCheckBox(false, [this](bool checked) {
-        if (targetWidget_) targetWidget_->setTopView(checked);
+        if (targetWidget_) {
+            targetWidget_->setTopView(checked);
+            // Add synchronization
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            qDebug() << "Top view:" << (checked ? "ON" : "OFF");
+        }
     });
     setItemWidget(topViewItem, 1, topViewCheck);
     
     // 축 표시 토글
     auto axesItem = new QTreeWidgetItem(parent, {"Show Axes"});
     auto axesCheck = createCheckBox(true, [this](bool checked) {
-        if (targetWidget_) targetWidget_->setShowAxes(checked);
+        if (targetWidget_) {
+            targetWidget_->setShowAxes(checked);
+            // Add synchronization
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            qDebug() << "Axes display:" << (checked ? "ON" : "OFF");
+        }
     });
     setItemWidget(axesItem, 1, axesCheck);
     
     // 그리드 표시 토글
     auto gridItem = new QTreeWidgetItem(parent, {"Show Grid"});
     auto gridCheck = createCheckBox(true, [this](bool checked) {
-        if (targetWidget_) targetWidget_->setShowGrid(checked);
+        if (targetWidget_) {
+            targetWidget_->setShowGrid(checked);
+            // Add synchronization
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            qDebug() << "Grid display:" << (checked ? "ON" : "OFF");
+        }
     });
     setItemWidget(gridItem, 1, gridCheck);
     
     // 로봇 라벨 표시 토글
     auto labelItem = new QTreeWidgetItem(parent, {"Show Robot Labels"});
     auto labelCheck = createCheckBox(true, [this](bool checked) {
-        if (targetWidget_) targetWidget_->setShowRobotLabel(checked);
+        if (targetWidget_) {
+            targetWidget_->setShowRobotLabel(checked);
+            // Add synchronization
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            qDebug() << "Robot labels:" << (checked ? "ON" : "OFF");
+        }
     });
     setItemWidget(labelItem, 1, labelCheck);
     
     // 현재 위치 마커 표시
     auto positionItem = new QTreeWidgetItem(parent, {"Show Current Position"});
     auto positionCheck = createCheckBox(true, [this](bool checked) {
-        if (targetWidget_) targetWidget_->setShowPosition(checked);
+        if (targetWidget_) {
+            targetWidget_->setShowPosition(checked);
+            // Add synchronization
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            qDebug() << "Position display:" << (checked ? "ON" : "OFF");
+        }
     });
     setItemWidget(positionItem, 1, positionCheck);
 }
@@ -171,6 +197,9 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
         const QString& colorHex = ROBOT_COLORS[i];
         QColor color(colorHex);
         
+        // ✅ Calculate path color (lighter version of points color)
+        QColor pathColor = color.lighter(150); // Make path color 50% lighter
+        
         // 포인트 색상
         auto pointColorItem = new QTreeWidgetItem(colorsSubGroup, {robot + " Points"});
         auto pointColorBtn = createButton("", [this, robot]() {
@@ -179,12 +208,16 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
                 glm::vec3 glmColor(newColor.redF(), newColor.greenF(), newColor.blueF());
                 targetWidget_->setRobotPointsColor(robot, glmColor);
                 
+                // Add synchronization
+                ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+                
                 // 버튼 색상 업데이트
                 auto btn = qobject_cast<QPushButton*>(sender());
                 if (btn) {
                     btn->setStyleSheet(QString("background-color: %1; border: 2px solid white;")
                                      .arg(newColor.name()));
                 }
+                qDebug() << robot << "points color changed to:" << newColor.name();
             }
         });
         pointColorBtn->setFixedSize(40, 25);
@@ -195,12 +228,14 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
         
         // 경로 색상
         auto pathColorItem = new QTreeWidgetItem(colorsSubGroup, {robot + " Path"});
-        QColor pathColor = color.lighter(150);
         auto pathColorBtn = createButton("", [this, robot]() {
             QColor newColor = QColorDialog::getColor();
             if (newColor.isValid() && targetWidget_) {
                 glm::vec3 glmColor(newColor.redF(), newColor.greenF(), newColor.blueF());
                 targetWidget_->setRobotPathColor(robot, glmColor);
+                
+                // Add synchronization
+                ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
                 
                 // 버튼 색상 업데이트
                 auto btn = qobject_cast<QPushButton*>(sender());
@@ -208,9 +243,11 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
                     btn->setStyleSheet(QString("background-color: %1; border: 2px solid white;")
                                      .arg(newColor.name()));
                 }
+                qDebug() << robot << "path color changed to:" << newColor.name();
             }
         });
         pathColorBtn->setFixedSize(40, 25);
+        // ✅ Fixed: Use pathColor variable instead of undefined pathColor
         pathColorBtn->setStyleSheet(QString("background-color: %1; border: 2px solid white;")
                                   .arg(pathColor.name()));
         setItemWidget(pathColorItem, 1, pathColorBtn);
@@ -222,51 +259,46 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
     auto resetBtn = createButton("Reset", [this]() {
         if (targetWidget_) {
             targetWidget_->resetAllColorsToDefault();
+            // Add synchronization
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
             updateColorButtons();
+            qDebug() << "Colors reset to default";
         }
     });
     setItemWidget(resetColorsItem, 1, resetBtn);
 }
 
 void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
-    // Show Points checkbox
+    // Show Points checkbox - ✅ 기본값을 true로 설정
     auto showPointsItem = new QTreeWidgetItem(parent, {"Show Points"});
     QCheckBox* showPointsCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
             targetWidget_->setShowPoints(checked);
-            qDebug() << "Points display:" << (checked ? "ON" : "OFF");
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            qDebug() << robotName_ << "Points display:" << (checked ? "ON" : "OFF");
         }
     });
     setItemWidget(showPointsItem, 1, showPointsCheck);
     
-    // Show Path checkbox
+    // Show Path checkbox - ✅ 기본값을 true로 설정
     auto showPathItem = new QTreeWidgetItem(parent, {"Show Path"});
     QCheckBox* showPathCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
             targetWidget_->setShowPath(checked);
-            qDebug() << "Path display:" << (checked ? "ON" : "OFF");
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            qDebug() << robotName_ << "Path display:" << (checked ? "ON" : "OFF");
         }
     });
     setItemWidget(showPathItem, 1, showPathCheck);
-    
-    // Show Position checkbox
-    auto showPositionItem = new QTreeWidgetItem(parent, {"Show Position"});
-    auto showPositionCheck = createCheckBox(true, [this](bool checked) {
-        if (targetWidget_) {
-            targetWidget_->setShowPosition(checked);
-            qDebug() << "Position display:" << (checked ? "ON" : "OFF");
-        }
-    });
-    setItemWidget(showPositionItem, 1, showPositionCheck);
     
     // Position Marker Type selection
     auto markerTypeItem = new QTreeWidgetItem(parent, {"Position Marker Type"});
     auto markerTypeCombo = new QComboBox();
     markerTypeCombo->addItems({"Cylinder", "Axes"});
-    markerTypeCombo->setCurrentIndex(1); // Default to Axes
+    markerTypeCombo->setCurrentIndex(1);
     
     connect(markerTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            [this, markerTypeCombo](int index) {  // Add markerTypeCombo to capture list
+            [this, markerTypeCombo](int index) {
         if (targetWidget_) {
             Widget::PointCloudWidget::PositionMarkerType markerType;
             if (index == 0) {
@@ -276,6 +308,10 @@ void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
             }
             
             targetWidget_->setPositionMarkerType(markerType);
+            
+            // Save settings and notify manager
+            Widget::ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            
             qDebug() << "Position marker type changed to:" << markerTypeCombo->currentText();
         }
     });
@@ -284,12 +320,16 @@ void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
     // Point Size slider
     auto pointSizeItem = new QTreeWidgetItem(parent, {"Point Size"});
     auto pointSizeSlider = new QSlider(Qt::Horizontal);
-    pointSizeSlider->setRange(5, 100);  // 0.5 ~ 10.0 (×10)
-    pointSizeSlider->setValue(20);      // Default value 2.0
+    pointSizeSlider->setRange(5, 100);
+    pointSizeSlider->setValue(20);
     connect(pointSizeSlider, &QSlider::valueChanged, [this](int value) {
         if (targetWidget_) {
             float size = value / 10.0f;
             targetWidget_->setPointSize(size);
+            
+            // Save settings and notify manager
+            Widget::ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            
             qDebug() << "Point size:" << size;
         }
     });
@@ -298,12 +338,16 @@ void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
     // Path Width slider
     auto pathWidthItem = new QTreeWidgetItem(parent, {"Path Width"});
     auto pathWidthSlider = new QSlider(Qt::Horizontal);
-    pathWidthSlider->setRange(5, 100);  // 0.5 ~ 10.0 (×10)
-    pathWidthSlider->setValue(30);      // Default value 3.0
+    pathWidthSlider->setRange(5, 100);
+    pathWidthSlider->setValue(30);
     connect(pathWidthSlider, &QSlider::valueChanged, [this](int value) {
         if (targetWidget_) {
             float width = value / 10.0f;
             targetWidget_->setPathWidth(width);
+            
+            // Save settings and notify manager
+            Widget::ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            
             qDebug() << "Path width:" << width;
         }
     });
@@ -318,6 +362,8 @@ void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
         if (targetWidget_) {
             float radius = value / 100.0f;
             targetWidget_->setPositionRadius(radius);
+            // Add missing synchronization
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
             qDebug() << "Marker radius:" << radius;
         }
     });
@@ -332,6 +378,8 @@ void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
         if (targetWidget_) {
             float sensitivity = value / 100.0f;
             targetWidget_->setRotationSensitivity(sensitivity);
+            // Add missing synchronization
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
             qDebug() << "Rotation sensitivity:" << sensitivity;
         }
     });

@@ -76,6 +76,16 @@ namespace Widget {
         void setShowRobotLabel(bool show);
         void setPositionRadius(float radius);
         bool isShowPosition() const { return showPosition_; }
+        
+        // ✅ 추가된 Getter 함수들
+        bool getShowAxes() const { return showAxes_; }
+        bool getShowGrid() const { return showGrid_; }
+        bool getShowPosition() const { return showPosition_; }
+        bool getShowRobotLabel() const { return showRobotLabel_; }
+        float getPositionRadius() const { return currentPositionRadius_; }
+        float getRotationSensitivity() const { return rotationSensitivity_; }
+        glm::vec3 getFocusPoint() const { return focusPoint_; }
+
         // ✅ 포인트 및 경로 스타일 설정
         void setShowPoints(bool show);
         void setShowPath(bool show);
@@ -83,8 +93,16 @@ namespace Widget {
         void setPathWidth(float width);
         float getPointSize() const { return pointSize_; }
         float getPathWidth() const { return pathWidth_; }
+        
+        // ✅ 추가된 Getter 함수들
+        bool getShowPoints() const { return showPoints_; }
+        bool getShowPath() const { return showPath_; }
+        
         void setPositionMarkerType(PositionMarkerType type);
-
+        
+        // ✅ 추가된 Getter 함수들
+        PositionMarkerType getPositionMarkerType() const { return positionMarkerType_; }
+    
     public slots:
         // ============================================================================
         // 📡 데이터 수신 슬롯들

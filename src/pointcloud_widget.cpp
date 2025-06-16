@@ -19,9 +19,23 @@ namespace Widget {
 PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
     lastMousePos_ = QPoint(0, 0);
     showIndicator_ = false;
+    
+    // ✅ ViewerSettings와 동일한 기본값들 (중복이지만 일관성 유지)
+    showPoints_ = true;
+    showPath_ = true;
+    showPosition_ = true;
+    showAxes_ = true;
+    showGrid_ = true;
+    showRobotLabel_ = true;
+    
+    pointSize_ = 2.0f;
+    pathWidth_ = 3.0f;
+    
     connect(&hideTimer_, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
     updateCameraPosition();
     initializeDefaultColors();
+    
+    qDebug() << "PointCloudWidget created with standard defaults";
 }
 
 PointCloudWidget::~PointCloudWidget() {

@@ -5,7 +5,7 @@
 #include "viewer_container.hpp"
 #include "control_tree_widget.hpp"
 #include "debug_console_widget.hpp"
-
+#include "viewer_settings_manager.hpp"
 // ✅ Qt 위젯 헤더들 추가
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -77,14 +77,11 @@ MainWindow::~MainWindow() {
 
 // ✅ PointCloudWidget들 설정
 void MainWindow::setupPointCloudWidgets() {
-    // Qt Designer에서 생성된 PointCloudWidget들을 찾아서 저장
-    // ✅ 탭 순서: COMBINED, TUGV, MUGV, SUGV1, SUGV2, SUAV (좌상단부터 오른쪽으로)
     QStringList robotNames = {"COMBINED", "TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
     
     for (int i = 0; i < robotNames.size() && i < panelCount_; ++i) {
         const QString& robotName = robotNames[i];
         
-        // openGLWidget_0, openGLWidget_1, ... 형태로 찾기
         auto* viewer = qobject_cast<Widget::PointCloudWidget*>(
             findChild<QWidget*>(QString("openGLWidget_%1").arg(i))
         );
@@ -92,12 +89,18 @@ void MainWindow::setupPointCloudWidgets() {
         if (viewer) {
             pointCloudWidgets_[robotName] = viewer;
             viewer->setRobot(robotName);
-            std::cout << "✅ Found PointCloudWidget for " << robotName.toStdString() 
+            
+            // ✅ 단순히 등록만 하면 됨 (올바른 기본값이 자동 적용됨)
+            Widget::ViewerSettingsManager::instance()->registerWidget(robotName, viewer);
+            
+            std::cout << "Found PointCloudWidget for " << robotName.toStdString() 
                       << " at index " << i << std::endl;
         } else {
-            std::cerr << "❌ Could not find PointCloudWidget for " << robotName.toStdString() << std::endl;
+            std::cerr << "Could not find PointCloudWidget for " << robotName.toStdString() << std::endl;
         }
     }
+    
+    qDebug() << "✅ All widgets initialized with proper default settings";
 }
 
 // ✅ 제어 패널 설정
@@ -263,24 +266,40 @@ void MainWindow::onControlTabChanged(int index) {
     }
 }
 
-void MainWindow::openNewViewer()
-{
+void MainWindow::openNewViewer() {
     Widget::RobotSelectDialog dlg(this);
     if (dlg.exec() != QDialog::Accepted) return;
 
-    // Store the robot name before the lambda
     QString robotName = dlg.robotName();
     
     QMetaObject::invokeMethod(this, [this, robotName]{
         auto* win = new Widget::ViewerWindow(robotName, node_, nullptr);
         auto* pcw = win->findChild<Widget::PointCloudWidget*>();
-        pcw->setRobot(robotName);
-        connect(broker_.get(), &DataBroker::cloudArrived,
-                pcw,    &Widget::PointCloudWidget::onCloudShared,
-                Qt::QueuedConnection);
-        connect(broker_.get(), &DataBroker::pathArrived,
-                pcw,    &Widget::PointCloudWidget::onPathShared,
-                Qt::QueuedConnection);
+        
+        if (pcw) {
+            pcw->setRobot(robotName);
+            
+            qDebug() << "MainWindow: Creating new viewer for" << robotName;
+            
+            // Connect to data broker first
+            connect(broker_.get(), &DataBroker::cloudArrived,
+                    pcw, &Widget::PointCloudWidget::onCloudShared,
+                    Qt::QueuedConnection);
+            connect(broker_.get(), &DataBroker::pathArrived,
+                    pcw, &Widget::PointCloudWidget::onPathShared,
+                    Qt::QueuedConnection);
+            
+            // Synchronize settings with existing viewers (after connections are made)
+            Widget::ViewerSettingsManager::instance()->synchronizeSettings(pcw, robotName);
+            
+            // Setup cleanup when window closes
+            connect(win, &QObject::destroyed, [pcw]() {
+                Widget::ViewerSettingsManager::instance()->unregisterWidget(pcw);
+            });
+            
+            qDebug() << "MainWindow: New viewer setup completed for" << robotName;
+        }
+        
         win->show();
     }, Qt::QueuedConnection);
 }
