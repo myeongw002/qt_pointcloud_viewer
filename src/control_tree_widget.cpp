@@ -2,7 +2,14 @@
 #include "control_tree_widget.hpp"
 #include <QApplication>
 #include <QStyle>
-#include <QDebug>  // ✅ qDebug 사용을 위해 추가
+#include <QDebug>
+#include <QColorDialog>
+#include <QSlider>
+#include <QComboBox>
+#include <QCheckBox>
+#include <QPushButton>
+#include <QLabel>
+#include <QHBoxLayout>
 
 namespace Widget {
 
@@ -222,65 +229,87 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
 }
 
 void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
-    // ✅ 포인트 클라우드 표시 체크박스 (qDebug 사용)
+    // Show Points checkbox
     auto showPointsItem = new QTreeWidgetItem(parent, {"Show Points"});
     QCheckBox* showPointsCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
             targetWidget_->setShowPoints(checked);
-            qDebug() << "🎯 Points display:" << (checked ? "ON" : "OFF");
+            qDebug() << "Points display:" << (checked ? "ON" : "OFF");
         }
     });
     setItemWidget(showPointsItem, 1, showPointsCheck);
     
-    // ✅ 경로 표시 체크박스 (qDebug 사용)
+    // Show Path checkbox
     auto showPathItem = new QTreeWidgetItem(parent, {"Show Path"});
     QCheckBox* showPathCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
             targetWidget_->setShowPath(checked);
-            qDebug() << "📍 Path display:" << (checked ? "ON" : "OFF");
+            qDebug() << "Path display:" << (checked ? "ON" : "OFF");
         }
     });
     setItemWidget(showPathItem, 1, showPathCheck);
     
-    // 위치 마커 표시
+    // Show Position checkbox
     auto showPositionItem = new QTreeWidgetItem(parent, {"Show Position"});
     auto showPositionCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
             targetWidget_->setShowPosition(checked);
-            qDebug() << "📍 Position display:" << (checked ? "ON" : "OFF");
+            qDebug() << "Position display:" << (checked ? "ON" : "OFF");
         }
     });
     setItemWidget(showPositionItem, 1, showPositionCheck);
     
-    // ✅ 포인트 크기 슬라이더 (qDebug 사용)
+    // Position Marker Type selection
+    auto markerTypeItem = new QTreeWidgetItem(parent, {"Position Marker Type"});
+    auto markerTypeCombo = new QComboBox();
+    markerTypeCombo->addItems({"Cylinder", "Axes"});
+    markerTypeCombo->setCurrentIndex(1); // Default to Axes
+    
+    connect(markerTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            [this, markerTypeCombo](int index) {  // Add markerTypeCombo to capture list
+        if (targetWidget_) {
+            Widget::PointCloudWidget::PositionMarkerType markerType;
+            if (index == 0) {
+                markerType = Widget::PointCloudWidget::PositionMarkerType::CYLINDER;
+            } else {
+                markerType = Widget::PointCloudWidget::PositionMarkerType::AXES;
+            }
+            
+            targetWidget_->setPositionMarkerType(markerType);
+            qDebug() << "Position marker type changed to:" << markerTypeCombo->currentText();
+        }
+    });
+    setItemWidget(markerTypeItem, 1, markerTypeCombo);
+    
+    // Point Size slider
     auto pointSizeItem = new QTreeWidgetItem(parent, {"Point Size"});
     auto pointSizeSlider = new QSlider(Qt::Horizontal);
     pointSizeSlider->setRange(5, 100);  // 0.5 ~ 10.0 (×10)
-    pointSizeSlider->setValue(20);      // 기본값 2.0
+    pointSizeSlider->setValue(20);      // Default value 2.0
     connect(pointSizeSlider, &QSlider::valueChanged, [this](int value) {
         if (targetWidget_) {
             float size = value / 10.0f;
             targetWidget_->setPointSize(size);
-            qDebug() << "🔍 Point size:" << size;
+            qDebug() << "Point size:" << size;
         }
     });
     setItemWidget(pointSizeItem, 1, pointSizeSlider);
     
-    // ✅ 경로 두께 슬라이더 (qDebug 사용)
+    // Path Width slider
     auto pathWidthItem = new QTreeWidgetItem(parent, {"Path Width"});
     auto pathWidthSlider = new QSlider(Qt::Horizontal);
     pathWidthSlider->setRange(5, 100);  // 0.5 ~ 10.0 (×10)
-    pathWidthSlider->setValue(30);      // 기본값 3.0
+    pathWidthSlider->setValue(30);      // Default value 3.0
     connect(pathWidthSlider, &QSlider::valueChanged, [this](int value) {
         if (targetWidget_) {
             float width = value / 10.0f;
             targetWidget_->setPathWidth(width);
-            qDebug() << "📏 Path width:" << width;
+            qDebug() << "Path width:" << width;
         }
     });
     setItemWidget(pathWidthItem, 1, pathWidthSlider);
     
-    // 마커 크기 조절
+    // Marker Size slider
     auto markerSizeItem = new QTreeWidgetItem(parent, {"Marker Size"});
     auto sizeSlider = new QSlider(Qt::Horizontal);
     sizeSlider->setRange(10, 200);
@@ -289,12 +318,12 @@ void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
         if (targetWidget_) {
             float radius = value / 100.0f;
             targetWidget_->setPositionRadius(radius);
-            qDebug() << "📍 Marker radius:" << radius;
+            qDebug() << "Marker radius:" << radius;
         }
     });
     setItemWidget(markerSizeItem, 1, sizeSlider);
     
-    // 회전 민감도
+    // Rotation Sensitivity slider
     auto sensitivityItem = new QTreeWidgetItem(parent, {"Rotation Sensitivity"});
     auto sensitivitySlider = new QSlider(Qt::Horizontal);
     sensitivitySlider->setRange(10, 100);
@@ -303,7 +332,7 @@ void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
         if (targetWidget_) {
             float sensitivity = value / 100.0f;
             targetWidget_->setRotationSensitivity(sensitivity);
-            qDebug() << "🔄 Rotation sensitivity:" << sensitivity;
+            qDebug() << "Rotation sensitivity:" << sensitivity;
         }
     });
     setItemWidget(sensitivityItem, 1, sensitivitySlider);
@@ -527,31 +556,53 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
                 auto* robotWidget = findRobotWidget(robot);
                 if (robotWidget) {
                     robotWidget->setLockIndicatorToCurrentPosition(false);
-                    robotWidget->setIndicatorTargetRobot("TUGV");  // 기본값으로 리셋
+                    robotWidget->setIndicatorTargetRobot("TUGV");  // 기본 로봇으로 리셋
+                    qDebug() << "🔄 Reset individual widget for" << robot;
                 }
             }
-            qDebug() << "🔄 All individual robot indicators reset to default state";
         }
         
-        // 현재 위젯도 리셋
+        // COMBINED 위젯 리셋
         if (targetWidget_) {
             targetWidget_->setLockIndicatorToCurrentPosition(false);
-            targetWidget_->setIndicatorTargetRobot("TUGV");  // 기본값으로 리셋
-            qDebug() << "🔄 Current widget indicator reset to default state";
+            targetWidget_->setIndicatorTargetRobot("TUGV");  // 기본 로봇으로 리셋
+            qDebug() << "🔄 Reset COMBINED widget";
         }
     });
     setItemWidget(resetIndicatorItem, 1, resetBtn);
-    
-    // ✅ 현재 상태 표시 (모드별 표시)
-    auto statusItem = new QTreeWidgetItem(parent, {"Current Status"});
-    auto statusLabel = new QLabel(robotName_ == "COMBINED" ? "COMBINED Mode" : "Individual Mode");
-    statusLabel->setStyleSheet(robotName_ == "COMBINED" ? 
-                              "color: blue; font-weight: bold;" : 
-                              "color: green; font-weight: bold;");
-    setItemWidget(statusItem, 1, statusLabel);
 }
 
-// ✅ 헬퍼 함수들
+void ControlTreeWidget::onItemChanged(QTreeWidgetItem* item, int column) {
+    // 아이템 변경 시 처리 (현재는 로봇 색상 변경에만 사용)
+    if (robotGroup_ && item->parent() == robotGroup_) {
+        QString itemName = item->text(0);
+        
+        // 포인트 색상 아이템인지 확인
+        if (itemName.endsWith("Points")) {
+            QString robotName = itemName.split(" ")[0];
+            QColor newColor = colorButtons_[robotName + "_points"]->palette().button().color();
+            if (targetWidget_) {
+                glm::vec3 glmColor(newColor.redF(), newColor.greenF(), newColor.blueF());
+                targetWidget_->setRobotPointsColor(robotName, glmColor);
+                qDebug() << "Changed" << robotName << "points color to" << newColor.name();
+            }
+        }
+        // 경로 색상 아이템인지 확인
+        else if (itemName.endsWith("Path")) {
+            QString robotName = itemName.split(" ")[0];
+            QColor newColor = colorButtons_[robotName + "_path"]->palette().button().color();
+            if (targetWidget_) {
+                glm::vec3 glmColor(newColor.redF(), newColor.greenF(), newColor.blueF());
+                targetWidget_->setRobotPathColor(robotName, glmColor);
+                qDebug() << "Changed" << robotName << "path color to" << newColor.name();
+            }
+        }
+    }
+}
+
+// Add these function implementations at the end of the file, before the closing namespace bracket
+
+// Helper widget creation functions
 QCheckBox* ControlTreeWidget::createCheckBox(bool checked, std::function<void(bool)> callback) {
     auto checkBox = new QCheckBox();
     checkBox->setChecked(checked);
@@ -561,58 +612,177 @@ QCheckBox* ControlTreeWidget::createCheckBox(bool checked, std::function<void(bo
 
 QPushButton* ControlTreeWidget::createButton(const QString& text, std::function<void()> callback) {
     auto button = new QPushButton(text);
-    button->setMaximumHeight(25);
     connect(button, &QPushButton::clicked, callback);
     return button;
 }
 
-void ControlTreeWidget::updateColorButtons() {
-    // 색상 버튼들을 현재 설정값으로 업데이트
-    if (!targetWidget_) return;
+QWidget* ControlTreeWidget::createSliderWidget(const QString& label, double min, double max, double value, 
+                                             std::function<void(double)> callback) {
+    auto widget = new QWidget();
+    auto layout = new QHBoxLayout(widget);
     
+    auto labelWidget = new QLabel(label);
+    auto slider = new QSlider(Qt::Horizontal);
+    auto valueLabel = new QLabel(QString::number(value, 'f', 1));
+    
+    slider->setRange(static_cast<int>(min * 10), static_cast<int>(max * 10));
+    slider->setValue(static_cast<int>(value * 10));
+    
+    connect(slider, &QSlider::valueChanged, [callback, valueLabel](int val) {
+        double doubleVal = val / 10.0;
+        valueLabel->setText(QString::number(doubleVal, 'f', 1));
+        callback(doubleVal);
+    });
+    
+    layout->addWidget(labelWidget);
+    layout->addWidget(slider);
+    layout->addWidget(valueLabel);
+    layout->setContentsMargins(0, 0, 0, 0);
+    
+    return widget;
+}
+
+QWidget* ControlTreeWidget::createComboWidget(const QString& label, const QStringList& items, 
+                                            const QString& current, std::function<void(const QString&)> callback) {
+    auto widget = new QWidget();
+    auto layout = new QHBoxLayout(widget);
+    
+    auto labelWidget = new QLabel(label);
+    auto combo = new QComboBox();
+    combo->addItems(items);
+    combo->setCurrentText(current);
+    
+    connect(combo, &QComboBox::currentTextChanged, callback);
+    
+    layout->addWidget(labelWidget);
+    layout->addWidget(combo);
+    layout->setContentsMargins(0, 0, 0, 0);
+    
+    return widget;
+}
+
+QWidget* ControlTreeWidget::createColorWidget(const QString& label, const QColor& color, 
+                                            std::function<void(const QColor&)> callback) {
+    auto widget = new QWidget();
+    auto layout = new QHBoxLayout(widget);
+    
+    auto labelWidget = new QLabel(label);
+    auto colorButton = new QPushButton();
+    colorButton->setFixedSize(40, 25);
+    colorButton->setStyleSheet(QString("background-color: %1; border: 2px solid gray;").arg(color.name()));
+    
+    connect(colorButton, &QPushButton::clicked, [this, callback, colorButton]() {
+        QColor newColor = QColorDialog::getColor(Qt::white, this, "Select Color");
+        if (newColor.isValid()) {
+            colorButton->setStyleSheet(QString("background-color: %1; border: 2px solid gray;").arg(newColor.name()));
+            callback(newColor);
+        }
+    });
+    
+    layout->addWidget(labelWidget);
+    layout->addWidget(colorButton);
+    layout->setContentsMargins(0, 0, 0, 0);
+    
+    return widget;
+}
+
+// Synchronize controls with widget state
+void ControlTreeWidget::syncWithWidget() {
+    if (!targetWidget_) {
+        return;
+    }
+    
+    // Sync display settings
+    // Note: You might need to add getter functions to PointCloudWidget
+    // to properly sync the current state
+    
+    qDebug() << "Syncing controls with widget for robot:" << robotName_;
+    
+    // This function should update UI controls to match current widget state
+    // Implementation depends on what getter functions are available in PointCloudWidget
+}
+
+// Update color buttons to reflect current colors
+void ControlTreeWidget::updateColorButtons() {
+    if (!targetWidget_) {
+        return;
+    }
+    
+    // Update color buttons for each robot
     for (const QString& robot : ROBOT_NAMES) {
-        // 포인트 색상 버튼 업데이트
-        if (colorButtons_.contains(robot + "_points")) {
-            glm::vec3 color = targetWidget_->getRobotPointsColor(robot);
-            QColor qcolor(color.x * 255, color.y * 255, color.z * 255);
-            colorButtons_[robot + "_points"]->setStyleSheet(
-                QString("background-color: %1; border: 2px solid white;").arg(qcolor.name()));
+        if (robot == "COMBINED") continue;
+        
+        auto pointsColor = targetWidget_->getRobotPointsColor(robot);
+        auto pathColor = targetWidget_->getRobotPathColor(robot);
+        
+        // Update button colors if they exist
+        QString pointsKey = robot + "_points";
+        QString pathKey = robot + "_path";
+        
+        if (colorButtons_.contains(pointsKey)) {
+            QColor qColor(static_cast<int>(pointsColor.r * 255), 
+                         static_cast<int>(pointsColor.g * 255), 
+                         static_cast<int>(pointsColor.b * 255));
+            colorButtons_[pointsKey]->setStyleSheet(
+                QString("background-color: %1; border: 2px solid gray;").arg(qColor.name()));
         }
         
-        // 경로 색상 버튼 업데이트
-        if (colorButtons_.contains(robot + "_path")) {
-            glm::vec3 color = targetWidget_->getRobotPathColor(robot);
-            QColor qcolor(color.x * 255, color.y * 255, color.z * 255);
-            colorButtons_[robot + "_path"]->setStyleSheet(
-                QString("background-color: %1; border: 2px solid white;").arg(qcolor.name()));
+        if (colorButtons_.contains(pathKey)) {
+            QColor qColor(static_cast<int>(pathColor.r * 255), 
+                         static_cast<int>(pathColor.g * 255), 
+                         static_cast<int>(pathColor.b * 255));
+            colorButtons_[pathKey]->setStyleSheet(
+                QString("background-color: %1; border: 2px solid gray;").arg(qColor.name()));
         }
+    }
+    
+    qDebug() << "Color buttons updated";
+}
+
+
+
+
+void ControlTreeWidget::onColorButtonClicked() {
+    // Handle color button clicks
+    QPushButton* button = qobject_cast<QPushButton*>(sender());
+    if (!button || !targetWidget_) {
+        return;
+    }
+    
+    QColor newColor = QColorDialog::getColor(Qt::white, this, "Select Color");
+    if (newColor.isValid()) {
+        button->setStyleSheet(QString("background-color: %1; border: 2px solid gray;").arg(newColor.name()));
+        
+        // Apply color to appropriate robot/component
+        // This would need to be implemented based on button identification
+        qDebug() << "Color changed to:" << newColor.name();
     }
 }
 
-void ControlTreeWidget::syncWithWidget() {
-    // targetWidget_의 현재 설정값들을 읽어서 UI 동기화
-    updateColorButtons();
-    // TODO: 다른 설정값들도 동기화
-}
-
-// ✅ 슬롯 함수들 (필요한 경우 구현)
-void ControlTreeWidget::onItemChanged(QTreeWidgetItem* item, int column) {
-    // 아이템 변경 시 처리
-}
-
-void ControlTreeWidget::onColorButtonClicked() {
-    // 색상 버튼 클릭 시 처리 (위에서 람다로 처리했으므로 비워둠)
-}
-
 void ControlTreeWidget::onResetColorsClicked() {
-    // 색상 리셋 버튼 클릭 시 처리 (위에서 람다로 처리했으므로 비워둠)
+    if (targetWidget_) {
+        targetWidget_->resetAllColorsToDefault();
+        updateColorButtons();
+        qDebug() << "Colors reset to default";
+    }
 }
 
 void ControlTreeWidget::onCameraPresetClicked() {
-    // 카메라 프리셋 버튼 클릭 시 처리 (위에서 람다로 처리했으므로 비워둠)
+    QPushButton* button = qobject_cast<QPushButton*>(sender());
+    if (!button || !targetWidget_) {
+        return;
+    }
+    
+    QString presetName = button->text();
+    
+    if (presetName == "Reset Camera") {
+        targetWidget_->resetCamera();
+        qDebug() << "Camera reset";
+    } else if (presetName == "Top View") {
+        targetWidget_->setTopView(true);
+        qDebug() << "Top view activated";
+    }
+    // Add more camera presets as needed
 }
 
 } // namespace Widget
-
-// ✅ MOC 파일 포함 (Q_OBJECT 매크로 사용 시 필요)
-#include "control_tree_widget.moc"

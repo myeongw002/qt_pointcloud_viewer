@@ -26,7 +26,6 @@ add_executable(${PROJECT_NAME}
     src/main.cpp
     src/mainwindow.cpp
     src/pointcloud_widget.cpp
-    src/viewer_panel.cpp
     src/robot_select_dialog.cpp
     src/viewer_container.cpp
     src/viewer_window.cpp
@@ -40,7 +39,6 @@ add_executable(${PROJECT_NAME}
 # MOC 파일 자동 생성
 set(MOC_HEADERS include/${PROJECT_NAME}/mainwindow.hpp 
     include/${PROJECT_NAME}/pointcloud_widget.hpp 
-    include/${PROJECT_NAME}/viewer_panel.hpp
     include/${PROJECT_NAME}/robot_select_dialog.hpp
     include/${PROJECT_NAME}/viewer_container.hpp
     include/${PROJECT_NAME}/viewer_window.hpp

@@ -14,7 +14,6 @@
 
 // 프로젝트 헤더들
 #include "pointcloud_widget.hpp"
-#include "viewer_panel.hpp"
 #include "data_broker.hpp"
 #include "control_tree_widget.hpp"
 #include "debug_console_widget.hpp"
@@ -61,7 +60,6 @@ private:
     // 📺 뷰어 관련 멤버들
     // ============================================================================
     Widget::PointCloudWidget *viewer_;                                    // 메인 뷰어
-    std::vector<Widget::ViewerPanel*> panels_;                           // 뷰어 패널들
     const int panelCount_ = 6;                                          // 패널 개수
     QHash<QString, Widget::PointCloudWidget*> pointCloudWidgets_;       // 로봇별 위젯들
     

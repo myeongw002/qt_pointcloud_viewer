@@ -29,7 +29,12 @@ namespace Widget {
     public:
         explicit PointCloudWidget(QWidget *parent = nullptr);
         ~PointCloudWidget();
-        
+    
+        enum class PositionMarkerType {
+            CYLINDER,
+            AXES
+        };
+
         // ============================================================================
         // 🤖 로봇 관련 함수들
         // ============================================================================
@@ -78,7 +83,8 @@ namespace Widget {
         void setPathWidth(float width);
         float getPointSize() const { return pointSize_; }
         float getPathWidth() const { return pathWidth_; }
-    
+        void setPositionMarkerType(PositionMarkerType type);
+
     public slots:
         // ============================================================================
         // 📡 데이터 수신 슬롯들
@@ -179,10 +185,7 @@ namespace Widget {
         void drawCameraIndicator();
         
         // 위치 마커 관련
-        enum class PositionMarkerType {
-            CYLINDER,
-            AXES
-        };
+
         bool showPosition_ = true;
         PositionMarkerType positionMarkerType_ = PositionMarkerType::AXES;
         float currentPositionRadius_ = 0.3f;
@@ -191,7 +194,6 @@ namespace Widget {
         float positionAxesRadius_ = 0.03f;
         
         void drawPositions();
-        void setPositionMarkerType(PositionMarkerType type);
         void drawCylinderMarker(const glm::vec3& position, const glm::vec3& robotColor, const QString& robotName);
         void drawPositionAxes(const glm::vec3& position, const glm::quat& orientation, const QString& robotName);
         void drawCustomAxes(const glm::vec3& position, const glm::quat& orientation);

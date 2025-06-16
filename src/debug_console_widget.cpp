@@ -273,5 +273,3 @@ void DebugConsoleWidget::onWordWrapToggled(bool enabled) {
 }
 
 } // namespace Widget
-
-#include "debug_console_widget.moc"

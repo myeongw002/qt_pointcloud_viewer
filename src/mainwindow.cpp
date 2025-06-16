@@ -1,7 +1,6 @@
 #include "./ui_mainwindow.h"
 #include "mainwindow.hpp"
 #include "pointcloud_widget.hpp"
-#include "viewer_panel.hpp"
 #include "robot_select_dialog.hpp"
 #include "viewer_container.hpp"
 #include "control_tree_widget.hpp"
@@ -197,17 +196,17 @@ Widget::PointCloudWidget* MainWindow::getWidgetByName(const QString& robotName) 
     int widgetIndex = -1;
     
     if (robotName == "COMBINED") {
-        widgetIndex = 0;  // 좌상단
+        widgetIndex = 0; 
     } else if (robotName == "TUGV") {
-        widgetIndex = 1;  // 우상단
+        widgetIndex = 1; 
     } else if (robotName == "MUGV") {
-        widgetIndex = 2;  // 중앙좌
+        widgetIndex = 2;  
     } else if (robotName == "SUGV1") {
-        widgetIndex = 3;  // 중앙우
+        widgetIndex = 3; 
     } else if (robotName == "SUGV2") {
-        widgetIndex = 4;  // 하좌
+        widgetIndex = 4; 
     } else if (robotName == "SUAV") {
-        widgetIndex = 5;  // 하우
+        widgetIndex = 5; 
     }
     
     if (widgetIndex >= 0) {
@@ -232,16 +231,12 @@ Widget::PointCloudWidget* MainWindow::getWidgetByName(const QString& robotName) 
 // ✅ 기존 viewer panels 설정 (기존 코드를 함수로 분리)
 void MainWindow::setupViewerPanels() {
     try {
-        for (int i = 0; i < panelCount_; ++i) {
-            Widget::ViewerPanel* panel = new Widget::ViewerPanel(this);
-            
+        for (int i = 0; i < panelCount_; ++i) {            
             auto* viewer = qobject_cast<Widget::PointCloudWidget*>(
                 findChild<QWidget*>(QString("openGLWidget_%1").arg(i))
             );
             
-            if (viewer) {
-                panel->setPointCloudWidget(viewer);
-                
+            if (viewer) {                
                 // DataBroker와 연결
                 connect(broker_.get(), &DataBroker::cloudArrived,
                         viewer, &Widget::PointCloudWidget::onCloudShared,
@@ -250,9 +245,6 @@ void MainWindow::setupViewerPanels() {
                         viewer, &Widget::PointCloudWidget::onPathShared,
                         Qt::QueuedConnection);
             }
-            
-            panel->setPanelIdx_(i);
-            panels_.push_back(panel);
         }
     } catch (const std::exception &e) {
         std::cerr << "❌ Exception in creating ViewerPanel: " << e.what() << std::endl;
