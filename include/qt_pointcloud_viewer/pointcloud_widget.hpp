@@ -124,6 +124,7 @@ namespace Widget {
         void mouseReleaseEvent(QMouseEvent *event) override;
         void mouseMoveEvent(QMouseEvent *event) override;
         void wheelEvent(QWheelEvent *event) override;
+        void keyPressEvent(QKeyEvent *event) override;  // Added keyboard event handler
 
     private:
         // ============================================================================

@@ -1,9 +1,10 @@
 #include "pointcloud_widget.hpp"
 #include "shape_helper.hpp"
-#include <QDebug>  // Added for qDebug usage
+#include <QDebug>
 #include <QEvent>
 #include <QPainter>
 #include <QPaintEvent>
+#include <QKeyEvent>  // Added for keyboard events
 #include <QPen>
 #include <QBrush>
 #include <QFont>
@@ -20,6 +21,9 @@ PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
     lastMousePos_ = QPoint(0, 0);
     showIndicator_ = false;
     
+    // Enable keyboard focus for this widget
+    setFocusPolicy(Qt::StrongFocus);
+    
     // Same default values as ViewerSettings (redundant but maintains consistency)
     showPoints_ = true;
     showPath_ = true;
@@ -35,7 +39,7 @@ PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
     updateCameraPosition();
     initializeDefaultColors();
     
-    qDebug() << "PointCloudWidget created with standard defaults";
+    qDebug() << "PointCloudWidget created with keyboard support and standard defaults";
 }
 
 PointCloudWidget::~PointCloudWidget() {
@@ -392,6 +396,29 @@ void PointCloudWidget::setPositionMarkerType(PositionMarkerType type) {
 // Qt Event Overrides
 // ============================================================================
 
+void PointCloudWidget::keyPressEvent(QKeyEvent *event) {
+    switch (event->key()) {
+        case Qt::Key_Z:
+            // Reset camera to default position
+            resetCamera();
+            qDebug() << "Camera reset with Z key for robot:" << robotName_;
+            event->accept();
+            break;
+            
+        case Qt::Key_R:
+            // Additional: Reset colors with R key (optional)
+            resetAllColorsToDefault();
+            qDebug() << "Colors reset with R key for robot:" << robotName_;
+            event->accept();
+            break;
+            
+        default:
+            // Pass unhandled keys to parent
+            QOpenGLWidget::keyPressEvent(event);
+            break;
+    }
+}
+
 void PointCloudWidget::initializeGL() {
     initializeOpenGLFunctions();
     glEnable(GL_DEPTH_TEST);
@@ -441,6 +468,9 @@ void PointCloudWidget::paintEvent(QPaintEvent* event) {
 }
 
 void PointCloudWidget::mousePressEvent(QMouseEvent *event) {
+    // Set focus to this widget so it can receive keyboard events
+    setFocus();
+    
     lastMousePos_ = event->pos();
     showIndicator_ = true;
     hideTimer_.stop();
