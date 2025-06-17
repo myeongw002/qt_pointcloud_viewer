@@ -28,7 +28,7 @@ static QString robotToPathTopic(const QString& r)
 DataBroker::DataBroker(const QStringList& robots, QObject *parent)
     : QObject(parent), Node("qt_pointcloud_viewer", rclcpp::NodeOptions().use_intra_process_comms(true))
 {
-    for (const QString& r : robots) {  // 변수 선언 추가
+    for (const QString& r : robots) {  // Added variable declaration
         createPcdSub(r, robotToPcdTopic(r).toStdString());
         createPathSub(r, robotToPathTopic(r).toStdString());
     }
@@ -42,9 +42,9 @@ void DataBroker::createPcdSub(const QString& robot, const std::string& topic)
         topic, qos,
         [this, robot](const sensor_msgs::msg::PointCloud2::SharedPtr msg){
             auto tmp = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-            pcl::fromROSMsg(*msg, *tmp);               // 변환 1회
+            pcl::fromROSMsg(*msg, *tmp);               // Convert once
             CloudConstPtr cloud = tmp;
-            emit cloudArrived(robot, cloud);  // Qt → GUI 스레드
+            emit cloudArrived(robot, cloud);  // Qt → GUI thread
         });
     // qDebug() << "Subscribed to" << robot << "at" << QString::fromStdString(topic);
 }
@@ -55,8 +55,8 @@ void DataBroker::createPathSub(const QString& robot, const std::string& topic)
     pathSubs_[topic] = create_subscription<nav_msgs::msg::Path>(
         topic, qos,
         [this, robot](const nav_msgs::msg::Path::SharedPtr msg){
-            // Path 메시지를 vector로 변환
+            // Convert Path message to vector
             std::vector<geometry_msgs::msg::PoseStamped> pathVector = msg->poses;
-            emit pathArrived(robot, pathVector);  // vector로 변환해서 전송
+            emit pathArrived(robot, pathVector);  // Send converted vector
         });
 }

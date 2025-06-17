@@ -1,6 +1,6 @@
 #include "pointcloud_widget.hpp"
 #include "shape_helper.hpp"
-#include <QDebug>  // ✅ qDebug 사용을 위해 추가
+#include <QDebug>  // Added for qDebug usage
 #include <QEvent>
 #include <QPainter>
 #include <QPaintEvent>
@@ -13,14 +13,14 @@
 namespace Widget {
 
 // ============================================================================
-// 🏗️ 생성자 및 소멸자
+// Constructor and Destructor
 // ============================================================================
 
 PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
     lastMousePos_ = QPoint(0, 0);
     showIndicator_ = false;
     
-    // ✅ ViewerSettings와 동일한 기본값들 (중복이지만 일관성 유지)
+    // Same default values as ViewerSettings (redundant but maintains consistency)
     showPoints_ = true;
     showPath_ = true;
     showPosition_ = true;
@@ -44,7 +44,7 @@ PointCloudWidget::~PointCloudWidget() {
 }
 
 // ============================================================================
-// 🤖 로봇 관련 함수들
+// Robot Related Functions
 // ============================================================================
 
 void PointCloudWidget::setRobot(const QString& robot) {
@@ -53,25 +53,25 @@ void PointCloudWidget::setRobot(const QString& robot) {
 }
 
 // ============================================================================
-// 🎨 색상 관리 함수들
+// Color Management Functions
 // ============================================================================
 
 void PointCloudWidget::initializeDefaultColors() {
-    // 기본 포인트 색상들
-    robotPointsColors_["TUGV"] = glm::vec3(1.0f, 0.0f, 0.0f);    // 빨간색
-    robotPointsColors_["MUGV"] = glm::vec3(0.0f, 1.0f, 0.0f);    // 초록색
-    robotPointsColors_["SUGV1"] = glm::vec3(0.0f, 0.0f, 1.0f);   // 파란색
-    robotPointsColors_["SUGV2"] = glm::vec3(1.0f, 1.0f, 0.0f);   // 노란색
-    robotPointsColors_["SUAV"] = glm::vec3(1.0f, 0.0f, 1.0f);    // 보라색
-    robotPointsColors_["DEFAULT"] = glm::vec3(0.0f, 1.0f, 0.0f); // 기본 초록색
+    // Default point colors
+    robotPointsColors_["TUGV"] = glm::vec3(1.0f, 0.0f, 0.0f);    // Red
+    robotPointsColors_["MUGV"] = glm::vec3(0.0f, 1.0f, 0.0f);    // Green
+    robotPointsColors_["SUGV1"] = glm::vec3(0.0f, 0.0f, 1.0f);   // Blue
+    robotPointsColors_["SUGV2"] = glm::vec3(1.0f, 1.0f, 0.0f);   // Yellow
+    robotPointsColors_["SUAV"] = glm::vec3(1.0f, 0.0f, 1.0f);    // Magenta
+    robotPointsColors_["DEFAULT"] = glm::vec3(0.0f, 1.0f, 0.0f); // Default Green
     
-    // 기본 경로 색상들 (포인트보다 살짝 밝게)
-    robotPathColors_["TUGV"] = glm::vec3(1.0f, 0.5f, 0.5f);     // 연한 빨간색
-    robotPathColors_["MUGV"] = glm::vec3(0.5f, 1.0f, 0.5f);     // 연한 초록색
-    robotPathColors_["SUGV1"] = glm::vec3(0.5f, 0.5f, 1.0f);    // 연한 파란색
-    robotPathColors_["SUGV2"] = glm::vec3(1.0f, 1.0f, 0.5f);    // 연한 노란색
-    robotPathColors_["SUAV"] = glm::vec3(1.0f, 0.5f, 1.0f);     // 연한 보라색
-    robotPathColors_["DEFAULT"] = glm::vec3(0.5f, 1.0f, 0.5f);  // 기본 연한 초록색
+    // Default path colors (slightly brighter than points)
+    robotPathColors_["TUGV"] = glm::vec3(1.0f, 0.5f, 0.5f);     // Light Red
+    robotPathColors_["MUGV"] = glm::vec3(0.5f, 1.0f, 0.5f);     // Light Green
+    robotPathColors_["SUGV1"] = glm::vec3(0.5f, 0.5f, 1.0f);    // Light Blue
+    robotPathColors_["SUGV2"] = glm::vec3(1.0f, 1.0f, 0.5f);    // Light Yellow
+    robotPathColors_["SUAV"] = glm::vec3(1.0f, 0.5f, 1.0f);     // Light Magenta
+    robotPathColors_["DEFAULT"] = glm::vec3(0.5f, 1.0f, 0.5f);  // Default Light Green
 }
 
 void PointCloudWidget::setRobotPointsColor(const QString& robot, const glm::vec3& color) {
@@ -104,7 +104,7 @@ void PointCloudWidget::resetAllColorsToDefault() {
 }
 
 // ============================================================================
-// 📡 데이터 수신 슬롯들
+// Data Reception Slots
 // ============================================================================
 
 void PointCloudWidget::onCloudShared(const QString& robot, CloudConstPtr cloud) {
@@ -117,7 +117,7 @@ void PointCloudWidget::onPathShared(const QString& robot, PathConstPtr path) {
     std::lock_guard<std::mutex> lock(pathMutex_);
     paths_[robot] = path;
     
-    // 카메라 인디케이터가 이 로봇에 고정되어 있으면 위치 업데이트
+    // Update position if camera indicator is locked to this robot
     if (lockIndicatorToCurrentPosition_ && indicatorTargetRobot_ == robot) {
         QMetaObject::invokeMethod(this, [this]() {
             updateIndicatorPosition();
@@ -129,7 +129,7 @@ void PointCloudWidget::onPathShared(const QString& robot, PathConstPtr path) {
 }
 
 // ============================================================================
-// 📷 카메라 제어 함수들
+// Camera Control Functions
 // ============================================================================
 
 void PointCloudWidget::setFocusPoint(const glm::vec3& focus) {
@@ -143,13 +143,13 @@ void PointCloudWidget::setRotationSensitivity(float sensitivity) {
 }
 
 void PointCloudWidget::updateCameraPosition() {
-    // ROS 좌표계 기준으로 카메라 위치 계산
+    // Calculate camera position based on ROS coordinate system
     // ROS: X=forward, Y=left, Z=up
     float rosX = distance_ * cos(glm::radians(pitch_)) * cos(glm::radians(yaw_));  // forward
     float rosY = distance_ * cos(glm::radians(pitch_)) * sin(glm::radians(yaw_));  // left
     float rosZ = distance_ * sin(glm::radians(pitch_));                            // up
     
-    // ROS → OpenGL 좌표 변환
+    // ROS → OpenGL coordinate conversion
     float openglX = -rosY;  // ROS Y(left) → OpenGL -X(right)
     float openglY = rosZ;   // ROS Z(up) → OpenGL Y(up)
     float openglZ = -rosX;  // ROS X(forward) → OpenGL -Z(back)
@@ -191,28 +191,28 @@ void PointCloudWidget::restoreCameraState() {
 }
 
 void PointCloudWidget::updateTopViewCamera() {
-    // 탑뷰용 카메라 위치 계산 (yaw 회전 적용)
+    // Calculate top view camera position (with yaw rotation applied)
     float yawRad = glm::radians(yaw_);
     
-    // yaw에 따른 up 벡터 계산 (Z축 중심 회전)
+    // Calculate up vector based on yaw (rotation around Z-axis)
     glm::vec3 up = glm::vec3(-sin(yawRad), 0.0f, -cos(yawRad));
     
-    // 카메라는 항상 포커스 지점 바로 위에 위치
+    // Camera is always positioned directly above the focus point
     cameraPos_ = focusPoint_ + glm::vec3(0.0f, topViewHeight_, 0.0f);
     
-    // 뷰 매트릭스 계산 (yaw 회전이 적용된 up 벡터 사용)
+    // Calculate view matrix (using up vector with yaw rotation applied)
     viewMatrix_ = glm::lookAt(cameraPos_, focusPoint_, up);
 }
 
 void PointCloudWidget::resetCamera() {
     if (isTopView_) {
-        // 탑뷰 모드에서는 탑뷰 기본값으로 리셋
+        // Reset to top view defaults in top view mode
         focusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
         topViewHeight_ = 20.0f;
         topViewZoom_ = 1.0f;
         updateTopViewCamera();
     } else {
-        // 일반 모드에서는 일반 기본값으로 리셋
+        // Reset to normal defaults in normal mode
         focusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
         distance_ = 10.0f;
         yaw_ = 0.0f;
@@ -231,7 +231,7 @@ void PointCloudWidget::jumpToPosition(const glm::vec3& position) {
         updateCameraPosition();
     }
     
-    qDebug() << "📷 Camera jumped to position: (" 
+    qDebug() << "Camera jumped to position: (" 
              << position.x << "," << position.y << "," << position.z << ")";
     
     update();
@@ -239,19 +239,19 @@ void PointCloudWidget::jumpToPosition(const glm::vec3& position) {
 
 void PointCloudWidget::jumpToRobotPosition(const QString& robotName) {
     if (!hasValidCurrentPosition(robotName)) {
-        qDebug() << "❌ No valid position found for robot:" << robotName;
+        qDebug() << "No valid position found for robot:" << robotName;
         return;
     }
     
     glm::vec3 robotPos = getCurrentRobotPosition(robotName);
     jumpToPosition(robotPos);
     
-    qDebug() << "📷 Camera jumped to" << robotName 
+    qDebug() << "Camera jumped to" << robotName 
              << "at position (" << robotPos.x << "," << robotPos.y << "," << robotPos.z << ")";
 }
 
 // ============================================================================
-// 🎯 인디케이터 시스템
+// Indicator System
 // ============================================================================
 
 void PointCloudWidget::setLockIndicatorToCurrentPosition(bool lock) {
@@ -339,7 +339,7 @@ void PointCloudWidget::hideIndicator() {
 }
 
 // ============================================================================
-// 🎭 표시 옵션 함수들
+// Display Option Functions
 // ============================================================================
 
 void PointCloudWidget::setShowAxes(bool show) {
@@ -362,17 +362,17 @@ void PointCloudWidget::setShowPosition(bool show) {
     update();
 }
 
-// ✅ 새로 추가: 포인트 클라우드 표시 설정
+// Newly added: Point cloud display setting
 void PointCloudWidget::setShowPoints(bool show) {
     showPoints_ = show;
-    qDebug() << "🎯 Points display:" << (show ? "ON" : "OFF");
+    qDebug() << "Points display:" << (show ? "ON" : "OFF");
     update();
 }
 
-// ✅ 새로 추가: 경로 표시 설정
+// Newly added: Path display setting
 void PointCloudWidget::setShowPath(bool show) {
     showPath_ = show;
-    qDebug() << "📍 Path display:" << (show ? "ON" : "OFF");
+    qDebug() << "Path display:" << (show ? "ON" : "OFF");
     update();
 }
 
@@ -389,7 +389,7 @@ void PointCloudWidget::setPositionMarkerType(PositionMarkerType type) {
 }
 
 // ============================================================================
-// 🖥️ Qt 이벤트 오버라이드
+// Qt Event Overrides
 // ============================================================================
 
 void PointCloudWidget::initializeGL() {
@@ -410,7 +410,7 @@ void PointCloudWidget::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (isTopView_) {
-        // 탑뷰에서는 updateTopViewCamera에서 계산된 viewMatrix_ 사용
+        // In top view, use viewMatrix_ calculated in updateTopViewCamera
     } else {
         glm::vec3 openglUpVector = glm::vec3(0, 1, 0);
         viewMatrix_ = glm::lookAt(cameraPos_, focusPoint_, openglUpVector);
@@ -421,9 +421,9 @@ void PointCloudWidget::paintGL() {
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixf(glm::value_ptr(viewMatrix_));
 
-    // ✅ 조건부 렌더링: showPoints_와 showPath_ 확인
-    if (showPoints_) drawPoints();      // 포인트 클라우드 표시
-    if (showPath_) drawPath();          // 경로 표시
+    // Conditional rendering: check showPoints_ and showPath_
+    if (showPoints_) drawPoints();      // Display point cloud
+    if (showPath_) drawPath();          // Display path
     
     if (showPosition_) drawPositions();
     if (showAxes_) drawAxes();
@@ -525,28 +525,28 @@ void PointCloudWidget::wheelEvent(QWheelEvent *event) {
 }
 
 // ============================================================================
-// 🎨 렌더링 시스템
+// Rendering System
 // ============================================================================
 
 void PointCloudWidget::setPointSize(float size) {
     pointSize_ = glm::clamp(size, 0.5f, 10.0f);
-    qDebug() << "🔍 Point size set to:" << pointSize_;
+    qDebug() << "Point size set to:" << pointSize_;
     update();
 }
 
 void PointCloudWidget::setPathWidth(float width) {
     pathWidth_ = glm::clamp(width, 0.5f, 10.0f);
-    qDebug() << "📏 Path width set to:" << pathWidth_;
+    qDebug() << "Path width set to:" << pathWidth_;
     update();
 }
 
 void PointCloudWidget::drawPoints() {
-    // ✅ 추가 체크: showPoints_가 false면 렌더링하지 않음
+    // Additional check: don't render if showPoints_ is false
     if (!showPoints_) return;
     
     std::lock_guard<std::mutex> lock(cloudMutex_);
 
-    glPointSize(pointSize_);  // ✅ 동적 포인트 크기
+    glPointSize(pointSize_);  // Dynamic point size
     glBegin(GL_POINTS);
 
     for (auto it = clouds_.cbegin(); it != clouds_.cend(); ++it) {
@@ -578,12 +578,12 @@ void PointCloudWidget::drawPoints() {
 }
 
 void PointCloudWidget::drawPath() {
-    // ✅ 추가 체크: showPath_가 false면 렌더링하지 않음
+    // Additional check: don't render if showPath_ is false
     if (!showPath_) return;
     
     std::lock_guard<std::mutex> lock(pathMutex_);
     
-    glLineWidth(pathWidth_);  // ✅ 동적 경로 두께
+    glLineWidth(pathWidth_);  // Dynamic path width
     glBegin(GL_LINES);
     
     for (auto it = paths_.cbegin(); it != paths_.cend(); ++it) {
@@ -752,11 +752,11 @@ void PointCloudWidget::drawPositionAxes(const glm::vec3& position, const glm::qu
 }
 
 void PointCloudWidget::drawCustomAxes(const glm::vec3& position, const glm::quat& orientation) {
-    // 사용자 정의 축 그리기 (필요시 구현)
+    // Custom axes drawing (implement if needed)
 }
 
 // ============================================================================
-// 🏷️ 로봇 라벨 렌더링
+// Robot Label Rendering
 // ============================================================================
 
 void PointCloudWidget::drawRobotLabel(QPainter& painter) {

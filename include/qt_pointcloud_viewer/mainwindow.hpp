@@ -2,17 +2,17 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QDockWidget>      // ✅ 추가
-#include <QTabWidget>       // ✅ 추가
+#include <QDockWidget>      // Added
+#include <QTabWidget>       // Added
 #include <QHash>
-#include <QAction>          // ✅ 추가
-#include <QMenu>            // ✅ 추가
-#include <QMenuBar>         // ✅ 추가
+#include <QAction>          // Added
+#include <QMenu>            // Added
+#include <QMenuBar>         // Added
 #include <QVector3D>
 #include <rclcpp/rclcpp.hpp>
 #include <thread>
 
-// 프로젝트 헤더들
+// Project headers
 #include "pointcloud_widget.hpp"
 #include "data_broker.hpp"
 #include "control_tree_widget.hpp"
@@ -31,13 +31,13 @@ public:
 
 private slots:
     // ============================================================================
-    // 🎛️ 기본 슬롯들
+    // Basic Slots
     // ============================================================================
     void openNewViewer();
     void onControlTabChanged(int index);
     
     // ============================================================================
-    // 🖥️ 디버그 콘솔 슬롯들
+    // Debug Console Slots
     // ============================================================================
     void toggleDebugConsole();
     void showDebugConsole();
@@ -45,106 +45,106 @@ private slots:
 
 private:
     // ============================================================================
-    // 🏗️ UI 구조 멤버들
+    // UI Structure Members
     // ============================================================================
     Ui::MainWindow *ui_;
     
     // ============================================================================
-    // 🤖 ROS2 관련 멤버들
+    // ROS2 Related Members
     // ============================================================================
     rclcpp::Node::SharedPtr node_;
     std::shared_ptr<DataBroker> broker_;
     std::thread ros_thread_;
     
     // ============================================================================
-    // 📺 뷰어 관련 멤버들
+    // Viewer Related Members
     // ============================================================================
-    Widget::PointCloudWidget *viewer_;                                    // 메인 뷰어
-    const int panelCount_ = 6;                                          // 패널 개수
-    QHash<QString, Widget::PointCloudWidget*> pointCloudWidgets_;       // 로봇별 위젯들
+    Widget::PointCloudWidget *viewer_;                                    // Main viewer
+    const int panelCount_ = 6;                                          // Panel count
+    QHash<QString, Widget::PointCloudWidget*> pointCloudWidgets_;       // Robot-specific widgets
     
     // ============================================================================
-    // 🎛️ 제어 패널 관련 멤버들
+    // Control Panel Related Members
     // ============================================================================
-    QTabWidget* controlTabWidget_ = nullptr;                            // 제어 탭 위젯
-    QDockWidget* controlDockWidget_ = nullptr;                          // 제어 독 위젯
-    QHash<QString, Widget::ControlTreeWidget*> controlTrees_;           // 로봇별 TreeWidget들
+    QTabWidget* controlTabWidget_ = nullptr;                            // Control tab widget
+    QDockWidget* controlDockWidget_ = nullptr;                          // Control dock widget
+    QHash<QString, Widget::ControlTreeWidget*> controlTrees_;           // Robot-specific TreeWidgets
     
     // ============================================================================
-    // 🖥️ 디버그 콘솔 관련 멤버들
+    // Debug Console Related Members
     // ============================================================================
-    Widget::DebugConsoleWidget* debugConsole_ = nullptr;                // 디버그 콘솔 위젯
-    QDockWidget* debugConsoleDock_ = nullptr;                           // 디버그 콘솔 독 위젯
-    QAction* debugConsoleAction_ = nullptr;                             // 메뉴 액션
+    Widget::DebugConsoleWidget* debugConsole_ = nullptr;                // Debug console widget
+    QDockWidget* debugConsoleDock_ = nullptr;                           // Debug console dock widget
+    QAction* debugConsoleAction_ = nullptr;                             // Menu action
     
     // ============================================================================
-    // 📋 메뉴 관련 멤버들
+    // Menu Related Members
     // ============================================================================
-    QMenu* fileMenu_ = nullptr;                                         // 파일 메뉴
-    QMenu* viewMenu_ = nullptr;                                         // 뷰 메뉴
-    QMenu* toolsMenu_ = nullptr;                                        // 도구 메뉴
-    QMenu* helpMenu_ = nullptr;                                         // 도움말 메뉴
+    QMenu* fileMenu_ = nullptr;                                         // File menu
+    QMenu* viewMenu_ = nullptr;                                         // View menu
+    QMenu* toolsMenu_ = nullptr;                                        // Tools menu
+    QMenu* helpMenu_ = nullptr;                                         // Help menu
     
-    // 파일 메뉴 액션들
+    // File menu actions
     QAction* newViewerAction_ = nullptr;
     QAction* saveLogAction_ = nullptr;
     QAction* exitAction_ = nullptr;
     
-    // 뷰 메뉴 액션들
+    // View menu actions
     QAction* showControlPanelAction_ = nullptr;
     QAction* resetLayoutAction_ = nullptr;
     
-    // 도구 메뉴 액션들
+    // Tools menu actions
     QAction* resetAllCamerasAction_ = nullptr;
     QAction* resetAllColorsAction_ = nullptr;
     
     // ============================================================================
-    // 🏗️ 초기화 함수들
+    // Initialization Functions
     // ============================================================================
-    void setupUI();                              // 전체 UI 설정
-    void setupMenuBar();                         // 메뉴바 설정
-    void setupStatusBar();                       // 상태바 설정
-    void setupPointCloudWidgets();               // 포인트클라우드 위젯들 설정
-    void setupViewerPanels();                    // 뷰어 패널들 설정
-    void setupControlPanel();                    // 제어 패널 설정
-    void setupDebugConsole();                    // 디버그 콘솔 설정
+    void setupUI();                              // Overall UI setup
+    void setupMenuBar();                         // Menu bar setup
+    void setupStatusBar();                       // Status bar setup
+    void setupPointCloudWidgets();               // Point cloud widgets setup
+    void setupViewerPanels();                    // Viewer panels setup
+    void setupControlPanel();                    // Control panel setup
+    void setupDebugConsole();                    // Debug console setup
     
     // ============================================================================
-    // 🔧 헬퍼 함수들
+    // Helper Functions
     // ============================================================================
-    void createControlTrees();                   // 제어 트리들 생성
-    void connectControlSignals();                // 제어 시그널 연결
-    void connectMenuActions();                   // 메뉴 액션 연결
+    void createControlTrees();                   // Create control trees
+    void connectControlSignals();                // Connect control signals
+    void connectMenuActions();                   // Connect menu actions
     
-    // 위젯 검색 함수들
+    // Widget search functions
     Widget::PointCloudWidget* getWidgetByName(const QString& robotName);
     Widget::PointCloudWidget* findPointCloudWidget(const QString& objectName);
     
-    // 레이아웃 관리 함수들
-    void saveLayout();                           // 레이아웃 저장
-    void restoreLayout();                        // 레이아웃 복원
-    void resetToDefaultLayout();                 // 기본 레이아웃으로 리셋
+    // Layout management functions
+    void saveLayout();                           // Save layout
+    void restoreLayout();                        // Restore layout
+    void resetToDefaultLayout();                 // Reset to default layout
     
     // ============================================================================
-    // 🎯 유틸리티 함수들
+    // Utility Functions
     // ============================================================================
-    void updateStatusBar(const QString& message);               // 상태바 업데이트
+    void updateStatusBar(const QString& message);               // Update status bar
     void logToConsole(const QString& message, 
                      Widget::DebugConsoleWidget::LogLevel level = 
-                     Widget::DebugConsoleWidget::INFO);         // 콘솔 로그
+                     Widget::DebugConsoleWidget::INFO);         // Console log
     
-    // 설정 관리
-    void loadSettings();                         // 설정 로드
-    void saveSettings();                         // 설정 저장
+    // Settings management
+    void loadSettings();                         // Load settings
+    void saveSettings();                         // Save settings
     
 protected:
     // ============================================================================
-    // 🖥️ 이벤트 오버라이드
+    // Event Overrides
     // ============================================================================
-    void closeEvent(QCloseEvent* event) override;               // 창 닫기 이벤트
-    void resizeEvent(QResizeEvent* event) override;             // 크기 변경 이벤트
-    void showEvent(QShowEvent* event) override;                 // 표시 이벤트
-    void keyPressEvent(QKeyEvent* event) override;              // 키 입력 이벤트
+    void closeEvent(QCloseEvent* event) override;               // Window close event
+    void resizeEvent(QResizeEvent* event) override;             // Resize event
+    void showEvent(QShowEvent* event) override;                 // Show event
+    void keyPressEvent(QKeyEvent* event) override;              // Key press event
 };
 
 #endif // MAINWINDOW_H

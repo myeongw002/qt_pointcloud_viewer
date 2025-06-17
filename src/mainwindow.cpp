@@ -6,7 +6,7 @@
 #include "control_tree_widget.hpp"
 #include "debug_console_widget.hpp"
 #include "viewer_settings_manager.hpp"
-// ✅ Qt 위젯 헤더들 추가
+// Qt widget headers
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QLabel>
@@ -14,16 +14,16 @@
 #include <QComboBox>    
 #include <QTextEdit>
 #include <QDebug>
-#include <QMenuBar>        // ✅ QMenuBar 헤더 추가
-#include <QMenu>           // ✅ QMenu 헤더 추가
-#include <QAction>         // ✅ QAction 헤더 추가 (이미 있을 수 있음)
-#include <QDockWidget>     // ✅ QDockWidget 헤더 추가
-#include <QKeySequence>    // ✅ QKeySequence 헤더 추가
-#include <QTabWidget>      // ✅ QTabWidget 헤더 추가
+#include <QMenuBar>        // QMenuBar header
+#include <QMenu>           // QMenu header
+#include <QAction>         // QAction header (may already exist)
+#include <QDockWidget>     // QDockWidget header
+#include <QKeySequence>    // QKeySequence header
+#include <QTabWidget>      // QTabWidget header
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui_(new Ui::MainWindow)  // ✅ ui_ 초기화 수정
+    , ui_(new Ui::MainWindow)  // ui_ initialization fix
     , debugConsole_(nullptr)
     , debugConsoleDock_(nullptr)
     , debugConsoleAction_(nullptr)
@@ -32,17 +32,17 @@ MainWindow::MainWindow(QWidget *parent)
         std::cout << "Setting up UI..." << std::endl;
         ui_->setupUi(this);
         
-        // ✅ PointCloudWidget들을 해시맵에 저장
+        // Store PointCloudWidgets in hash map
         setupPointCloudWidgets();
         
-        // ✅ 제어 패널 설정
+        // Setup control panel
         setupControlPanel();
         
-        // ✅ 디버그 콘솔 설정 추가
+        // Setup debug console
         setupDebugConsole();
         
     } catch (const std::exception &e) {
-        std::cerr << "❌ Exception in setupUi(): " << e.what() << std::endl;
+        std::cerr << "Exception in setupUi(): " << e.what() << std::endl;
     }
 
     ui_->dockWidget->setVisible(false);
@@ -56,14 +56,14 @@ MainWindow::MainWindow(QWidget *parent)
                 QStringList{"TUGV","MUGV","SUGV1","SUGV2","SUAV"},
                 this);
 
-    // 기존 panels_ 설정 코드...
+    // Existing panels_ setup code...
     setupViewerPanels();
     
     ros_thread_ = std::thread([this](){ rclcpp::spin(broker_); });
 }
 
 MainWindow::~MainWindow() {
-    // 디버그 콘솔 정리
+    // Debug console cleanup
     if (debugConsole_) {
         delete debugConsole_;
     }
@@ -75,7 +75,7 @@ MainWindow::~MainWindow() {
     delete ui_;
 }
 
-// ✅ PointCloudWidget들 설정
+// Setup PointCloudWidgets
 void MainWindow::setupPointCloudWidgets() {
     QStringList robotNames = {"COMBINED", "TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
     
@@ -90,7 +90,7 @@ void MainWindow::setupPointCloudWidgets() {
             pointCloudWidgets_[robotName] = viewer;
             viewer->setRobot(robotName);
             
-            // ✅ 단순히 등록만 하면 됨 (올바른 기본값이 자동 적용됨)
+            // Simply register (proper default values are automatically applied)
             Widget::ViewerSettingsManager::instance()->registerWidget(robotName, viewer);
             
             std::cout << "Found PointCloudWidget for " << robotName.toStdString() 
@@ -100,102 +100,102 @@ void MainWindow::setupPointCloudWidgets() {
         }
     }
     
-    qDebug() << "✅ All widgets initialized with proper default settings";
+    qDebug() << "All widgets initialized with proper default settings";
 }
 
-// ✅ 제어 패널 설정
+// Setup control panel
 void MainWindow::setupControlPanel() {
-    // Qt Designer에서 생성된 위젯들 가져오기
+    // Get widgets created from Qt Designer
     controlDockWidget_ = ui_->dockWidget;
     controlTabWidget_ = ui_->tabWidget;
     
     if (!controlDockWidget_ || !controlTabWidget_) {
-        std::cerr << "❌ Control widgets not found in UI file!" << std::endl;
+        std::cerr << "Control widgets not found in UI file!" << std::endl;
         return;
     }
     
-    // ✅ 탭 순서: COMBINED, TUGV, MUGV, SUGV1, SUGV2, SUAV (좌상단부터 오른쪽으로)
+    // Tab order: COMBINED, TUGV, MUGV, SUGV1, SUGV2, SUAV (from top-left to right)
     QStringList robotNames = {"COMBINED", "TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
     
-    // 기존 탭들 제거
+    // Remove existing tabs
     controlTabWidget_->clear();
     
     for (int i = 0; i < robotNames.size(); ++i) {
         const QString& robotName = robotNames[i];
         
-        // TreeWidget 생성
+        // Create TreeWidget
         Widget::ControlTreeWidget* treeWidget = new Widget::ControlTreeWidget(this);
         treeWidget->setRobotName(robotName);
         
-        // ✅ MainWindow 참조 설정
+        // Set MainWindow reference
         treeWidget->setMainWindow(this);
         
-        // 해당 PointCloudWidget과 연결
+        // Connect to corresponding PointCloudWidget
         Widget::PointCloudWidget* targetWidget = getWidgetByName(robotName);
         if (targetWidget) {
             treeWidget->setTargetWidget(targetWidget);
-            std::cout << "✅ Connected TreeWidget to " << robotName.toStdString() 
+            std::cout << "Connected TreeWidget to " << robotName.toStdString() 
                       << " (tab index: " << i << ")" << std::endl;
         } else {
-            std::cerr << "❌ Could not find PointCloudWidget for " << robotName.toStdString() << std::endl;
+            std::cerr << "Could not find PointCloudWidget for " << robotName.toStdString() << std::endl;
         }
         
-        // 새 탭 생성
+        // Create new tab
         QWidget* tabPage = new QWidget();
         QVBoxLayout* layout = new QVBoxLayout(tabPage);
         layout->setContentsMargins(5, 5, 5, 5);
         layout->addWidget(treeWidget);
         
-        // ✅ 탭에 추가 (순서 보장)
+        // Add to tab (order guaranteed)
         controlTabWidget_->addTab(tabPage, robotName);
         
-        // TreeWidget 저장
+        // Store TreeWidget
         controlTrees_[robotName] = treeWidget;
     }
     
-    // 탭 변경 시 이벤트 연결
+    // Connect tab change event
     connect(controlTabWidget_, &QTabWidget::currentChanged, 
             this, &MainWindow::onControlTabChanged);
     
-    std::cout << "✅ Control panel setup complete with " << robotNames.size() << " tabs" << std::endl;
+    std::cout << "Control panel setup complete with " << robotNames.size() << " tabs" << std::endl;
 }
 
-// ✅ 제어 TreeWidget들 생성
+// Create control TreeWidgets
 void MainWindow::createControlTrees() {
     QStringList robotNames = {"COMBINED", "TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
     
-    // 기존 탭들 제거
+    // Remove existing tabs
     controlTabWidget_->clear();
     
     for (const QString& robotName : robotNames) {
-        // TreeWidget 생성
+        // Create TreeWidget
         Widget::ControlTreeWidget* treeWidget = new Widget::ControlTreeWidget(this);
         treeWidget->setRobotName(robotName);
         
-        // 해당 PointCloudWidget과 연결
+        // Connect to corresponding PointCloudWidget
         Widget::PointCloudWidget* targetWidget = getWidgetByName(robotName);
         if (targetWidget) {
             treeWidget->setTargetWidget(targetWidget);
-            std::cout << "✅ Connected TreeWidget to " << robotName.toStdString() << std::endl;
+            std::cout << "Connected TreeWidget to " << robotName.toStdString() << std::endl;
         }
         
-        // 새 탭 생성
+        // Create new tab
         QWidget* tabPage = new QWidget();
         QVBoxLayout* layout = new QVBoxLayout(tabPage);
         layout->setContentsMargins(5, 5, 5, 5);
         layout->addWidget(treeWidget);
         
-        // 탭에 추가
+        // Add to tab
         controlTabWidget_->addTab(tabPage, robotName);
         
-        // TreeWidget 저장
+        // Store TreeWidget
         controlTrees_[robotName] = treeWidget;
     }
 }
 
-// ✅ 로봇 이름으로 PointCloudWidget 찾기
+// Find PointCloudWidget by robot name
 Widget::PointCloudWidget* MainWindow::getWidgetByName(const QString& robotName) {
-    // ✅ 탭 순서에 맞게 매핑: COMBINED(0), TUGV(1), MUGV(2), SUGV1(3), SUGV2(4), SUAV(5)
+    // Map according to tab order: COMBINED(0), TUGV(1), MUGV(2), SUGV1(3), SUGV2(4), SUAV(5)
     int widgetIndex = -1;
     
     if (robotName == "COMBINED") {
@@ -218,10 +218,10 @@ Widget::PointCloudWidget* MainWindow::getWidgetByName(const QString& robotName) 
         );
         
         if (widget) {
-            std::cout << "✅ Found widget for " << robotName.toStdString() 
+            std::cout << "Found widget for " << robotName.toStdString() 
                       << " at openGLWidget_" << widgetIndex << std::endl;
         } else {
-            std::cerr << "❌ Widget openGLWidget_" << widgetIndex 
+            std::cerr << "Widget openGLWidget_" << widgetIndex 
                       << " not found for " << robotName.toStdString() << std::endl;
         }
         
@@ -231,7 +231,7 @@ Widget::PointCloudWidget* MainWindow::getWidgetByName(const QString& robotName) 
     return nullptr;
 }
 
-// ✅ 기존 viewer panels 설정 (기존 코드를 함수로 분리)
+// Setup existing viewer panels (separated existing code into function)
 void MainWindow::setupViewerPanels() {
     try {
         for (int i = 0; i < panelCount_; ++i) {            
@@ -240,7 +240,7 @@ void MainWindow::setupViewerPanels() {
             );
             
             if (viewer) {                
-                // DataBroker와 연결
+                // Connect to DataBroker
                 connect(broker_.get(), &DataBroker::cloudArrived,
                         viewer, &Widget::PointCloudWidget::onCloudShared,
                         Qt::QueuedConnection);
@@ -250,19 +250,19 @@ void MainWindow::setupViewerPanels() {
             }
         }
     } catch (const std::exception &e) {
-        std::cerr << "❌ Exception in creating ViewerPanel: " << e.what() << std::endl;
+        std::cerr << "Exception in creating ViewerPanel: " << e.what() << std::endl;
     }
 }
 
-// ✅ 제어 탭 변경 이벤트
+// Control tab change event
 void MainWindow::onControlTabChanged(int index) {
     QString tabName = controlTabWidget_->tabText(index);
-    std::cout << "📑 Control tab changed to: " << tabName.toStdString() << std::endl;
+    std::cout << "Control tab changed to: " << tabName.toStdString() << std::endl;
     
-    // 현재 탭의 TreeWidget 활성화
+    // Activate current tab's TreeWidget
     if (controlTrees_.contains(tabName)) {
         Widget::ControlTreeWidget* currentTree = controlTrees_[tabName];
-        // 필요한 경우 추가 설정
+        // Additional settings if needed
     }
 }
 
@@ -304,30 +304,30 @@ void MainWindow::openNewViewer() {
     }, Qt::QueuedConnection);
 }
 
-// 디버그 콘솔 설정
+// Setup debug console
 void MainWindow::setupDebugConsole() {
-    // 디버그 콘솔 위젯 생성
+    // Create debug console widget
     debugConsole_ = new Widget::DebugConsoleWidget(this);
     
-    // 도킹 위젯으로 감싸기
+    // Wrap with dock widget
     debugConsoleDock_ = new QDockWidget("Debug Console", this);
     debugConsoleDock_->setWidget(debugConsole_);
     debugConsoleDock_->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::RightDockWidgetArea);
     
-    // 메인 윈도우에 도킹 위젯 추가
+    // Add dock widget to main window
     addDockWidget(Qt::BottomDockWidgetArea, debugConsoleDock_);
     
-    // 초기에는 숨김
+    // Initially hidden
     debugConsoleDock_->hide();
     
-    // ✅ 메뉴바 처리 개선
-    QMenuBar* mainMenuBar = menuBar();  // 메뉴바 포인터 얻기
+    // Improved menu bar handling
+    QMenuBar* mainMenuBar = menuBar();  // Get menu bar pointer
     
     if (mainMenuBar) {
-        // View 메뉴 찾기 또는 생성
+        // Find or create View menu
         QMenu* viewMenu = nullptr;
         
-        // 기존 메뉴들 중에서 View 메뉴 찾기
+        // Find View menu among existing menus
         QList<QAction*> menuActions = mainMenuBar->actions();
         for (QAction* action : menuActions) {
             if (action->text() == "View" || action->text() == "&View") {
@@ -336,15 +336,15 @@ void MainWindow::setupDebugConsole() {
             }
         }
         
-        // View 메뉴가 없으면 새로 생성
+        // Create new View menu if not found
         if (!viewMenu) {
             viewMenu = mainMenuBar->addMenu("&View");
-            qDebug() << "✅ Created new View menu";
+            qDebug() << "Created new View menu";
         } else {
-            qDebug() << "✅ Found existing View menu";
+            qDebug() << "Found existing View menu";
         }
         
-        // 디버그 콘솔 토글 액션 추가
+        // Add debug console toggle action
         debugConsoleAction_ = viewMenu->addAction("&Debug Console");
         debugConsoleAction_->setCheckable(true);
         debugConsoleAction_->setShortcut(QKeySequence("F12"));
@@ -353,59 +353,59 @@ void MainWindow::setupDebugConsole() {
         connect(debugConsoleAction_, &QAction::triggered, 
                 this, &MainWindow::toggleDebugConsole);
                 
-        qDebug() << "✅ Debug console action added to View menu";
+        qDebug() << "Debug console action added to View menu";
     } else {
-        qDebug() << "❌ Could not access menu bar";
+        qDebug() << "Could not access menu bar";
     }
     
-    // 도킹 위젯 표시/숨김과 액션 상태 동기화
+    // Synchronize dock widget show/hide with action state
     connect(debugConsoleDock_, &QDockWidget::visibilityChanged, 
             [this](bool visible) {
         if (debugConsoleAction_) {
             debugConsoleAction_->setChecked(visible);
         }
-        qDebug() << "🖥️ Debug console visibility:" << (visible ? "SHOWN" : "HIDDEN");
+        qDebug() << "Debug console visibility:" << (visible ? "SHOWN" : "HIDDEN");
     });
     
-    qDebug() << "✅ Debug console setup completed";
+    qDebug() << "Debug console setup completed";
 }
 
 void MainWindow::toggleDebugConsole() {
     if (debugConsoleDock_) {
         if (debugConsoleDock_->isVisible()) {
             debugConsoleDock_->hide();
-            qDebug() << "🖥️ Debug console hidden";
+            qDebug() << "Debug console hidden";
         } else {
             debugConsoleDock_->show();
-            debugConsoleDock_->raise();  // 앞으로 가져오기
-            qDebug() << "🖥️ Debug console shown";
+            debugConsoleDock_->raise();  // Bring to front
+            qDebug() << "Debug console shown";
         }
     } else {
-        qDebug() << "❌ Debug console dock widget not found";
+        qDebug() << "Debug console dock widget not found";
     }
 }
 
-// ✅ 추가 디버그 콘솔 슬롯들 구현
+// Additional debug console slots implementation
 void MainWindow::showDebugConsole() {
     if (debugConsoleDock_) {
         debugConsoleDock_->show();
         debugConsoleDock_->raise();
-        qDebug() << "🖥️ Debug console shown (explicit)";
+        qDebug() << "Debug console shown (explicit)";
     }
 }
 
 void MainWindow::hideDebugConsole() {
     if (debugConsoleDock_) {
         debugConsoleDock_->hide();
-        qDebug() << "🖥️ Debug console hidden (explicit)";
+        qDebug() << "Debug console hidden (explicit)";
     }
 }
 
-// ✅ 유틸리티 함수들 구현
+// Utility functions implementation
 void MainWindow::updateStatusBar(const QString& message) {
     if (statusBar()) {
-        statusBar()->showMessage(message, 3000);  // 3초간 표시
-        qDebug() << "📊 Status:" << message;
+        statusBar()->showMessage(message, 3000);  // Show for 3 seconds
+        qDebug() << "Status:" << message;
     }
 }
 
@@ -413,7 +413,7 @@ void MainWindow::logToConsole(const QString& message, Widget::DebugConsoleWidget
     if (debugConsole_) {
         debugConsole_->appendLog(message, level);
     } else {
-        // 폴백: qDebug로 출력
+        // Fallback: output to qDebug
         switch (level) {
             case Widget::DebugConsoleWidget::DEBUG:
                 qDebug() << message;
@@ -435,31 +435,31 @@ Widget::PointCloudWidget* MainWindow::findPointCloudWidget(const QString& object
     return qobject_cast<Widget::PointCloudWidget*>(findChild<QWidget*>(objectName));
 }
 
-// ✅ 설정 관리 함수들 구현
+// Settings management functions implementation
 void MainWindow::saveSettings() {
-    // QSettings로 창 상태 저장
-    // 나중에 구현
-    qDebug() << "💾 Settings saved";
+    // Save window state with QSettings
+    // To be implemented later
+    qDebug() << "Settings saved";
 }
 
 void MainWindow::loadSettings() {
-    // QSettings로 창 상태 복원
-    // 나중에 구현
-    qDebug() << "📂 Settings loaded";
+    // Restore window state with QSettings
+    // To be implemented later
+    qDebug() << "Settings loaded";
 }
 
 void MainWindow::resetToDefaultLayout() {
-    // 기본 레이아웃으로 리셋
+    // Reset to default layout
     if (debugConsoleDock_) {
         debugConsoleDock_->hide();
     }
     if (controlDockWidget_) {
         controlDockWidget_->show();
     }
-    qDebug() << "🔄 Layout reset to default";
+    qDebug() << "Layout reset to default";
 }
 
-// ✅ 이벤트 오버라이드들
+// Event overrides
 void MainWindow::closeEvent(QCloseEvent* event) {
     saveSettings();
     QMainWindow::closeEvent(event);
@@ -478,7 +478,7 @@ void MainWindow::showEvent(QShowEvent* event) {
 }
 
 void MainWindow::keyPressEvent(QKeyEvent* event) {
-    // F12 키로 디버그 콘솔 토글
+    // Toggle debug console with F12 key
     if (event->key() == Qt::Key_F12) {
         toggleDebugConsole();
         event->accept();

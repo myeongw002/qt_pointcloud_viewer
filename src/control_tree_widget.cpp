@@ -14,14 +14,14 @@
 
 namespace Widget {
 
-// ✅ 상수 정의 수정
+// Constant definitions modification
 const QStringList ControlTreeWidget::ROBOT_NAMES = {"COMBINED", "TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
 const QStringList ControlTreeWidget::ROBOT_COLORS = {"#888888", "#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"};
 
 ControlTreeWidget::ControlTreeWidget(QWidget* parent) 
     : QTreeWidget(parent), targetWidget_(nullptr), mainWindow_(nullptr) {
     
-    // 트리 기본 설정
+    // Tree basic configuration
     setHeaderLabels({"Property", "Value"});
     setColumnWidth(0, 200);
     setColumnWidth(1, 150);
@@ -29,23 +29,20 @@ ControlTreeWidget::ControlTreeWidget(QWidget* parent)
     setRootIsDecorated(true);
     setIndentation(15);
     
-    // ✅ 스타일 설정 제거 (Qt 기본 테마 사용)
-    // setStyleSheet(...) 코드 삭제
-    
-    // 초기 트리 구조 설정
+    // Initial tree structure setup
     setupTreeStructure();
     
-    // 시그널 연결
+    // Signal connections
     connect(this, &QTreeWidget::itemChanged, this, &ControlTreeWidget::onItemChanged);
 }
 
 void ControlTreeWidget::setRobotName(const QString& robotName) {
     robotName_ = robotName;
     
-    // 기존 트리 클리어
+    // Clear existing tree
     clear();
     
-    // 로봇 타입에 따라 다른 트리 구성
+    // Different tree configuration based on robot type
     if (robotName == "COMBINED") {
         setupCombinedModeTree();
     } else {
@@ -56,33 +53,33 @@ void ControlTreeWidget::setRobotName(const QString& robotName) {
 void ControlTreeWidget::setTargetWidget(PointCloudWidget* widget) {
     targetWidget_ = widget;
     
-    // 현재 설정값들로 UI 동기화
+    // Synchronize UI with current setting values
     if (targetWidget_) {
         syncWithWidget();
     }
 }
 
-// ✅ MainWindow 참조 설정
+// Set MainWindow reference
 void ControlTreeWidget::setMainWindow(QMainWindow* mainWindow) {
     mainWindow_ = mainWindow;
 }
 
 void ControlTreeWidget::setupTreeStructure() {
-    // 메인 그룹들 생성
-    viewGroup_ = new QTreeWidgetItem(this, {"🎭 View Settings"});
-    robotGroup_ = new QTreeWidgetItem(this, {"🤖 Robot Settings"});
-    displayGroup_ = new QTreeWidgetItem(this, {"🎨 Display Settings"});
-    cameraGroup_ = new QTreeWidgetItem(this, {"📷 Camera Controls"});
-    indicatorGroup_ = new QTreeWidgetItem(this, {"📍 Indicator Controls"});
+    // Create main groups
+    viewGroup_ = new QTreeWidgetItem(this, {"View Settings"});
+    robotGroup_ = new QTreeWidgetItem(this, {"Robot Settings"});
+    displayGroup_ = new QTreeWidgetItem(this, {"Display Settings"});
+    cameraGroup_ = new QTreeWidgetItem(this, {"Camera Controls"});
+    indicatorGroup_ = new QTreeWidgetItem(this, {"Indicator Controls"});
     
-    // 그룹들 확장 상태 설정
+    // Set group expansion state
     viewGroup_->setExpanded(true);
     robotGroup_->setExpanded(true);
     displayGroup_->setExpanded(false);
     cameraGroup_->setExpanded(false);
     indicatorGroup_->setExpanded(false);
     
-    // 각 그룹에 컨트롤들 추가
+    // Add controls to each group
     addViewControls(viewGroup_);
     addRobotControls(robotGroup_);
     addDisplayControls(displayGroup_);
@@ -93,7 +90,7 @@ void ControlTreeWidget::setupTreeStructure() {
 void ControlTreeWidget::setupSingleRobotTree() {
     setupTreeStructure();
     
-    // 단일 로봇 모드에서는 로봇 선택 콤보박스 숨기기
+    // Hide robot selection combo box in single robot mode
     if (robotGroup_) {
         for (int i = 0; i < robotGroup_->childCount(); ++i) {
             QTreeWidgetItem* child = robotGroup_->child(i);
@@ -108,12 +105,12 @@ void ControlTreeWidget::setupSingleRobotTree() {
 void ControlTreeWidget::setupCombinedModeTree() {
     setupTreeStructure();
     
-    // COMBINED 모드에서는 모든 컨트롤 표시
-    // 특별한 설정이 필요한 경우 여기서 처리
+    // Show all controls in COMBINED mode
+    // Handle special settings here if needed
 }
 
 void ControlTreeWidget::addViewControls(QTreeWidgetItem* parent) {
-    // 탑뷰 모드 토글
+    // Top view mode toggle
     auto topViewItem = new QTreeWidgetItem(parent, {"Top View Mode"});
     auto topViewCheck = createCheckBox(false, [this](bool checked) {
         if (targetWidget_) {
@@ -125,7 +122,7 @@ void ControlTreeWidget::addViewControls(QTreeWidgetItem* parent) {
     });
     setItemWidget(topViewItem, 1, topViewCheck);
     
-    // 축 표시 토글
+    // Axes display toggle
     auto axesItem = new QTreeWidgetItem(parent, {"Show Axes"});
     auto axesCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
@@ -137,7 +134,7 @@ void ControlTreeWidget::addViewControls(QTreeWidgetItem* parent) {
     });
     setItemWidget(axesItem, 1, axesCheck);
     
-    // 그리드 표시 토글
+    // Grid display toggle
     auto gridItem = new QTreeWidgetItem(parent, {"Show Grid"});
     auto gridCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
@@ -149,7 +146,7 @@ void ControlTreeWidget::addViewControls(QTreeWidgetItem* parent) {
     });
     setItemWidget(gridItem, 1, gridCheck);
     
-    // 로봇 라벨 표시 토글
+    // Robot label display toggle
     auto labelItem = new QTreeWidgetItem(parent, {"Show Robot Labels"});
     auto labelCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
@@ -161,7 +158,7 @@ void ControlTreeWidget::addViewControls(QTreeWidgetItem* parent) {
     });
     setItemWidget(labelItem, 1, labelCheck);
     
-    // 현재 위치 마커 표시
+    // Current position marker display
     auto positionItem = new QTreeWidgetItem(parent, {"Show Current Position"});
     auto positionCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
@@ -175,7 +172,7 @@ void ControlTreeWidget::addViewControls(QTreeWidgetItem* parent) {
 }
 
 void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
-    // 현재 로봇 선택 (COMBINED 모드가 아닐 때만)
+    // Current robot selection (only when not in COMBINED mode)
     if (robotName_ != "COMBINED") {
         auto robotSelectItem = new QTreeWidgetItem(parent, {"Current Robot"});
         auto robotCombo = new QComboBox();
@@ -189,18 +186,18 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
         setItemWidget(robotSelectItem, 1, robotCombo);
     }
     
-    // 로봇별 색상 설정
-    auto colorsSubGroup = new QTreeWidgetItem(parent, {"🎨 Robot Colors"});
+    // Robot color settings by robot
+    auto colorsSubGroup = new QTreeWidgetItem(parent, {"Robot Colors"});
     
     for (int i = 1; i < ROBOT_NAMES.size(); ++i) {
         const QString& robot = ROBOT_NAMES[i];
         const QString& colorHex = ROBOT_COLORS[i];
         QColor color(colorHex);
         
-        // ✅ Calculate path color (lighter version of points color)
+        // Calculate path color (lighter version of points color)
         QColor pathColor = color.lighter(150); // Make path color 50% lighter
         
-        // 포인트 색상
+        // Point color
         auto pointColorItem = new QTreeWidgetItem(colorsSubGroup, {robot + " Points"});
         auto pointColorBtn = createButton("", [this, robot]() {
             QColor newColor = QColorDialog::getColor();
@@ -211,7 +208,7 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
                 // Add synchronization
                 ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
                 
-                // 버튼 색상 업데이트
+                // Update button color
                 auto btn = qobject_cast<QPushButton*>(sender());
                 if (btn) {
                     btn->setStyleSheet(QString("background-color: %1; border: 2px solid white;")
@@ -226,7 +223,7 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
         setItemWidget(pointColorItem, 1, pointColorBtn);
         colorButtons_[robot + "_points"] = pointColorBtn;
         
-        // 경로 색상
+        // Path color
         auto pathColorItem = new QTreeWidgetItem(colorsSubGroup, {robot + " Path"});
         auto pathColorBtn = createButton("", [this, robot]() {
             QColor newColor = QColorDialog::getColor();
@@ -237,7 +234,7 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
                 // Add synchronization
                 ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
                 
-                // 버튼 색상 업데이트
+                // Update button color
                 auto btn = qobject_cast<QPushButton*>(sender());
                 if (btn) {
                     btn->setStyleSheet(QString("background-color: %1; border: 2px solid white;")
@@ -247,14 +244,14 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
             }
         });
         pathColorBtn->setFixedSize(40, 25);
-        // ✅ Fixed: Use pathColor variable instead of undefined pathColor
+        // Fixed: Use pathColor variable instead of undefined pathColor
         pathColorBtn->setStyleSheet(QString("background-color: %1; border: 2px solid white;")
                                   .arg(pathColor.name()));
         setItemWidget(pathColorItem, 1, pathColorBtn);
         colorButtons_[robot + "_path"] = pathColorBtn;
     }
     
-    // 색상 리셋 버튼
+    // Color reset button
     auto resetColorsItem = new QTreeWidgetItem(parent, {"Reset All Colors"});
     auto resetBtn = createButton("Reset", [this]() {
         if (targetWidget_) {
@@ -269,7 +266,7 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
 }
 
 void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
-    // Show Points checkbox - ✅ 기본값을 true로 설정
+    // Show Points checkbox - set default value to true
     auto showPointsItem = new QTreeWidgetItem(parent, {"Show Points"});
     QCheckBox* showPointsCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
@@ -280,7 +277,7 @@ void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
     });
     setItemWidget(showPointsItem, 1, showPointsCheck);
     
-    // Show Path checkbox - ✅ 기본값을 true로 설정
+    // Show Path checkbox - set default value to true
     auto showPathItem = new QTreeWidgetItem(parent, {"Show Path"});
     QCheckBox* showPathCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
@@ -387,17 +384,17 @@ void ControlTreeWidget::addDisplayControls(QTreeWidgetItem* parent) {
 }
 
 void ControlTreeWidget::addCameraControls(QTreeWidgetItem* parent) {
-    // 카메라 리셋 버튼
+    // Camera reset button
     auto resetCameraItem = new QTreeWidgetItem(parent, {"Reset Camera"});
     auto resetCameraBtn = createButton("Reset", [this]() {
         if (targetWidget_) targetWidget_->resetCamera();
     });
     setItemWidget(resetCameraItem, 1, resetCameraBtn);
     
-    // 카메라 프리셋들
-    auto presetsGroup = new QTreeWidgetItem(parent, {"📐 View Presets"});
+    // Camera presets
+    auto presetsGroup = new QTreeWidgetItem(parent, {"View Presets"});
     
-    // 프론트 뷰
+    // Front view
     auto frontViewItem = new QTreeWidgetItem(presetsGroup, {"Front View"});
     auto frontBtn = createButton("Apply", [this]() {
         if (targetWidget_) {
@@ -410,15 +407,15 @@ void ControlTreeWidget::addCameraControls(QTreeWidgetItem* parent) {
 
 PointCloudWidget* ControlTreeWidget::findRobotWidget(const QString& robotName) {
     if (!mainWindow_) {
-        qDebug() << "❌ MainWindow reference not set!";
+        qDebug() << "MainWindow reference not set!";
         return nullptr;
     }
     
-    // MainWindow에서 해당 로봇의 위젯을 찾기
+    // Find corresponding robot widget in MainWindow
     int widgetIndex = -1;
     
     if (robotName == "COMBINED") {
-        widgetIndex = 0;  // COMBINED는 인덱스 0
+        widgetIndex = 0;  // COMBINED is index 0
     } else if (robotName == "TUGV") {
         widgetIndex = 1;
     } else if (robotName == "MUGV") {
@@ -431,39 +428,39 @@ PointCloudWidget* ControlTreeWidget::findRobotWidget(const QString& robotName) {
         widgetIndex = 5;
     }
     
-    // ✅ 수정: 모든 유효한 인덱스에 대해 처리
-    if (widgetIndex >= 0) {  // ✅ >= 0으로 변경
+    // Modified: handle all valid indices
+    if (widgetIndex >= 0) {  // Changed to >= 0
         auto* widget = qobject_cast<PointCloudWidget*>(
             mainWindow_->findChild<QWidget*>(QString("openGLWidget_%1").arg(widgetIndex))
         );
         
         if (widget) {
-            qDebug() << "✅ Found widget for" << robotName << "at openGLWidget_" << widgetIndex;
+            qDebug() << "Found widget for" << robotName << "at openGLWidget_" << widgetIndex;
             return widget;
         } else {
-            qDebug() << "❌ Could not find openGLWidget_" << widgetIndex << "for" << robotName;
+            qDebug() << "Could not find openGLWidget_" << widgetIndex << "for" << robotName;
         }
     } else {
-        qDebug() << "❌ Invalid robot name:" << robotName;
+        qDebug() << "Invalid robot name:" << robotName;
     }
     
     return nullptr;
 }
 
 void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
-    // 인디케이터 현재 위치 고정
+    // Lock indicator to current position
     auto lockIndicatorItem = new QTreeWidgetItem(parent, {"Lock to Robot Position"});
     auto lockCheck = createCheckBox(false, [this](bool checked) {
         if (targetWidget_) {
             targetWidget_->setLockIndicatorToCurrentPosition(checked);
-            qDebug() << "🔒 Lock indicator:" << (checked ? "ON" : "OFF");
+            qDebug() << "Lock indicator:" << (checked ? "ON" : "OFF");
         }
     });
     setItemWidget(lockIndicatorItem, 1, lockCheck);
     
-    // 추적 대상 로봇 선택
+    // Target robot selection for tracking
     auto targetRobotItem = new QTreeWidgetItem(parent, {"Target Robot"});
-    targetRobotCombo_ = new QComboBox();  // ✅ 멤버 변수에 저장
+    targetRobotCombo_ = new QComboBox();  // Store in member variable
     
     QStringList realRobots = {"TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
     targetRobotCombo_->addItems(realRobots);
@@ -471,116 +468,116 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
     
     connect(targetRobotCombo_, QOverload<const QString&>::of(&QComboBox::currentTextChanged), 
             [this](const QString& robot) {
-        qDebug() << "🎯 Target robot combo changed to:" << robot;
+        qDebug() << "Target robot combo changed to:" << robot;
         
-        // ✅ COMBINED 모드에서는 개별 위젯과 COMBINED 위젯 모두에 설정
+        // In COMBINED mode, set both individual widgets and COMBINED widget
         if (robotName_ == "COMBINED") {
-            // 1. 개별 위젯에 설정
+            // 1. Set to individual widget
             auto* robotWidget = findRobotWidget(robot);
             if (robotWidget) {
-                robotWidget->setIndicatorTargetRobot(robot);  // ✅ 개별 위젯에 설정
-                qDebug() << "🎯 Individual widget target changed to:" << robot;
+                robotWidget->setIndicatorTargetRobot(robot);  // Set to individual widget
+                qDebug() << "Individual widget target changed to:" << robot;
             }
             
-            // 2. COMBINED 위젯에도 설정
+            // 2. Also set to COMBINED widget
             if (targetWidget_) {
-                targetWidget_->setIndicatorTargetRobot(robot);  // ✅ COMBINED 위젯에도 설정
-                qDebug() << "🎯 COMBINED widget target changed to:" << robot;
+                targetWidget_->setIndicatorTargetRobot(robot);  // Also set to COMBINED widget
+                qDebug() << "COMBINED widget target changed to:" << robot;
             }
         } else if (targetWidget_) {
-            // 일반 모드에서는 현재 위젯에만 설정
+            // In normal mode, set only to current widget
             targetWidget_->setIndicatorTargetRobot(robot);
-            qDebug() << "🎯 Target robot changed to:" << robot;
+            qDebug() << "Target robot changed to:" << robot;
         }
     });
     setItemWidget(targetRobotItem, 1, targetRobotCombo_);
     
-    // ✅ Quick Jump 버튼들 (qDebug 사용)
-    auto jumpGroup = new QTreeWidgetItem(parent, {"🎯 Quick Jump"});
+    // Quick Jump buttons
+    auto jumpGroup = new QTreeWidgetItem(parent, {"Quick Jump"});
     
     for (const QString& robot : realRobots) {
         auto jumpItem = new QTreeWidgetItem(jumpGroup, {"Jump to " + robot});
         auto jumpBtn = createButton("Go", [this, robot]() {
-            qDebug() << "🚀 Quick jump to" << robot << "initiated...";
+            qDebug() << "Quick jump to" << robot << "initiated...";
             
             PointCloudWidget* activeWidget = nullptr;
             
-            // ✅ COMBINED 모드에서는 항상 해당 로봇의 개별 위젯 찾기
+            // In COMBINED mode, always find individual widget for the robot
             if (robotName_ == "COMBINED") {
-                activeWidget = findRobotWidget(robot);  // ✅ 매번 새로 찾기
+                activeWidget = findRobotWidget(robot);  // Find anew each time
                 if (!activeWidget) {
-                    qDebug() << "❌ Could not find individual widget for" << robot;
+                    qDebug() << "Could not find individual widget for" << robot;
                     return;
                 }
-                qDebug() << "📡 Found individual widget for" << robot << "in COMBINED mode";
+                qDebug() << "Found individual widget for" << robot << "in COMBINED mode";
             } else {
                 activeWidget = targetWidget_;
                 if (!activeWidget) {
-                    qDebug() << "❌ No target widget for quick jump!";
+                    qDebug() << "No target widget for quick jump!";
                     return;
                 }
             }
             
-            // ✅ 1. 개별 위젯에 타겟 로봇 설정 (강제로 설정)
+            // 1. Set target robot to individual widget (forced setting)
             activeWidget->setIndicatorTargetRobot(robot);
-            qDebug() << "🎯 Set target robot" << robot << "on individual widget";
+            qDebug() << "Set target robot" << robot << "on individual widget";
             
-            // ✅ 2. COMBINED 모드에서는 COMBINED 위젯에도 타겟 설정
+            // 2. In COMBINED mode, also set target to COMBINED widget
             if (robotName_ == "COMBINED" && targetWidget_) {
                 targetWidget_->setIndicatorTargetRobot(robot);
-                qDebug() << "🎯 Set target robot" << robot << "on COMBINED widget";
+                qDebug() << "Set target robot" << robot << "on COMBINED widget";
             }
             
-            // ✅ 3. 개별 위젯에서 로봇 위치 가져오기
+            // 3. Get robot position from individual widget
             glm::vec3 robotPosition(0.0f, 0.0f, 0.0f);
             bool positionFound = false;
             
             if (robotName_ == "COMBINED") {
-                // 개별 위젯에서 로봇의 현재 위치 가져오기
+                // Get robot's current position from individual widget
                 robotPosition = activeWidget->getRobotCurrentPosition(robot);
                 positionFound = true;
-                qDebug() << "📍 Robot" << robot << "position: (" 
+                qDebug() << "Robot" << robot << "position: (" 
                          << robotPosition.x << "," << robotPosition.y << "," << robotPosition.z << ")";
             }
             
-            // ✅ 4. 카메라 이동
+            // 4. Move camera
             if (robotName_ == "COMBINED" && positionFound && targetWidget_) {
-                // COMBINED 위젯의 카메라를 로봇 위치로 이동
+                // Move COMBINED widget's camera to robot position
                 targetWidget_->jumpToPosition(robotPosition);
-                qDebug() << "📷 COMBINED camera jumped to" << robot << "position";
+                qDebug() << "COMBINED camera jumped to" << robot << "position";
             } else if (activeWidget) {
-                // 일반 모드에서는 기존 방식 사용
+                // Use existing method in normal mode
                 activeWidget->jumpToRobotPosition(robot);
-                qDebug() << "📷 Individual camera jumped to" << robot << "position";
+                qDebug() << "Individual camera jumped to" << robot << "position";
             }
             
-            // ✅ 5. 위치 고정 활성화
+            // 5. Activate position lock
             activeWidget->setLockIndicatorToCurrentPosition(true);
             
             if (robotName_ == "COMBINED" && targetWidget_) {
                 targetWidget_->setLockIndicatorToCurrentPosition(true);
-                qDebug() << "🔗 COMBINED widget also locked to" << robot;
+                qDebug() << "COMBINED widget also locked to" << robot;
             }
             
-            // ✅ 6. 콤보박스도 업데이트 (멤버 변수 사용)
+            // 6. Update combo box too (using member variable)
             if (targetRobotCombo_ && targetRobotCombo_->currentText() != robot) {
-                targetRobotCombo_->setCurrentText(robot);  // UI 동기화
-                qDebug() << "🔄 Updated combo box to:" << robot;
+                targetRobotCombo_->setCurrentText(robot);  // UI synchronization
+                qDebug() << "Updated combo box to:" << robot;
             }
             
-            // ✅ 7. 안전한 타이머로 자동 해제 (3초 후)
+            // 7. Safe auto-release with timer (after 3 seconds)
             QTimer* autoReleaseTimer = new QTimer();
             autoReleaseTimer->setSingleShot(true);
             
             connect(autoReleaseTimer, &QTimer::timeout, [this, autoReleaseTimer, robot, activeWidget]() {
                 if (activeWidget) {
                     activeWidget->setLockIndicatorToCurrentPosition(false);
-                    qDebug() << "🔓 Auto-release lock for" << robot;
+                    qDebug() << "Auto-release lock for" << robot;
                 }
                 
                 if (robotName_ == "COMBINED" && targetWidget_) {
                     targetWidget_->setLockIndicatorToCurrentPosition(false);
-                    qDebug() << "🔓 Auto-release lock for COMBINED widget";
+                    qDebug() << "Auto-release lock for COMBINED widget";
                 }
                 
                 autoReleaseTimer->deleteLater();
@@ -588,44 +585,44 @@ void ControlTreeWidget::addIndicatorControls(QTreeWidgetItem* parent) {
             
             autoReleaseTimer->start(3000);
             
-            qDebug() << "✅ Quick jump to" << robot << "completed!";
+            qDebug() << "Quick jump to" << robot << "completed!";
         });
         
         setItemWidget(jumpItem, 1, jumpBtn);
     }
     
-    // ✅ 전체 리셋 버튼 (qDebug 사용)
+    // Reset all button
     auto resetIndicatorItem = new QTreeWidgetItem(parent, {"Reset Indicator"});
     auto resetBtn = createButton("Reset", [this]() {
-        // 개별 위젯들 리셋
+        // Reset individual widgets
         if (robotName_ == "COMBINED") {
             QStringList realRobots = {"TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
             for (const QString& robot : realRobots) {
                 auto* robotWidget = findRobotWidget(robot);
                 if (robotWidget) {
                     robotWidget->setLockIndicatorToCurrentPosition(false);
-                    robotWidget->setIndicatorTargetRobot("TUGV");  // 기본 로봇으로 리셋
-                    qDebug() << "🔄 Reset individual widget for" << robot;
+                    robotWidget->setIndicatorTargetRobot("TUGV");  // Reset to default robot
+                    qDebug() << "Reset individual widget for" << robot;
                 }
             }
         }
         
-        // COMBINED 위젯 리셋
+        // Reset COMBINED widget
         if (targetWidget_) {
             targetWidget_->setLockIndicatorToCurrentPosition(false);
-            targetWidget_->setIndicatorTargetRobot("TUGV");  // 기본 로봇으로 리셋
-            qDebug() << "🔄 Reset COMBINED widget";
+            targetWidget_->setIndicatorTargetRobot("TUGV");  // Reset to default robot
+            qDebug() << "Reset COMBINED widget";
         }
     });
     setItemWidget(resetIndicatorItem, 1, resetBtn);
 }
 
 void ControlTreeWidget::onItemChanged(QTreeWidgetItem* item, int column) {
-    // 아이템 변경 시 처리 (현재는 로봇 색상 변경에만 사용)
+    // Handle item changes (currently used only for robot color changes)
     if (robotGroup_ && item->parent() == robotGroup_) {
         QString itemName = item->text(0);
         
-        // 포인트 색상 아이템인지 확인
+        // Check if it's a point color item
         if (itemName.endsWith("Points")) {
             QString robotName = itemName.split(" ")[0];
             QColor newColor = colorButtons_[robotName + "_points"]->palette().button().color();
@@ -635,7 +632,7 @@ void ControlTreeWidget::onItemChanged(QTreeWidgetItem* item, int column) {
                 qDebug() << "Changed" << robotName << "points color to" << newColor.name();
             }
         }
-        // 경로 색상 아이템인지 확인
+        // Check if it's a path color item
         else if (itemName.endsWith("Path")) {
             QString robotName = itemName.split(" ")[0];
             QColor newColor = colorButtons_[robotName + "_path"]->palette().button().color();
@@ -647,8 +644,6 @@ void ControlTreeWidget::onItemChanged(QTreeWidgetItem* item, int column) {
         }
     }
 }
-
-// Add these function implementations at the end of the file, before the closing namespace bracket
 
 // Helper widget creation functions
 QCheckBox* ControlTreeWidget::createCheckBox(bool checked, std::function<void(bool)> callback) {
@@ -740,10 +735,6 @@ void ControlTreeWidget::syncWithWidget() {
         return;
     }
     
-    // Sync display settings
-    // Note: You might need to add getter functions to PointCloudWidget
-    // to properly sync the current state
-    
     qDebug() << "Syncing controls with widget for robot:" << robotName_;
     
     // This function should update UI controls to match current widget state
@@ -786,9 +777,6 @@ void ControlTreeWidget::updateColorButtons() {
     
     qDebug() << "Color buttons updated";
 }
-
-
-
 
 void ControlTreeWidget::onColorButtonClicked() {
     // Handle color button clicks

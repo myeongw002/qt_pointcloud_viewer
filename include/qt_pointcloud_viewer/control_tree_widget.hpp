@@ -44,28 +44,28 @@ private:
     QString robotName_;
     PointCloudWidget* targetWidget_;
     QMainWindow* mainWindow_;
-    QComboBox* targetRobotCombo_;  // 타겟 로봇 선택 콤보박스
+    QComboBox* targetRobotCombo_;  // Target robot selection combo box
     
-    // 트리 그룹 아이템들
+    // Tree group items
     QTreeWidgetItem* viewGroup_;
     QTreeWidgetItem* robotGroup_;
     QTreeWidgetItem* displayGroup_;
     QTreeWidgetItem* cameraGroup_;
     QTreeWidgetItem* indicatorGroup_;
     
-    // 초기화 함수들
+    // Initialization functions
     void setupTreeStructure();
-    void setupSingleRobotTree();    // 단일 로봇용 트리
-    void setupCombinedModeTree();   // COMBINED 모드용 트리
+    void setupSingleRobotTree();    // Tree for single robot
+    void setupCombinedModeTree();   // Tree for COMBINED mode
     
-    // 트리 구성 함수들
+    // Tree composition functions
     void addViewControls(QTreeWidgetItem* parent);
     void addRobotControls(QTreeWidgetItem* parent);
     void addDisplayControls(QTreeWidgetItem* parent);
     void addCameraControls(QTreeWidgetItem* parent);
     void addIndicatorControls(QTreeWidgetItem* parent);
     
-    // 위젯 생성 헬퍼 함수들
+    // Widget creation helper functions
     QWidget* createSliderWidget(const QString& label, double min, double max, double value, 
                                std::function<void(double)> callback);
     QWidget* createComboWidget(const QString& label, const QStringList& items, 
@@ -75,15 +75,15 @@ private:
     QCheckBox* createCheckBox(bool checked, std::function<void(bool)> callback);
     QPushButton* createButton(const QString& text, std::function<void()> callback);
     
-    // ✅ 누락된 함수들 추가
+    // Added missing functions
     void updateColorButtons();
     void syncWithWidget();
     PointCloudWidget* findRobotWidget(const QString& robotName);
     
-    // 색상 관리
+    // Color management
     QHash<QString, QPushButton*> colorButtons_;
     
-    // 상수들
+    // Constants
     static const QStringList ROBOT_NAMES;
     static const QStringList ROBOT_COLORS;
 };

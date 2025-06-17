@@ -3,8 +3,6 @@
 
 namespace Widget {
 
-
-    
 ViewerSettingsManager* ViewerSettingsManager::instance_ = nullptr;
 
 ViewerSettingsManager* ViewerSettingsManager::instance() {
@@ -20,7 +18,7 @@ ViewerSettingsManager::ViewerSettingsManager(QObject* parent)
 }
 
 void ViewerSettingsManager::initializeDefaultSettings() {
-    // ✅ 기본 생성자만 호출하면 됨 (ViewerSettings의 기본값 사용)
+    // Just call default constructor (use ViewerSettings default values)
     globalSettings_ = ViewerSettings();
     
     qDebug() << "ViewerSettingsManager: Default settings initialized with proper values";
@@ -29,7 +27,7 @@ void ViewerSettingsManager::initializeDefaultSettings() {
 void ViewerSettingsManager::registerWidget(const QString& robotName, PointCloudWidget* widget) {
     if (!widget) return;
     
-    // ✅ 중복 등록 방지
+    // Prevent duplicate registration
     if (registeredWidgets_.contains(widget)) {
         qDebug() << "ViewerSettingsManager: Widget already registered for" << robotName;
         return;
@@ -37,7 +35,7 @@ void ViewerSettingsManager::registerWidget(const QString& robotName, PointCloudW
     
     registeredWidgets_[widget] = robotName;
     
-    // ✅ 글로벌 기본 설정 적용 (이미 올바른 값들)
+    // Apply global default settings (already correct values)
     applySettings(widget, globalSettings_);
     
     qDebug() << "ViewerSettingsManager: Registered widget for" << robotName;
@@ -59,10 +57,10 @@ void ViewerSettingsManager::saveSettings(const QString& robotName, PointCloudWid
     
     qDebug() << "ViewerSettingsManager: Settings saved for" << robotName;
     
-    // ✅ 개별 로봇 설정만 저장, 전파하지 않음
-    // globalSettings_ = settings;  // ❌ 제거
+    // Only save individual robot settings, do not propagate
+    // globalSettings_ = settings;  // Removed
     
-    // ✅ 다른 위젯에 전파하지 않음
+    // Do not propagate to other widgets
     /*
     for (auto it = registeredWidgets_.begin(); it != registeredWidgets_.end(); ++it) {
         PointCloudWidget* otherWidget = it.key();
@@ -70,7 +68,7 @@ void ViewerSettingsManager::saveSettings(const QString& robotName, PointCloudWid
         
         if (otherWidget == widget) continue;
         
-        applySettings(otherWidget, settings);  // ❌ 제거
+        applySettings(otherWidget, settings);  // Removed
         qDebug() << "ViewerSettingsManager: Settings propagated to" << otherRobot;
     }
     */
@@ -85,12 +83,12 @@ void ViewerSettingsManager::synchronizeSettings(PointCloudWidget* newWidget, con
     
     ViewerSettings settingsToApply;
     
-    // ✅ 해당 로봇의 설정이 있으면 사용
+    // Use existing robot settings if available
     if (robotSettings_.contains(robotName)) {
         settingsToApply = robotSettings_[robotName];
         qDebug() << "ViewerSettingsManager: Using existing settings for" << robotName;
     } else {
-        // ✅ 다른 좋은 설정을 찾아보기
+        // Try to find other good settings
         bool foundGoodSettings = false;
         
         for (auto it = registeredWidgets_.begin(); it != registeredWidgets_.end(); ++it) {
@@ -101,7 +99,7 @@ void ViewerSettingsManager::synchronizeSettings(PointCloudWidget* newWidget, con
             
             ViewerSettings candidateSettings = extractSettings(widget);
             
-            // ✅ 올바른 설정인지 검증 (기본적인 표시 항목들이 켜져있는지)
+            // Validate if settings are correct (basic display items are enabled)
             if (candidateSettings.showPoints && candidateSettings.showPath && 
                 candidateSettings.pointSize > 0 && candidateSettings.pathWidth > 0) {
                 settingsToApply = candidateSettings;
@@ -111,17 +109,17 @@ void ViewerSettingsManager::synchronizeSettings(PointCloudWidget* newWidget, con
             }
         }
         
-        // ✅ 좋은 설정을 못 찾았으면 글로벌 기본값 사용
+        // Use global default values if no good settings found
         if (!foundGoodSettings) {
-            settingsToApply = globalSettings_;  // ✅ 이미 올바른 기본값들
+            settingsToApply = globalSettings_;  // Already correct default values
             qDebug() << "ViewerSettingsManager: Using global default settings";
         }
     }
     
-    // 새 위젯에 설정 적용
+    // Apply settings to new widget
     applySettings(newWidget, settingsToApply);
     
-    // 등록
+    // Register widget
     registerWidget(robotName, newWidget);
     
     qDebug() << "ViewerSettingsManager: Synchronization completed for" << robotName;
@@ -132,7 +130,7 @@ ViewerSettings ViewerSettingsManager::extractSettings(PointCloudWidget* widget) 
     
     if (!widget) return settings;
     
-    // Extract all display settings - ✅ 이제 모든 함수가 사용 가능
+    // Extract all display settings - All functions now available
     settings.showPoints = widget->getShowPoints();
     settings.showPath = widget->getShowPath();
     settings.showPosition = widget->getShowPosition();
@@ -140,14 +138,14 @@ ViewerSettings ViewerSettingsManager::extractSettings(PointCloudWidget* widget) 
     settings.showGrid = widget->getShowGrid();
     settings.showRobotLabel = widget->getShowRobotLabel();
     
-    // Extract style settings - ✅ 이제 모든 함수가 사용 가능
+    // Extract style settings - All functions now available
     settings.pointSize = widget->getPointSize();
     settings.pathWidth = widget->getPathWidth();
     settings.positionRadius = widget->getPositionRadius();
     settings.rotationSensitivity = widget->getRotationSensitivity();
     settings.markerType = widget->getPositionMarkerType();
     
-    // Extract camera settings - ✅ 이제 모든 함수가 사용 가능
+    // Extract camera settings - All functions now available
     settings.isTopView = widget->isTopView();
     settings.focusPoint = widget->getFocusPoint();
     

@@ -36,12 +36,12 @@ namespace Widget {
         };
 
         // ============================================================================
-        // 🤖 로봇 관련 함수들
+        // Robot Related Functions
         // ============================================================================
         void setRobot(const QString& robot);
         
         // ============================================================================
-        // 🎨 색상 관리 함수들
+        // Color Management Functions
         // ============================================================================
         void setRobotPointsColor(const QString& robot, const glm::vec3& color);
         void setRobotPathColor(const QString& robot, const glm::vec3& color);
@@ -50,7 +50,7 @@ namespace Widget {
         void resetAllColorsToDefault();
         
         // ============================================================================
-        // 📷 카메라 제어 함수들
+        // Camera Control Functions
         // ============================================================================
         void setFocusPoint(const glm::vec3& focus);
         void setRotationSensitivity(float sensitivity);
@@ -61,14 +61,14 @@ namespace Widget {
         void jumpToRobotPosition(const QString& robotName);
         
         // ============================================================================
-        // 🎯 인디케이터 제어 함수들
+        // Indicator Control Functions
         // ============================================================================
         void setLockIndicatorToCurrentPosition(bool lock);
         void setIndicatorTargetRobot(const QString& robot);
         glm::vec3 getRobotCurrentPosition(const QString& robotName);
         
         // ============================================================================
-        // 🎭 표시 옵션 함수들
+        // Display Option Functions
         // ============================================================================
         void setShowAxes(bool show);
         void setShowGrid(bool show);
@@ -77,7 +77,7 @@ namespace Widget {
         void setPositionRadius(float radius);
         bool isShowPosition() const { return showPosition_; }
         
-        // ✅ 추가된 Getter 함수들
+        // Added Getter functions
         bool getShowAxes() const { return showAxes_; }
         bool getShowGrid() const { return showGrid_; }
         bool getShowPosition() const { return showPosition_; }
@@ -86,7 +86,7 @@ namespace Widget {
         float getRotationSensitivity() const { return rotationSensitivity_; }
         glm::vec3 getFocusPoint() const { return focusPoint_; }
 
-        // ✅ 포인트 및 경로 스타일 설정
+        // Point and path style settings
         void setShowPoints(bool show);
         void setShowPath(bool show);
         void setPointSize(float size);
@@ -94,32 +94,32 @@ namespace Widget {
         float getPointSize() const { return pointSize_; }
         float getPathWidth() const { return pathWidth_; }
         
-        // ✅ 추가된 Getter 함수들
+        // Added Getter functions
         bool getShowPoints() const { return showPoints_; }
         bool getShowPath() const { return showPath_; }
         
         void setPositionMarkerType(PositionMarkerType type);
         
-        // ✅ 추가된 Getter 함수들
+        // Added Getter functions
         PositionMarkerType getPositionMarkerType() const { return positionMarkerType_; }
     
     public slots:
         // ============================================================================
-        // 📡 데이터 수신 슬롯들
+        // Data Reception Slots
         // ============================================================================
         void onCloudShared(const QString& robot, CloudConstPtr cloud);
         void onPathShared(const QString& robot, PathConstPtr path);
         
     protected:
         // ============================================================================
-        // 🖥️ Qt 이벤트 오버라이드
+        // Qt Event Overrides
         // ============================================================================
         void initializeGL() override;
         void paintGL() override;
         void resizeGL(int w, int h) override;
         void paintEvent(QPaintEvent* event) override;
         
-        // 마우스/키보드 이벤트
+        // Mouse/keyboard events
         void mousePressEvent(QMouseEvent *event) override;
         void mouseReleaseEvent(QMouseEvent *event) override;
         void mouseMoveEvent(QMouseEvent *event) override;
@@ -127,7 +127,7 @@ namespace Widget {
 
     private:
         // ============================================================================
-        // 🤖 로봇 데이터 관리
+        // Robot Data Management
         // ============================================================================
         QString robotName_ = "";
         QHash<QString, CloudConstPtr> clouds_;
@@ -136,16 +136,16 @@ namespace Widget {
         mutable std::mutex pathMutex_;
         
         // ============================================================================
-        // 🎨 색상 관리
+        // Color Management
         // ============================================================================
         QHash<QString, glm::vec3> robotPointsColors_;
         QHash<QString, glm::vec3> robotPathColors_;
         void initializeDefaultColors();
         
         // ============================================================================
-        // 📷 카메라 시스템
+        // Camera System
         // ============================================================================
-        // 카메라 위치 및 방향
+        // Camera position and orientation
         glm::vec3 cameraPos_;
         glm::vec3 focusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
         float distance_ = 10.0f;
@@ -153,18 +153,18 @@ namespace Widget {
         float pitch_ = 0.0f;
         float rotationSensitivity_ = 0.3f;
         
-        // 카메라 매트릭스
+        // Camera matrices
         glm::mat4 viewMatrix_;
         glm::mat4 projectionMatrix_;
         glm::mat4 rvizToOpenGLMatrix_;
         
-        // 카메라 제어 함수들
+        // Camera control functions
         void updateCameraPosition();
         void updateTopViewCamera();
         void backupCameraState();
         void restoreCameraState();
         
-        // 탑뷰 관련
+        // Top view related
         bool isTopView_ = false;
         float topViewHeight_ = 20.0f;
         float topViewZoom_ = 1.0f;
@@ -174,36 +174,35 @@ namespace Widget {
         glm::vec3 backupFocusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
         
         // ============================================================================
-        // 🎯 인디케이터 시스템
+        // Indicator System
         // ============================================================================
         bool lockIndicatorToCurrentPosition_ = false;
         QString indicatorTargetRobot_ = "";
         glm::vec3 lastKnownPosition_ = glm::vec3(0.0f, 0.0f, 0.0f);
         
-        // 인디케이터 UI
+        // Indicator UI
         bool showIndicator_ = false;
         QTimer hideTimer_;
         const int timerInterval_ = 100;
         QPoint lastMousePos_;
         
-        // 인디케이터 관련 함수들
+        // Indicator related functions
         void updateIndicatorPosition();
         glm::vec3 getCurrentRobotPosition(const QString& robot) const;
         bool hasValidCurrentPosition(const QString& robot) const;
         void hideIndicator();
         
         // ============================================================================
-        // 🎭 렌더링 시스템
+        // Rendering System
         // ============================================================================
-        // 기본 렌더링 함수들
+        // Basic rendering functions
         void drawPoints();
         void drawPath();
         void drawAxes();
         void drawGrid();
         void drawCameraIndicator();
         
-        // 위치 마커 관련
-
+        // Position marker related
         bool showPosition_ = true;
         PositionMarkerType positionMarkerType_ = PositionMarkerType::AXES;
         float currentPositionRadius_ = 0.3f;
@@ -217,9 +216,9 @@ namespace Widget {
         void drawCustomAxes(const glm::vec3& position, const glm::quat& orientation);
         
         // ============================================================================
-        // 🎨 UI 표시 옵션
+        // UI Display Options
         // ============================================================================
-        // 축과 그리드
+        // Axes and grid
         bool showAxes_ = true;
         bool showGrid_ = true;
         int planeCellCount_ = 10;
@@ -228,7 +227,7 @@ namespace Widget {
         float axesLength_ = 1.0f;
         float axesRadius_ = 0.05f;
         
-        // 로봇 라벨
+        // Robot label
         bool showRobotLabel_ = true;
         const int fontSize_ = 10;
         const int circleSize_ = 12;
@@ -239,12 +238,12 @@ namespace Widget {
         void drawRobotLabel(QPainter& painter);
         void drawSingleLabel(QPainter& painter, const QString& text, const QColor& color, const QPoint& pos);
         
-
-        bool showPoints_ = true;  // 포인트 표시 여부
-        bool showPath_ = true;    // 경로 표시 여부
-        // ✅ 포인트 및 경로 스타일 변수
-        float pointSize_ = 2.0f;      // 포인트 크기
-        float pathWidth_ = 3.0f;      // 경로 선 두께
+        // Point and path display settings
+        bool showPoints_ = true;  // Point display toggle
+        bool showPath_ = true;    // Path display toggle
+        // Point and path style variables
+        float pointSize_ = 2.0f;      // Point size
+        float pathWidth_ = 3.0f;      // Path line thickness
     };
 }
 

@@ -11,11 +11,11 @@ class RobotSelectDialog final : public QDialog
     Q_OBJECT
 public:
     explicit RobotSelectDialog(QWidget *parent = nullptr);
-    ~RobotSelectDialog() override; // 가상 소멸자 선언
-    QString robotName() const;               // 선택된 로봇 반환
+    ~RobotSelectDialog() override;  // Virtual destructor declaration
+    QString robotName() const;      // Return selected robot
 
 private:
     QListWidget *list_;
 };
 
-}
+} // namespace Widget
