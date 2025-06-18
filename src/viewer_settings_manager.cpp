@@ -130,7 +130,7 @@ ViewerSettings ViewerSettingsManager::extractSettings(PointCloudWidget* widget) 
     
     if (!widget) return settings;
     
-    // Extract all display settings - All functions now available
+    // Extract all display settings
     settings.showPoints = widget->getShowPoints();
     settings.showPath = widget->getShowPath();
     settings.showPosition = widget->getShowPosition();
@@ -138,11 +138,14 @@ ViewerSettings ViewerSettingsManager::extractSettings(PointCloudWidget* widget) 
     settings.showGrid = widget->getShowGrid();
     settings.showRobotLabel = widget->getShowRobotLabel();
     
-    // Extract style settings - All functions now available
+    // Extract style settings
     settings.pointSize = widget->getPointSize();
     settings.pathWidth = widget->getPathWidth();
     settings.positionRadius = widget->getPositionRadius();
     settings.rotationSensitivity = widget->getRotationSensitivity();
+    settings.gridSize = widget->getGridSize();
+    settings.gridCellCount = widget->getGridCellCount();
+    settings.axesSize = widget->getAxesSize();  // 새로 추가
     settings.markerType = widget->getPositionMarkerType();
     
     // Extract camera settings - All functions now available
@@ -163,13 +166,11 @@ void ViewerSettingsManager::applySettings(PointCloudWidget* widget, const Viewer
     if (!widget) return;
     
     qDebug() << "ViewerSettingsManager: Applying settings...";
-    qDebug() << "  - showPoints:" << settings.showPoints;
-    qDebug() << "  - showPath:" << settings.showPath;
-    qDebug() << "  - showPosition:" << settings.showPosition;
     qDebug() << "  - showAxes:" << settings.showAxes;
+    qDebug() << "  - axesSize:" << settings.axesSize;
     qDebug() << "  - showGrid:" << settings.showGrid;
-    qDebug() << "  - pointSize:" << settings.pointSize;
-    qDebug() << "  - pathWidth:" << settings.pathWidth;
+    qDebug() << "  - gridSize:" << settings.gridSize;
+    qDebug() << "  - gridCellCount:" << settings.gridCellCount;
     
     // Apply display settings
     widget->setShowPoints(settings.showPoints);
@@ -184,6 +185,9 @@ void ViewerSettingsManager::applySettings(PointCloudWidget* widget, const Viewer
     widget->setPathWidth(settings.pathWidth);
     widget->setPositionRadius(settings.positionRadius);
     widget->setRotationSensitivity(settings.rotationSensitivity);
+    widget->setGridSize(settings.gridSize);
+    widget->setGridCellCount(settings.gridCellCount);
+    widget->setAxesSize(settings.axesSize);  // 새로 추가
     widget->setPositionMarkerType(settings.markerType);
     
     // Apply camera settings

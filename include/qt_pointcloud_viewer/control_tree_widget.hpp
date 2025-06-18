@@ -55,12 +55,15 @@ private:
     
     // Initialization functions
     void setupTreeStructure();
-    void setupSingleRobotTree();    // Tree for single robot
-    void setupCombinedModeTree();   // Tree for COMBINED mode
+    void setupSingleRobotTree();
+    void setupCombinedModeTree();
     
-    // Tree composition functions
+    // Tree composition functions (updated for 2-group structure)
+    void addViewerSettings(QTreeWidgetItem* parent);  // New function
+    void addRobotControls(QTreeWidgetItem* parent);   // Updated function
+    
+    // Legacy functions (kept for compatibility)
     void addViewControls(QTreeWidgetItem* parent);
-    void addRobotControls(QTreeWidgetItem* parent);
     void addDisplayControls(QTreeWidgetItem* parent);
     void addCameraControls(QTreeWidgetItem* parent);
     void addIndicatorControls(QTreeWidgetItem* parent);

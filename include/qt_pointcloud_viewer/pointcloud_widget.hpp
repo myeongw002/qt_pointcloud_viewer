@@ -72,6 +72,9 @@ namespace Widget {
         // ============================================================================
         void setShowAxes(bool show);
         void setShowGrid(bool show);
+        void setGridSize(float size);
+        void setGridCellCount(int count);
+        void setAxesSize(float size);  // 새로 추가
         void setShowPosition(bool show);
         void setShowRobotLabel(bool show);
         void setPositionRadius(float radius);
@@ -80,6 +83,9 @@ namespace Widget {
         // Added Getter functions
         bool getShowAxes() const { return showAxes_; }
         bool getShowGrid() const { return showGrid_; }
+        float getGridSize() const { return cellSize_; }
+        int getGridCellCount() const { return planeCellCount_; }
+        float getAxesSize() const { return axesLength_; }  // 새로 추가
         bool getShowPosition() const { return showPosition_; }
         bool getShowRobotLabel() const { return showRobotLabel_; }
         float getPositionRadius() const { return currentPositionRadius_; }
@@ -225,8 +231,8 @@ namespace Widget {
         int planeCellCount_ = 10;
         float cellSize_ = 1.0f;
         float gridLineWidth_ = 0.1f;
-        float axesLength_ = 1.0f;
-        float axesRadius_ = 0.05f;
+        float axesLength_ = 1.0f;     // 조절 가능
+        float axesRadius_ = 0.05f;    // axesLength_에 비례하여 자동 계산
         
         // Robot label
         bool showRobotLabel_ = true;

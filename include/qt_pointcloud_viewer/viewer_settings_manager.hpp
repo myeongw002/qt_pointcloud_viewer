@@ -22,6 +22,9 @@ struct ViewerSettings {
     float pathWidth = 3.0f;
     float positionRadius = 0.3f;
     float rotationSensitivity = 0.3f;
+    float gridSize = 1.0f;          // Grid cell size
+    int gridCellCount = 10;         // Grid cell count
+    float axesSize = 1.0f;          // Axes size (새로 추가)
     PointCloudWidget::PositionMarkerType markerType = PointCloudWidget::PositionMarkerType::AXES;
     
     // Camera settings

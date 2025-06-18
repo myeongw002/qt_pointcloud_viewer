@@ -392,6 +392,25 @@ void PointCloudWidget::setPositionMarkerType(PositionMarkerType type) {
     update();
 }
 
+void PointCloudWidget::setGridCellCount(int count) {
+    planeCellCount_ = glm::clamp(count, 4, 50);  // 4x4 ~ 50x50 범위로 제한
+    update();
+    qDebug() << "Grid cell count set to:" << planeCellCount_ << "x" << planeCellCount_;
+}
+
+void PointCloudWidget::setGridSize(float size) {
+    cellSize_ = glm::clamp(size, 0.1f, 10.0f);  // 0.1m ~ 10.0m 범위로 제한
+    update();
+    qDebug() << "Grid cell size set to:" << cellSize_ << "meters";
+}
+
+void PointCloudWidget::setAxesSize(float size) {
+    axesLength_ = glm::clamp(size, 0.1f, 5.0f);  // 0.1m ~ 5.0m 범위로 제한
+    axesRadius_ = axesLength_ * 0.05f;           // 축 길이에 비례하여 반지름 자동 조정
+    update();
+    qDebug() << "Axes size set to:" << axesLength_ << "meters (radius:" << axesRadius_ << ")";
+}
+
 // ============================================================================
 // Qt Event Overrides
 // ============================================================================
@@ -650,42 +669,51 @@ void PointCloudWidget::drawPath() {
 }
 
 void PointCloudWidget::drawAxes() {
+    if (!showAxes_) return;
+    
     glm::vec3 origin = glm::vec3(0.0f, 0.01f, 0.0f);
     glm::mat4 identityMatrix = glm::mat4(1.0f);
     
     ShapeHelper::SimpleShape::drawRosAxes(
         origin,
         identityMatrix,
-        axesLength_,
-        axesRadius_,
+        axesLength_,    // 동적 크기 사용
+        axesRadius_,    // 동적 반지름 사용
         true
     );
 }
 
 void PointCloudWidget::drawGrid() {
-    float totalSize = planeCellCount_ * cellSize_;
-    float halfSize = totalSize / 2.0f;
+    if (!showGrid_) return;
     
     glColor3f(0.3f, 0.3f, 0.3f);
     glLineWidth(gridLineWidth_);
+    
     glBegin(GL_LINES);
     
-    for (int i = 0; i <= planeCellCount_; ++i) {
-        float pos = -halfSize + (i * cellSize_);
-        
-        glVertex3f(-halfSize, 0.0f, -pos);
-        glVertex3f(halfSize, 0.0f, -pos);
+    // planeCellCount_와 cellSize_ 모두 동적으로 사용
+    float halfSize = planeCellCount_ * cellSize_ * 0.5f;
+    
+    // X 방향 선들 (Y축을 따라)
+    for (int i = -planeCellCount_/2; i <= planeCellCount_/2; ++i) {
+        float pos = i * cellSize_;
+        glVertex3f(-halfSize, 0.0f, pos);
+        glVertex3f(halfSize, 0.0f, pos);
     }
     
-    for (int i = 0; i <= planeCellCount_; ++i) {
-        float pos = -halfSize + (i * cellSize_);
-        
-        glVertex3f(-pos, 0.0f, -halfSize);
-        glVertex3f(-pos, 0.0f, halfSize);
+    // Z 방향 선들 (X축을 따라)
+    for (int i = -planeCellCount_/2; i <= planeCellCount_/2; ++i) {
+        float pos = i * cellSize_;
+        glVertex3f(pos, 0.0f, -halfSize);
+        glVertex3f(pos, 0.0f, halfSize);
     }
+    
     glEnd();
-
-    glLineWidth(1.0f);
+    
+    // 디버그 정보
+    // qDebug() << "Grid drawn with" << planeCellCount_ << "x" << planeCellCount_ 
+    //          << "cells, each" << cellSize_ << "m size"
+    //          << "(total area:" << (planeCellCount_ * cellSize_) << "m x" << (planeCellCount_ * cellSize_) << "m)";
 }
 
 void PointCloudWidget::drawCameraIndicator() {
@@ -767,9 +795,11 @@ void PointCloudWidget::drawCylinderMarker(const glm::vec3& position, const glm::
 }
 
 void PointCloudWidget::drawPositionAxes(const glm::vec3& position, const glm::quat& orientation, const QString& robotName) {
-    float axesLength = positionAxesLength_;
-    float axesRadius = positionAxesRadius_;
+    // Base axes size from main setting
+    float axesLength = axesLength_ * 0.5f;  // Position axes는 main axes의 50% 크기
+    float axesRadius = axesRadius_ * 0.6f;  // 상대적으로 조금 더 굵게
     
+    // Robot-specific scaling
     if (robotName == "SUAV") {
         axesLength *= 1.2f;
     } else if (robotName == "SUGV1" || robotName == "SUGV2") {
