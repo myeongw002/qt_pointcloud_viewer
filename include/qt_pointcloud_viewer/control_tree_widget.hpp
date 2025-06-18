@@ -8,11 +8,8 @@
 #include <QCheckBox>
 #include <QSlider>
 #include <QComboBox>
-#include <QSpinBox>
-#include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QColorDialog>
-#include <QGroupBox>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -36,54 +33,39 @@ public:
 
 private slots:
     void onItemChanged(QTreeWidgetItem* item, int column);
-    void onColorButtonClicked();
-    void onResetColorsClicked();
-    void onCameraPresetClicked();
 
 private:
+    // ============================================================================
+    // Core Members
+    // ============================================================================
     QString robotName_;
     PointCloudWidget* targetWidget_;
     QMainWindow* mainWindow_;
-    QComboBox* targetRobotCombo_;  // Target robot selection combo box
+    QComboBox* targetRobotCombo_;
     
-    // Tree group items
+    // Tree group items (2-group structure only)
     QTreeWidgetItem* viewGroup_;
     QTreeWidgetItem* robotGroup_;
-    QTreeWidgetItem* displayGroup_;
-    QTreeWidgetItem* cameraGroup_;
-    QTreeWidgetItem* indicatorGroup_;
     
-    // Initialization functions
+    // ============================================================================
+    // Core Functions
+    // ============================================================================
     void setupTreeStructure();
-    void setupSingleRobotTree();
-    void setupCombinedModeTree();
+    void addViewerSettings(QTreeWidgetItem* parent);
+    void addRobotControls(QTreeWidgetItem* parent);
+    void syncWithWidget();
+    void updateColorButtons();
     
-    // Tree composition functions (updated for 2-group structure)
-    void addViewerSettings(QTreeWidgetItem* parent);  // New function
-    void addRobotControls(QTreeWidgetItem* parent);   // Updated function
-    
-    // Legacy functions (kept for compatibility)
-    void addViewControls(QTreeWidgetItem* parent);
-    void addDisplayControls(QTreeWidgetItem* parent);
-    void addCameraControls(QTreeWidgetItem* parent);
-    void addIndicatorControls(QTreeWidgetItem* parent);
-    
-    // Widget creation helper functions
-    QWidget* createSliderWidget(const QString& label, double min, double max, double value, 
-                               std::function<void(double)> callback);
-    QWidget* createComboWidget(const QString& label, const QStringList& items, 
-                              const QString& current, std::function<void(const QString&)> callback);
-    QWidget* createColorWidget(const QString& label, const QColor& color, 
-                              std::function<void(const QColor&)> callback);
+    // ============================================================================
+    // Helper Functions
+    // ============================================================================
     QCheckBox* createCheckBox(bool checked, std::function<void(bool)> callback);
     QPushButton* createButton(const QString& text, std::function<void()> callback);
-    
-    // Added missing functions
-    void updateColorButtons();
-    void syncWithWidget();
     PointCloudWidget* findRobotWidget(const QString& robotName);
     
-    // Color management
+    // ============================================================================
+    // Data Members
+    // ============================================================================
     QHash<QString, QPushButton*> colorButtons_;
     
     // Constants

@@ -189,13 +189,21 @@ margin: 0px;
     <string>toolBar</string>
    </property>
    <property name="styleSheet">
-    <string notr="true">QToolButton {padding: 10px; }</string>
+    <string notr="true">QToolButton {
+padding: 5px;
+ }</string>
    </property>
    <property name="movable">
     <bool>false</bool>
    </property>
    <property name="orientation">
     <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>20</width>
+     <height>20</height>
+    </size>
    </property>
    <property name="toolButtonStyle">
     <enum>Qt::ToolButtonFollowStyle</enum>
