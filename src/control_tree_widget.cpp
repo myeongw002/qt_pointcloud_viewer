@@ -762,7 +762,7 @@ void ControlTreeWidget::updateColorButtons() {
                                    .arg(qColor.name());
                 colorButtons_[pathKey]->setStyleSheet(styleSheet);
                 
-                qDebug() << robot << "path button updated to:" << qColor.name();
+                // qDebug() << robot << "path button updated to:" << qColor.name();
                 updatedCount++;
             } else {
                 qDebug() << "Path button not found for" << robot;

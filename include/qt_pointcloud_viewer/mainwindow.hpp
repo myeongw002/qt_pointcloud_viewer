@@ -2,12 +2,12 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QDockWidget>      // Added
-#include <QTabWidget>       // Added
+#include <QDockWidget>
+#include <QTabWidget>
 #include <QHash>
-#include <QAction>          // Added
-#include <QMenu>            // Added
-#include <QMenuBar>         // Added
+#include <QAction>
+#include <QMenu>
+#include <QMenuBar>
 #include <QVector3D>
 #include <rclcpp/rclcpp.hpp>
 #include <thread>
@@ -21,6 +21,11 @@
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
+
+class QKeyEvent;
+class QCloseEvent;
+class QResizeEvent;
+class QShowEvent;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -37,11 +42,25 @@ private slots:
     void onControlTabChanged(int index);
     
     // ============================================================================
-    // Debug Console Slots
+    // Debug Console Slots (간소화)
     // ============================================================================
     void toggleDebugConsole();
-    void showDebugConsole();
-    void hideDebugConsole();
+    
+    // ============================================================================
+    // Control Panel Slots
+    // ============================================================================
+    void toggleControlPanel();
+    void showControlPanel();
+    void hideControlPanel();
+
+protected:
+    // ============================================================================
+    // Event Overrides (구현 필요)
+    // ============================================================================
+    void closeEvent(QCloseEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 private:
     // ============================================================================
@@ -59,92 +78,40 @@ private:
     // ============================================================================
     // Viewer Related Members
     // ============================================================================
-    Widget::PointCloudWidget *viewer_;                                    // Main viewer
-    const int panelCount_ = 6;                                          // Panel count
-    QHash<QString, Widget::PointCloudWidget*> pointCloudWidgets_;       // Robot-specific widgets
+    const int panelCount_ = 6;
+    QHash<QString, Widget::PointCloudWidget*> pointCloudWidgets_;
     
     // ============================================================================
     // Control Panel Related Members
     // ============================================================================
-    QTabWidget* controlTabWidget_ = nullptr;                            // Control tab widget
-    QDockWidget* controlDockWidget_ = nullptr;                          // Control dock widget
-    QHash<QString, Widget::ControlTreeWidget*> controlTrees_;           // Robot-specific TreeWidgets
+    QTabWidget* controlTabWidget_ = nullptr;
+    QDockWidget* controlDockWidget_ = nullptr;
+    QHash<QString, Widget::ControlTreeWidget*> controlTrees_;
     
     // ============================================================================
     // Debug Console Related Members
     // ============================================================================
-    Widget::DebugConsoleWidget* debugConsole_ = nullptr;                // Debug console widget
-    QDockWidget* debugConsoleDock_ = nullptr;                           // Debug console dock widget
-    QAction* debugConsoleAction_ = nullptr;                             // Menu action
-    
-    // ============================================================================
-    // Menu Related Members
-    // ============================================================================
-    QMenu* fileMenu_ = nullptr;                                         // File menu
-    QMenu* viewMenu_ = nullptr;                                         // View menu
-    QMenu* toolsMenu_ = nullptr;                                        // Tools menu
-    QMenu* helpMenu_ = nullptr;                                         // Help menu
-    
-    // File menu actions
-    QAction* newViewerAction_ = nullptr;
-    QAction* saveLogAction_ = nullptr;
-    QAction* exitAction_ = nullptr;
-    
-    // View menu actions
-    QAction* showControlPanelAction_ = nullptr;
-    QAction* resetLayoutAction_ = nullptr;
-    
-    // Tools menu actions
-    QAction* resetAllCamerasAction_ = nullptr;
-    QAction* resetAllColorsAction_ = nullptr;
+    Widget::DebugConsoleWidget* debugConsole_;
+    QDockWidget* debugConsoleDock_;
+    QAction* debugConsoleAction_;
+    QAction* controlPanelAction_;
     
     // ============================================================================
     // Initialization Functions
     // ============================================================================
-    void setupUI();                              // Overall UI setup
-    void setupMenuBar();                         // Menu bar setup
-    void setupStatusBar();                       // Status bar setup
-    void setupPointCloudWidgets();               // Point cloud widgets setup
-    void setupViewerPanels();                    // Viewer panels setup
-    void setupControlPanel();                    // Control panel setup
-    void setupDebugConsole();                    // Debug console setup
+    void setupPointCloudWidgets();
+    void setupViewerPanels();
+    void setupControlPanel();
+    void setupDebugConsole();
+    void setupViewMenu();
     
     // ============================================================================
     // Helper Functions
     // ============================================================================
-    void createControlTrees();                   // Create control trees
-    void connectControlSignals();                // Connect control signals
-    void connectMenuActions();                   // Connect menu actions
-    
-    // Widget search functions
+    void createControlTrees();
     Widget::PointCloudWidget* getWidgetByName(const QString& robotName);
-    Widget::PointCloudWidget* findPointCloudWidget(const QString& objectName);
-    
-    // Layout management functions
-    void saveLayout();                           // Save layout
-    void restoreLayout();                        // Restore layout
-    void resetToDefaultLayout();                 // Reset to default layout
-    
-    // ============================================================================
-    // Utility Functions
-    // ============================================================================
-    void updateStatusBar(const QString& message);               // Update status bar
-    void logToConsole(const QString& message, 
-                     Widget::DebugConsoleWidget::LogLevel level = 
-                     Widget::DebugConsoleWidget::INFO);         // Console log
-    
-    // Settings management
-    void loadSettings();                         // Load settings
-    void saveSettings();                         // Save settings
-    
-protected:
-    // ============================================================================
-    // Event Overrides
-    // ============================================================================
-    void closeEvent(QCloseEvent* event) override;               // Window close event
-    void resizeEvent(QResizeEvent* event) override;             // Resize event
-    void showEvent(QShowEvent* event) override;                 // Show event
-    void keyPressEvent(QKeyEvent* event) override;              // Key press event
+    void resetToDefaultLayout();
+    void updateStatusBar(const QString& message);
 };
 
 #endif // MAINWINDOW_H
