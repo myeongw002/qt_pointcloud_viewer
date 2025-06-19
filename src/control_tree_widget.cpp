@@ -104,10 +104,10 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     setItemWidget(labelItem, 1, labelCheck);
     
     // ============================================================================
-    // Axes Controls Group (기존과 동일)
+    // Axes Controls Group (닫힌 상태로 시작)
     // ============================================================================
     auto axesGroup = new QTreeWidgetItem(parent, {"Axes Controls"});
-    axesGroup->setExpanded(true);
+    axesGroup->setExpanded(false);  // ✅ 변경: true → false
     
     // Show Axes checkbox
     auto axesItem = new QTreeWidgetItem(axesGroup, {"Show Axes"});
@@ -149,10 +149,10 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     setItemWidget(axesSizeItem, 1, axesSizeWidget);
     
     // ============================================================================
-    // Grid Controls Group (기존과 동일)
+    // Grid Controls Group (닫힌 상태로 시작)
     // ============================================================================
     auto gridGroup = new QTreeWidgetItem(parent, {"Grid Controls"});
-    gridGroup->setExpanded(true);
+    gridGroup->setExpanded(false);  // ✅ 변경: true → false
     
     // Show Grid checkbox
     auto gridItem = new QTreeWidgetItem(gridGroup, {"Show Grid"});
@@ -221,11 +221,15 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     setItemWidget(gridSizeItem, 1, gridSizeWidget);
     
     // ============================================================================
-    // Map Styling Group (Point Cloud Styling + Position Marker 통합)
+    // Map Styling Group (확장된 상태 유지)
     // ============================================================================
     auto mapStylingGroup = new QTreeWidgetItem(parent, {"Map Styling"});
-    mapStylingGroup->setExpanded(true);
+    mapStylingGroup->setExpanded(true);  // Map Styling은 열린 상태 유지
     
+    // ============================================================================
+    // 1. Map Display Settings (맵 표시 관련)
+    // ============================================================================
+
     // Map Style 콤보박스
     auto mapStyleItem = new QTreeWidgetItem(mapStylingGroup, {"Map Style"});
     auto mapStyleCombo = new QComboBox();
@@ -277,7 +281,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
             });
     setItemWidget(mapStyleItem, 1, mapStyleCombo);
     mapStyleCombo_ = mapStyleCombo;  // 멤버 변수로 저장 (동기화용)
-    
+
     // Show Map checkbox
     auto showMapItem = new QTreeWidgetItem(mapStylingGroup, {"Show Map"});
     auto showMapCheck = createCheckBox(true, [this](bool checked) {
@@ -298,7 +302,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
         }
     });
     setItemWidget(showMapItem, 1, showMapCheck);
-    
+
     // Show Path checkbox
     auto showPathItem = new QTreeWidgetItem(mapStylingGroup, {"Show Path"});
     auto showPathCheck = createCheckBox(true, [this](bool checked) {
@@ -309,20 +313,24 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
         }
     });
     setItemWidget(showPathItem, 1, showPathCheck);
-    
+
+    // ============================================================================
+    // 2. Size Settings (크기 관련 설정)
+    // ============================================================================
+
     // Point Size / Resolution slider
     auto pointSizeItem = new QTreeWidgetItem(mapStylingGroup, {"Point Size / Resolution"});
     auto pointSizeSlider = new QSlider(Qt::Horizontal);
     pointSizeSlider->setRange(5, 100);
     pointSizeSlider->setValue(20);
-    
+
     // 값 표시 레이블 추가
     auto pointSizeWidget = new QWidget();
     auto pointSizeLayout = new QHBoxLayout(pointSizeWidget);
     auto pointSizeLabel = new QLabel("2.0");
     pointSizeLabel->setMinimumWidth(50);
     pointSizeLabel->setAlignment(Qt::AlignCenter);
-    
+
     connect(pointSizeSlider, &QSlider::valueChanged, [this, pointSizeLabel](int value) {
         if (targetWidget_) {
             QString currentStyle = targetWidget_->getMapStyle();
@@ -348,20 +356,20 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
             ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
         }
     });
-    
+
     pointSizeLayout->addWidget(pointSizeSlider);
     pointSizeLayout->addWidget(pointSizeLabel);
     pointSizeLayout->setContentsMargins(0, 0, 0, 0);
     pointSizeLayout->setSpacing(5);
     setItemWidget(pointSizeItem, 1, pointSizeWidget);
-    
+
     // 슬라이더 참조 저장 (동기화용)
     pointSizeSlider_ = pointSizeSlider;
     pointSizeLabel_ = pointSizeLabel;
-    
+
     // Path Width slider
     auto pathWidthItem = new QTreeWidgetItem(mapStylingGroup, {"Path Width"});
-    
+
     // 값 표시 레이블과 함께 위젯 생성
     auto pathWidthWidget = new QWidget();
     auto pathWidthLayout = new QHBoxLayout(pathWidthWidget);
@@ -392,11 +400,11 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     // 멤버 변수로 저장 (동기화용)
     pathWidthSlider_ = pathWidthSlider;
     pathWidthLabel_ = pathWidthLabel;
-    
+
     // ============================================================================
-    // Position Marker 항목들을 Map Styling 그룹으로 이동
+    // 3. Position Marker Settings (위치 마커 관련)
     // ============================================================================
-    
+
     // Show Current Position
     auto positionItem = new QTreeWidgetItem(mapStylingGroup, {"Show Position"});
     auto positionCheck = createCheckBox(true, [this](bool checked) {
@@ -407,8 +415,8 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
         }
     });
     setItemWidget(positionItem, 1, positionCheck);
-    
-    // Show Position Names checkbox (새로 추가됨)
+
+    // Show Position Names checkbox
     auto positionNamesItem = new QTreeWidgetItem(mapStylingGroup, {"Show Names"});
     auto positionNamesCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
@@ -418,7 +426,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
         }
     });
     setItemWidget(positionNamesItem, 1, positionNamesCheck);
-    
+
     // Position Marker Type
     auto markerTypeItem = new QTreeWidgetItem(mapStylingGroup, {"Marker Type"});
     auto markerTypeCombo = new QComboBox();
@@ -437,7 +445,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
                 qDebug() << "Marker type changed to:" << markerTypeCombo->currentText();
             });
     setItemWidget(markerTypeItem, 1, markerTypeCombo);
-    
+
     // Marker Size slider
     auto markerSizeItem = new QTreeWidgetItem(mapStylingGroup, {"Marker Size"});
     auto markerSizeSlider = new QSlider(Qt::Horizontal);
@@ -449,7 +457,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     auto markerSizeLabel = new QLabel("0.30");
     markerSizeLabel->setMinimumWidth(50);
     markerSizeLabel->setAlignment(Qt::AlignCenter);
-    
+
     connect(markerSizeSlider, &QSlider::valueChanged, [this, markerSizeLabel](int value) {
         if (targetWidget_) {
             float radius = value / 100.0f;  // 0.05 ~ 1.0 범위
@@ -459,124 +467,19 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
             qDebug() << "Marker size:" << radius;
         }
     });
-    
+
     markerSizeLayout->addWidget(markerSizeSlider);
     markerSizeLayout->addWidget(markerSizeLabel);
     markerSizeLayout->setContentsMargins(0, 0, 0, 0);
     markerSizeLayout->setSpacing(5);
     setItemWidget(markerSizeItem, 1, markerSizeWidget);
-}
 
-void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
     // ============================================================================
-    // Robot Navigation Section
+    // 4. Robot Colors Section (닫힌 상태로 시작)
     // ============================================================================
-    
-    // Lock to Robot Position
-    auto lockIndicatorItem = new QTreeWidgetItem(parent, {"Lock to Robot Position"});
-    auto lockCheck = createCheckBox(false, [this](bool checked) {
-        if (targetWidget_) {
-            targetWidget_->setLockIndicatorToCurrentPosition(checked);
-            qDebug() << "Lock indicator:" << (checked ? "ON" : "OFF");
-        }
-    });
-    setItemWidget(lockIndicatorItem, 1, lockCheck);
-    
-    // Target Robot selection
-    auto targetRobotItem = new QTreeWidgetItem(parent, {"Target Robot"});
-    targetRobotCombo_ = new QComboBox();
-    QStringList realRobots = {"TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
-    targetRobotCombo_->addItems(realRobots);
-    targetRobotCombo_->setCurrentText("TUGV");
-    connect(targetRobotCombo_, QOverload<const QString&>::of(&QComboBox::currentTextChanged), 
-            [this](const QString& robot) {
-        qDebug() << "Target robot changed to:" << robot;
-        
-        if (robotName_ == "COMBINED") {
-            auto* robotWidget = findRobotWidget(robot);
-            if (robotWidget) {
-                robotWidget->setIndicatorTargetRobot(robot);
-            }
-            if (targetWidget_) {
-                targetWidget_->setIndicatorTargetRobot(robot);
-            }
-        } else if (targetWidget_) {
-            targetWidget_->setIndicatorTargetRobot(robot);
-        }
-    });
-    setItemWidget(targetRobotItem, 1, targetRobotCombo_);
-    
-    // ============================================================================
-    // Quick Jump Section (기존과 동일)
-    // ============================================================================
-    auto jumpGroup = new QTreeWidgetItem(parent, {"Quick Jump"});
-    
-    for (const QString& robot : realRobots) {
-        auto jumpItem = new QTreeWidgetItem(jumpGroup, {"Jump to " + robot});
-        auto jumpBtn = createButton("Go", [this, robot]() {
-            qDebug() << "Quick jump to" << robot << "initiated...";
-            
-            PointCloudWidget* activeWidget = nullptr;
-            
-            if (robotName_ == "COMBINED") {
-                activeWidget = findRobotWidget(robot);
-                if (!activeWidget) {
-                    qDebug() << "Could not find individual widget for" << robot;
-                    return;
-                }
-            } else {
-                activeWidget = targetWidget_;
-                if (!activeWidget) {
-                    qDebug() << "No target widget for quick jump!";
-                    return;
-                }
-            }
-            
-            // Set target and jump
-            activeWidget->setIndicatorTargetRobot(robot);
-            if (robotName_ == "COMBINED" && targetWidget_) {
-                targetWidget_->setIndicatorTargetRobot(robot);
-                glm::vec3 robotPosition = activeWidget->getRobotCurrentPosition(robot);
-                targetWidget_->jumpToPosition(robotPosition);
-            } else {
-                activeWidget->jumpToRobotPosition(robot);
-            }
-            
-            // Enable lock
-            activeWidget->setLockIndicatorToCurrentPosition(true);
-            if (robotName_ == "COMBINED" && targetWidget_) {
-                targetWidget_->setLockIndicatorToCurrentPosition(true);
-            }
-            
-            // Update combo box
-            if (targetRobotCombo_ && targetRobotCombo_->currentText() != robot) {
-                targetRobotCombo_->setCurrentText(robot);
-            }
-            
-            // Auto-release after 3 seconds
-            QTimer* autoReleaseTimer = new QTimer();
-            autoReleaseTimer->setSingleShot(true);
-            connect(autoReleaseTimer, &QTimer::timeout, [this, autoReleaseTimer, robot, activeWidget]() {
-                if (activeWidget) {
-                    activeWidget->setLockIndicatorToCurrentPosition(false);
-                }
-                if (robotName_ == "COMBINED" && targetWidget_) {
-                    targetWidget_->setLockIndicatorToCurrentPosition(false);
-                }
-                autoReleaseTimer->deleteLater();
-            });
-            autoReleaseTimer->start(3000);
-            
-            qDebug() << "Quick jump to" << robot << "completed!";
-        });
-        setItemWidget(jumpItem, 1, jumpBtn);
-    }
-    
-    // ============================================================================
-    // Robot Colors Section (수정된 버전)
-    // ============================================================================
-    auto colorsGroup = new QTreeWidgetItem(parent, {"Robot Colors"});
-    
+    auto colorsGroup = new QTreeWidgetItem(mapStylingGroup, {"Robot Colors"});
+    colorsGroup->setExpanded(false);  // ✅ 변경: true → false
+
     for (int i = 1; i < ROBOT_NAMES.size(); ++i) {
         const QString& robot = ROBOT_NAMES[i];
         
@@ -684,9 +587,9 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
         
         qDebug() << "Created path color button for" << robot << "with default color" << defaultPathColor.name();
     }
-    
-    // Reset All Colors button
-    auto resetColorsItem = new QTreeWidgetItem(parent, {"Reset All Colors"});
+
+    // ✅ Reset All Colors button을 Robot Colors 그룹 안으로 이동
+    auto resetColorsItem = new QTreeWidgetItem(colorsGroup, {"Reset All Colors"});
     auto resetBtn = createButton("Reset", [this]() {
         if (targetWidget_) {
             qDebug() << "Resetting all colors to default...";
@@ -704,9 +607,112 @@ void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
     setItemWidget(resetColorsItem, 1, resetBtn);
 }
 
-// ============================================================================
-// Synchronization and Update Functions
-// ============================================================================
+void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
+    // ============================================================================
+    // Robot Navigation Section
+    // ============================================================================
+    
+    // Lock to Robot Position
+    auto lockIndicatorItem = new QTreeWidgetItem(parent, {"Lock to Robot Position"});
+    auto lockCheck = createCheckBox(false, [this](bool checked) {
+        if (targetWidget_) {
+            targetWidget_->setLockIndicatorToCurrentPosition(checked);
+            qDebug() << "Lock indicator:" << (checked ? "ON" : "OFF");
+        }
+    });
+    setItemWidget(lockIndicatorItem, 1, lockCheck);
+    
+    // Target Robot selection
+    auto targetRobotItem = new QTreeWidgetItem(parent, {"Target Robot"});
+    targetRobotCombo_ = new QComboBox();
+    QStringList realRobots = {"TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
+    targetRobotCombo_->addItems(realRobots);
+    targetRobotCombo_->setCurrentText("TUGV");
+    connect(targetRobotCombo_, QOverload<const QString&>::of(&QComboBox::currentTextChanged), 
+            [this](const QString& robot) {
+        qDebug() << "Target robot changed to:" << robot;
+        
+        if (robotName_ == "COMBINED") {
+            auto* robotWidget = findRobotWidget(robot);
+            if (robotWidget) {
+                robotWidget->setIndicatorTargetRobot(robot);
+            }
+            if (targetWidget_) {
+                targetWidget_->setIndicatorTargetRobot(robot);
+            }
+        } else if (targetWidget_) {
+            targetWidget_->setIndicatorTargetRobot(robot);
+        }
+    });
+    setItemWidget(targetRobotItem, 1, targetRobotCombo_);
+    
+    // ============================================================================
+    // Quick Jump Section
+    // ============================================================================
+    auto jumpGroup = new QTreeWidgetItem(parent, {"Quick Jump"});
+    
+    for (const QString& robot : realRobots) {
+        auto jumpItem = new QTreeWidgetItem(jumpGroup, {"Jump to " + robot});
+        auto jumpBtn = createButton("Go", [this, robot]() {
+            qDebug() << "Quick jump to" << robot << "initiated...";
+            
+            PointCloudWidget* activeWidget = nullptr;
+            
+            if (robotName_ == "COMBINED") {
+                activeWidget = findRobotWidget(robot);
+                if (!activeWidget) {
+                    qDebug() << "Could not find individual widget for" << robot;
+                    return;
+                }
+            } else {
+                activeWidget = targetWidget_;
+                if (!activeWidget) {
+                    qDebug() << "No target widget for quick jump!";
+                    return;
+                }
+            }
+            
+            // Set target and jump
+            activeWidget->setIndicatorTargetRobot(robot);
+            if (robotName_ == "COMBINED" && targetWidget_) {
+                targetWidget_->setIndicatorTargetRobot(robot);
+                glm::vec3 robotPosition = activeWidget->getRobotCurrentPosition(robot);
+                targetWidget_->jumpToPosition(robotPosition);
+            } else {
+                activeWidget->jumpToRobotPosition(robot);
+            }
+            
+            // Enable lock
+            activeWidget->setLockIndicatorToCurrentPosition(true);
+            if (robotName_ == "COMBINED" && targetWidget_) {
+                targetWidget_->setLockIndicatorToCurrentPosition(true);
+            }
+            
+            // Update combo box
+            if (targetRobotCombo_ && targetRobotCombo_->currentText() != robot) {
+                targetRobotCombo_->setCurrentText(robot);
+            }
+            
+            // Auto-release after 3 seconds
+            QTimer* autoReleaseTimer = new QTimer();
+            autoReleaseTimer->setSingleShot(true);
+            connect(autoReleaseTimer, &QTimer::timeout, [this, autoReleaseTimer, robot, activeWidget]() {
+                if (activeWidget) {
+                    activeWidget->setLockIndicatorToCurrentPosition(false);
+                }
+                if (robotName_ == "COMBINED" && targetWidget_) {
+                    targetWidget_->setLockIndicatorToCurrentPosition(false);
+                }
+                autoReleaseTimer->deleteLater();
+            });
+            autoReleaseTimer->start(3000);
+            
+            qDebug() << "Quick jump to" << robot << "completed!";
+        });
+        setItemWidget(jumpItem, 1, jumpBtn);
+    }
+}
+
 void ControlTreeWidget::syncWithWidget() {
     if (!targetWidget_) {
         qDebug() << "syncWithWidget: No target widget available";
