@@ -24,9 +24,9 @@ class QPaintEvent;
 namespace Widget {
     using Cloud = pcl::PointCloud<pcl::PointXYZI>;
     using CloudConstPtr = Cloud::ConstPtr;
-    using PathConstPtr = std::vector<geometry_msgs::msg::PoseStamped>;
     
-    // RenderHelper의 타입을 사용하도록 변경
+    // PathConstPtr 타입을 직접 벡터로 변경
+    using PathConstPtr = std::vector<geometry_msgs::msg::PoseStamped>;  // std::shared_ptr 제거
     using PositionMarkerType = RenderHelper::PositionMarkerType;
     
     class PointCloudWidget : public QOpenGLWidget, protected QOpenGLFunctions {
@@ -35,12 +35,6 @@ namespace Widget {
     public:
         explicit PointCloudWidget(QWidget *parent = nullptr);
         ~PointCloudWidget();
-
-        // 기존 enum 제거하고 using 선언으로 대체
-        // enum class PositionMarkerType {
-        //     CYLINDER,
-        //     AXES
-        // }; // 이 부분 제거
 
         // ============================================================================
         // Robot Related Functions
@@ -100,6 +94,7 @@ namespace Widget {
         glm::vec3 getFocusPoint() const { return focusPoint_; }
 
         // Point and path style settings
+        void setShowGridMap(bool show);
         void setShowPoints(bool show);
         void setShowPath(bool show);
         void setPointSize(float size);
@@ -110,8 +105,13 @@ namespace Widget {
         // Added Getter functions
         bool getShowPoints() const { return showPoints_; }
         bool getShowPath() const { return showPath_; }
-        
+        bool getShowGridMap() const { return showGridMap_; }
         void setPositionMarkerType(PositionMarkerType type);
+        void setGridMapResolution(float resolution);
+        float getGridMapResolution() const;        
+        // Map Style 제어 함수 추가
+        void setMapStyle(const QString& style);  // "pointcloud" 또는 "gridmap"
+        QString getMapStyle() const { return mapStyle_; }
         
         // Added Getter functions
         PositionMarkerType getPositionMarkerType() const { return positionMarkerType_; }
@@ -145,7 +145,7 @@ namespace Widget {
         // ============================================================================
         QString robotName_ = "";
         QHash<QString, CloudConstPtr> clouds_;
-        QHash<QString, PathConstPtr> paths_;
+        QHash<QString, PathConstPtr> paths_;  // = QHash<QString, std::vector<...>>
         mutable std::mutex cloudMutex_;
         mutable std::mutex pathMutex_;
         
@@ -248,15 +248,16 @@ namespace Widget {
         bool showPath_ = true;
         float pointSize_ = 2.0f;
         float pathWidth_ = 3.0f;
-
+        float gridMapResolution_ = 0.05f;  // 기본 해상도 5cm
+        QString mapStyle_ = "pointcloud";  // "pointcloud" 또는 "gridmap"
         // ============================================================================
         // Grid Map Functions
         // ============================================================================
-        void setShowGridMap(bool show);
         void setGridMapParameters(const GridMap::GridMapParameters& params);
         void updateGridMapForRobot(const QString& robotName, CloudConstPtr cloud);
-        bool getShowGridMap() const { return showGridMap_; }
+        void resampleGridMapResolution(std::shared_ptr<GridMap::GridMapData> gridData, float newResolution);
         GridMap::GridMapParameters getGridMapParameters() const { return gridParams_; }
+
     };
 }
 

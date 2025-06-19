@@ -104,7 +104,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     setItemWidget(labelItem, 1, labelCheck);
     
     // ============================================================================
-    // Axes Controls Group
+    // Axes Controls Group (기존과 동일)
     // ============================================================================
     auto axesGroup = new QTreeWidgetItem(parent, {"Axes Controls"});
     axesGroup->setExpanded(true);
@@ -149,7 +149,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     setItemWidget(axesSizeItem, 1, axesSizeWidget);
     
     // ============================================================================
-    // Grid Controls Group
+    // Grid Controls Group (기존과 동일)
     // ============================================================================
     auto gridGroup = new QTreeWidgetItem(parent, {"Grid Controls"});
     gridGroup->setExpanded(true);
@@ -221,13 +221,184 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     setItemWidget(gridSizeItem, 1, gridSizeWidget);
     
     // ============================================================================
-    // Position Marker Group
+    // Map Styling Group (Point Cloud Styling + Position Marker 통합)
     // ============================================================================
-    auto markerGroup = new QTreeWidgetItem(parent, {"Position Marker"});
-    markerGroup->setExpanded(true);
+    auto mapStylingGroup = new QTreeWidgetItem(parent, {"Map Styling"});
+    mapStylingGroup->setExpanded(true);
+    
+    // Map Style 콤보박스
+    auto mapStyleItem = new QTreeWidgetItem(mapStylingGroup, {"Map Style"});
+    auto mapStyleCombo = new QComboBox();
+    mapStyleCombo->addItems({"PointCloud", "GridMap"});
+    mapStyleCombo->setCurrentText("PointCloud");
+    connect(mapStyleCombo, QOverload<const QString&>::of(&QComboBox::currentTextChanged),
+            [this, mapStyleCombo](const QString& style) {
+                if (!targetWidget_) return;
+                
+                qDebug() << "Map style changing to:" << style;
+                
+                // 멤버 변수 업데이트
+                currentMapStyle_ = style.toLower();
+                
+                if (style == "PointCloud") {
+                    targetWidget_->setMapStyle("pointcloud");
+                    
+                    // Point Size 모드로 슬라이더 레이블 업데이트
+                    if (pointSizeSlider_ && pointSizeLabel_) {
+                        int currentValue = pointSizeSlider_->value();
+                        float pointSize = currentValue / 10.0f;
+                        pointSizeLabel_->setText(QString("%1").arg(pointSize, 0, 'f', 1));
+                    }
+                    
+                } else if (style == "GridMap") {
+                    targetWidget_->setMapStyle("gridmap");
+                    
+                    // Resolution 모드로 슬라이더 레이블 업데이트
+                    if (pointSizeSlider_ && pointSizeLabel_) {
+                        int currentValue = pointSizeSlider_->value();
+                        float resolution = 0.01f + (currentValue - 5) * (1.0f - 0.01f) / (100 - 5);
+                        resolution = std::round(resolution * 100.0f) / 100.0f;
+                        pointSizeLabel_->setText(QString("%1m").arg(resolution, 0, 'f', 2));
+                        
+                        // 즉시 해상도 적용
+                        targetWidget_->setGridMapResolution(resolution);
+                    }
+                }
+                
+                // Show Map 체크박스 업데이트
+                auto showMapCheck = findCheckBoxInTree("Show Map");
+                if (showMapCheck) {
+                    showMapCheck->setChecked(true);
+                    showMapCheck->setEnabled(true);
+                }
+                
+                ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+                qDebug() << "Map style changed to:" << style;
+            });
+    setItemWidget(mapStyleItem, 1, mapStyleCombo);
+    mapStyleCombo_ = mapStyleCombo;  // 멤버 변수로 저장 (동기화용)
+    
+    // Show Map checkbox
+    auto showMapItem = new QTreeWidgetItem(mapStylingGroup, {"Show Map"});
+    auto showMapCheck = createCheckBox(true, [this](bool checked) {
+        if (targetWidget_) {
+            QString currentStyle = targetWidget_->getMapStyle();
+            
+            if (currentStyle == "pointcloud") {
+                // PointCloud 모드: Show Points 제어
+                targetWidget_->setShowPoints(checked);
+                qDebug() << "Points display:" << (checked ? "ON" : "OFF");
+            } else if (currentStyle == "gridmap") {
+                // GridMap 모드: Show GridMap 제어
+                targetWidget_->setShowGridMap(checked);
+                qDebug() << "GridMap display:" << (checked ? "ON" : "OFF");
+            }
+            
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+        }
+    });
+    setItemWidget(showMapItem, 1, showMapCheck);
+    
+    // Show Path checkbox
+    auto showPathItem = new QTreeWidgetItem(mapStylingGroup, {"Show Path"});
+    auto showPathCheck = createCheckBox(true, [this](bool checked) {
+        if (targetWidget_) {
+            targetWidget_->setShowPath(checked);
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            qDebug() << "Path display:" << (checked ? "ON" : "OFF");
+        }
+    });
+    setItemWidget(showPathItem, 1, showPathCheck);
+    
+    // Point Size / Resolution slider
+    auto pointSizeItem = new QTreeWidgetItem(mapStylingGroup, {"Point Size / Resolution"});
+    auto pointSizeSlider = new QSlider(Qt::Horizontal);
+    pointSizeSlider->setRange(5, 100);
+    pointSizeSlider->setValue(20);
+    
+    // 값 표시 레이블 추가
+    auto pointSizeWidget = new QWidget();
+    auto pointSizeLayout = new QHBoxLayout(pointSizeWidget);
+    auto pointSizeLabel = new QLabel("2.0");
+    pointSizeLabel->setMinimumWidth(50);
+    pointSizeLabel->setAlignment(Qt::AlignCenter);
+    
+    connect(pointSizeSlider, &QSlider::valueChanged, [this, pointSizeLabel](int value) {
+        if (targetWidget_) {
+            QString currentStyle = targetWidget_->getMapStyle();
+            
+            if (currentStyle == "pointcloud") {
+                // PointCloud 모드: Point Size 제어 (기존 동작)
+                float size = value / 10.0f;  // 0.5 ~ 10.0
+                targetWidget_->setPointSize(size);
+                pointSizeLabel->setText(QString("%1").arg(size, 0, 'f', 1));
+                qDebug() << "Point size:" << size;
+                
+            } else if (currentStyle == "gridmap") {
+                // GridMap 모드: Resolution 제어 (새로운 기능)
+                // 5~100 → 0.01~1.0 매핑
+                float resolution = 0.01f + (value - 5) * (1.0f - 0.01f) / (100 - 5);
+                resolution = std::round(resolution * 100.0f) / 100.0f;  // 소수점 2자리 반올림
+                
+                targetWidget_->setGridMapResolution(resolution);
+                pointSizeLabel->setText(QString("%1m").arg(resolution, 0, 'f', 2));
+                qDebug() << "GridMap resolution:" << resolution << "meters";
+            }
+            
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+        }
+    });
+    
+    pointSizeLayout->addWidget(pointSizeSlider);
+    pointSizeLayout->addWidget(pointSizeLabel);
+    pointSizeLayout->setContentsMargins(0, 0, 0, 0);
+    pointSizeLayout->setSpacing(5);
+    setItemWidget(pointSizeItem, 1, pointSizeWidget);
+    
+    // 슬라이더 참조 저장 (동기화용)
+    pointSizeSlider_ = pointSizeSlider;
+    pointSizeLabel_ = pointSizeLabel;
+    
+    // Path Width slider
+    auto pathWidthItem = new QTreeWidgetItem(mapStylingGroup, {"Path Width"});
+    
+    // 값 표시 레이블과 함께 위젯 생성
+    auto pathWidthWidget = new QWidget();
+    auto pathWidthLayout = new QHBoxLayout(pathWidthWidget);
+    auto pathWidthSlider = new QSlider(Qt::Horizontal);
+    auto pathWidthLabel = new QLabel("3.0");
+
+    pathWidthSlider->setRange(5, 100);  // 0.5 ~ 10.0 범위
+    pathWidthSlider->setValue(30);      // 기본값 3.0
+    pathWidthLabel->setMinimumWidth(50);
+    pathWidthLabel->setAlignment(Qt::AlignCenter);
+
+    connect(pathWidthSlider, &QSlider::valueChanged, [this, pathWidthLabel](int value) {
+        if (targetWidget_) {
+            float width = value / 10.0f;  // 5~100 → 0.5~10.0
+            targetWidget_->setPathWidth(width);
+            pathWidthLabel->setText(QString("%1").arg(width, 0, 'f', 1));
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            qDebug() << "Path width:" << width;
+        }
+    });
+
+    pathWidthLayout->addWidget(pathWidthSlider);
+    pathWidthLayout->addWidget(pathWidthLabel);
+    pathWidthLayout->setContentsMargins(0, 0, 0, 0);
+    pathWidthLayout->setSpacing(5);
+    setItemWidget(pathWidthItem, 1, pathWidthWidget);
+
+    // 멤버 변수로 저장 (동기화용)
+    pathWidthSlider_ = pathWidthSlider;
+    pathWidthLabel_ = pathWidthLabel;
+    
+    // ============================================================================
+    // Position Marker 항목들을 Map Styling 그룹으로 이동
+    // ============================================================================
     
     // Show Current Position
-    auto positionItem = new QTreeWidgetItem(markerGroup, {"Show Current Position"});
+    auto positionItem = new QTreeWidgetItem(mapStylingGroup, {"Show Current Position"});
     auto positionCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
             targetWidget_->setShowPosition(checked);
@@ -238,7 +409,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     setItemWidget(positionItem, 1, positionCheck);
     
     // Position Marker Type
-    auto markerTypeItem = new QTreeWidgetItem(markerGroup, {"Marker Type"});
+    auto markerTypeItem = new QTreeWidgetItem(mapStylingGroup, {"Marker Type"});
     auto markerTypeCombo = new QComboBox();
     markerTypeCombo->addItems({"Cylinder", "Axes"});
     markerTypeCombo->setCurrentIndex(1);
@@ -257,119 +428,32 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     setItemWidget(markerTypeItem, 1, markerTypeCombo);
     
     // Marker Size slider
-    auto markerSizeItem = new QTreeWidgetItem(markerGroup, {"Marker Size"});
+    auto markerSizeItem = new QTreeWidgetItem(mapStylingGroup, {"Marker Size"});
     auto markerSizeSlider = new QSlider(Qt::Horizontal);
-    markerSizeSlider->setRange(10, 200);
-    markerSizeSlider->setValue(30);
-    connect(markerSizeSlider, &QSlider::valueChanged, [this](int value) {
+    markerSizeSlider->setRange(5, 100);  // 0.05 ~ 1.0 범위로 확장
+    markerSizeSlider->setValue(30);      // 기본값 0.3
+
+    auto markerSizeWidget = new QWidget();
+    auto markerSizeLayout = new QHBoxLayout(markerSizeWidget);
+    auto markerSizeLabel = new QLabel("0.30");
+    markerSizeLabel->setMinimumWidth(50);
+    markerSizeLabel->setAlignment(Qt::AlignCenter);
+    
+    connect(markerSizeSlider, &QSlider::valueChanged, [this, markerSizeLabel](int value) {
         if (targetWidget_) {
-            float radius = value / 100.0f;
+            float radius = value / 100.0f;  // 0.05 ~ 1.0 범위
             targetWidget_->setPositionRadius(radius);
             ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
-            qDebug() << "Marker radius:" << radius;
+            markerSizeLabel->setText(QString("%1").arg(radius, 0, 'f', 2));
+            qDebug() << "Marker size:" << radius;
         }
     });
-    setItemWidget(markerSizeItem, 1, markerSizeSlider);
     
-    // ============================================================================
-    // Point Cloud Styling Group
-    // ============================================================================
-    auto pointCloudGroup = new QTreeWidgetItem(parent, {"Point Cloud Styling"});
-    pointCloudGroup->setExpanded(true);
-    
-    // Show Points checkbox
-    auto showPointsItem = new QTreeWidgetItem(pointCloudGroup, {"Show Points"});
-    auto showPointsCheck = createCheckBox(true, [this](bool checked) {
-        if (targetWidget_) {
-            targetWidget_->setShowPoints(checked);
-            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
-            qDebug() << "Points display:" << (checked ? "ON" : "OFF");
-        }
-    });
-    setItemWidget(showPointsItem, 1, showPointsCheck);
-    
-    // Show Path checkbox
-    auto showPathItem = new QTreeWidgetItem(pointCloudGroup, {"Show Path"});
-    auto showPathCheck = createCheckBox(true, [this](bool checked) {
-        if (targetWidget_) {
-            targetWidget_->setShowPath(checked);
-            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
-            qDebug() << "Path display:" << (checked ? "ON" : "OFF");
-        }
-    });
-    setItemWidget(showPathItem, 1, showPathCheck);
-    
-    // Point Size slider
-    auto pointSizeItem = new QTreeWidgetItem(pointCloudGroup, {"Point Size"});
-    auto pointSizeSlider = new QSlider(Qt::Horizontal);
-    pointSizeSlider->setRange(5, 100);
-    pointSizeSlider->setValue(20);
-    connect(pointSizeSlider, &QSlider::valueChanged, [this](int value) {
-        if (targetWidget_) {
-            float size = value / 10.0f;
-            targetWidget_->setPointSize(size);
-            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
-            qDebug() << "Point size:" << size;
-        }
-    });
-    setItemWidget(pointSizeItem, 1, pointSizeSlider);
-    
-    // Path Width slider
-    auto pathWidthItem = new QTreeWidgetItem(pointCloudGroup, {"Path Width"});
-    auto pathWidthSlider = new QSlider(Qt::Horizontal);
-    pathWidthSlider->setRange(5, 100);
-    pathWidthSlider->setValue(30);
-    connect(pathWidthSlider, &QSlider::valueChanged, [this](int value) {
-        if (targetWidget_) {
-            float width = value / 10.0f;
-            targetWidget_->setPathWidth(width);
-            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
-            qDebug() << "Path width:" << width;
-        }
-    });
-    setItemWidget(pathWidthItem, 1, pathWidthSlider);
-    
-    // ============================================================================
-    // Camera Controls Group
-    // ============================================================================
-    auto cameraGroup = new QTreeWidgetItem(parent, {"Camera Controls"});
-    cameraGroup->setExpanded(false);
-    
-    // Top View Mode
-    auto topViewItem = new QTreeWidgetItem(cameraGroup, {"Top View Mode"});
-    auto topViewCheck = createCheckBox(false, [this](bool checked) {
-        if (targetWidget_) {
-            targetWidget_->setTopView(checked);
-            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
-            qDebug() << "Top view:" << (checked ? "ON" : "OFF");
-        }
-    });
-    setItemWidget(topViewItem, 1, topViewCheck);
-    
-    // Rotation Sensitivity slider
-    auto sensitivityItem = new QTreeWidgetItem(cameraGroup, {"Rotation Sensitivity"});
-    auto sensitivitySlider = new QSlider(Qt::Horizontal);
-    sensitivitySlider->setRange(10, 100);
-    sensitivitySlider->setValue(30);
-    connect(sensitivitySlider, &QSlider::valueChanged, [this](int value) {
-        if (targetWidget_) {
-            float sensitivity = value / 100.0f;
-            targetWidget_->setRotationSensitivity(sensitivity);
-            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
-            qDebug() << "Rotation sensitivity:" << sensitivity;
-        }
-    });
-    setItemWidget(sensitivityItem, 1, sensitivitySlider);
-    
-    // Reset Camera button
-    auto resetCameraItem = new QTreeWidgetItem(cameraGroup, {"Reset Camera"});
-    auto resetCameraBtn = createButton("Reset", [this]() {
-        if (targetWidget_) {
-            targetWidget_->resetCamera();
-            qDebug() << "Camera reset";
-        }
-    });
-    setItemWidget(resetCameraItem, 1, resetCameraBtn);
+    markerSizeLayout->addWidget(markerSizeSlider);
+    markerSizeLayout->addWidget(markerSizeLabel);
+    markerSizeLayout->setContentsMargins(0, 0, 0, 0);
+    markerSizeLayout->setSpacing(5);
+    setItemWidget(markerSizeItem, 1, markerSizeWidget);
 }
 
 void ControlTreeWidget::addRobotControls(QTreeWidgetItem* parent) {
@@ -620,23 +704,6 @@ void ControlTreeWidget::syncWithWidget() {
     
     qDebug() << "syncWithWidget: Starting synchronization for robot:" << robotName_;
     
-    // Helper to find sliders in tree
-    auto findSliderInTree = [this](const QString& itemName) -> QSlider* {
-        QTreeWidgetItemIterator it(this);
-        while (*it) {
-            if ((*it)->text(0) == itemName) {
-                QWidget* widget = itemWidget(*it, 1);
-                if (auto* slider = qobject_cast<QSlider*>(widget)) {
-                    return slider;
-                } else if (widget) {
-                    return widget->findChild<QSlider*>();
-                }
-            }
-            ++it;
-        }
-        return nullptr;
-    };
-    
     // Helper to find checkboxes in tree
     auto findCheckBoxInTree = [this](const QString& itemName) -> QCheckBox* {
         QTreeWidgetItemIterator it(this);
@@ -650,40 +717,6 @@ void ControlTreeWidget::syncWithWidget() {
         return nullptr;
     };
     
-    // Sync sliders
-    if (auto* axesSizeSlider = findSliderInTree("Axes Size")) {
-        float currentAxesSize = targetWidget_->getAxesSize();
-        axesSizeSlider->setValue(static_cast<int>(currentAxesSize * 10));
-        
-        if (auto* parent = axesSizeSlider->parentWidget()) {
-            if (auto* label = parent->findChild<QLabel*>()) {
-                label->setText(QString("%1m").arg(currentAxesSize, 0, 'f', 1));
-            }
-        }
-    }
-    
-    if (auto* gridSizeSlider = findSliderInTree("Grid Cell Size")) {
-        float currentGridSize = targetWidget_->getGridSize();
-        gridSizeSlider->setValue(static_cast<int>(currentGridSize * 10));
-        
-        if (auto* parent = gridSizeSlider->parentWidget()) {
-            if (auto* label = parent->findChild<QLabel*>()) {
-                label->setText(QString("%1m").arg(currentGridSize, 0, 'f', 1));
-            }
-        }
-    }
-    
-    if (auto* gridCountSlider = findSliderInTree("Grid Cell Count")) {
-        int currentGridCount = targetWidget_->getGridCellCount();
-        gridCountSlider->setValue(currentGridCount);
-        
-        if (auto* parent = gridCountSlider->parentWidget()) {
-            if (auto* label = parent->findChild<QLabel*>()) {
-                label->setText(QString("%1x%1").arg(currentGridCount));
-            }
-        }
-    }
-    
     // Sync checkboxes
     if (auto* showAxesCheck = findCheckBoxInTree("Show Axes")) {
         showAxesCheck->setChecked(targetWidget_->getShowAxes());
@@ -693,10 +726,23 @@ void ControlTreeWidget::syncWithWidget() {
         showGridCheck->setChecked(targetWidget_->getShowGrid());
     }
     
-    if (auto* showPointsCheck = findCheckBoxInTree("Show Points")) {
-        showPointsCheck->setChecked(targetWidget_->getShowPoints());
+    // Show Map 체크박스 동기화 (Map Style에 따라 다른 동작)
+    if (auto* showMapCheck = findCheckBoxInTree("Show Map")) {
+        QString currentStyle = targetWidget_->getMapStyle();
+        
+        if (currentStyle == "pointcloud") {
+            // PointCloud 모드: Show Points 상태 반영
+            showMapCheck->setChecked(targetWidget_->getShowPoints());
+        } else if (currentStyle == "gridmap") {
+            // GridMap 모드: Show GridMap 상태 반영
+            showMapCheck->setChecked(targetWidget_->getShowGridMap());
+        }
+        
+        // 모든 모드에서 활성화 상태 유지
+        showMapCheck->setEnabled(true);
     }
     
+    // Show Path는 항상 동기화 (모든 모드에서 사용 가능)
     if (auto* showPathCheck = findCheckBoxInTree("Show Path")) {
         showPathCheck->setChecked(targetWidget_->getShowPath());
     }
@@ -707,6 +753,46 @@ void ControlTreeWidget::syncWithWidget() {
     
     if (auto* showLabelCheck = findCheckBoxInTree("Show Robot Labels")) {
         showLabelCheck->setChecked(targetWidget_->getShowRobotLabel());
+    }
+    
+    // Sync Map Style combo box
+    if (mapStyleCombo_) {
+        QString currentStyle = targetWidget_->getMapStyle();
+        if (currentStyle == "pointcloud") {
+            mapStyleCombo_->setCurrentText("PointCloud");
+        } else if (currentStyle == "gridmap") {
+            mapStyleCombo_->setCurrentText("GridMap");
+        }
+        
+        // Show Map 체크박스는 항상 활성화 (제거된 로직)
+        // GridMap 모드에서도 Path 제어가 가능하므로 비활성화하지 않음
+    }
+    
+    // Path Width 슬라이더 동기화
+    if (pathWidthSlider_ && pathWidthLabel_) {
+        float currentPathWidth = targetWidget_->getPathWidth();
+        int sliderValue = static_cast<int>(currentPathWidth * 10);
+        pathWidthSlider_->setValue(std::clamp(sliderValue, 5, 100));
+        pathWidthLabel_->setText(QString("%1").arg(currentPathWidth, 0, 'f', 1));
+        qDebug() << "Synced Path Width:" << currentPathWidth;
+    }
+    
+    // Point Size / Resolution 슬라이더 동기화
+    if (pointSizeSlider_ && pointSizeLabel_) {
+        QString currentStyle = targetWidget_->getMapStyle();
+        
+        if (currentStyle == "pointcloud") {
+            float currentPointSize = targetWidget_->getPointSize();
+            int sliderValue = static_cast<int>(currentPointSize * 10);
+            pointSizeSlider_->setValue(std::clamp(sliderValue, 5, 100));
+            pointSizeLabel_->setText(QString("%1").arg(currentPointSize, 0, 'f', 1));
+            
+        } else if (currentStyle == "gridmap") {
+            float currentResolution = targetWidget_->getGridMapResolution();
+            int sliderValue = static_cast<int>(5 + (currentResolution - 0.01f) * (100 - 5) / (1.0f - 0.01f));
+            pointSizeSlider_->setValue(std::clamp(sliderValue, 5, 100));
+            pointSizeLabel_->setText(QString("%1m").arg(currentResolution, 0, 'f', 2));
+        }
     }
     
     // Sync color buttons
@@ -843,6 +929,21 @@ QPushButton* ControlTreeWidget::createButton(const QString& text, std::function<
     auto button = new QPushButton(text);
     connect(button, &QPushButton::clicked, callback);
     return button;
+}
+
+// ============================================================================
+// Helper Functions (추가)
+// ============================================================================
+QCheckBox* ControlTreeWidget::findCheckBoxInTree(const QString& itemName) {
+    QTreeWidgetItemIterator it(this);
+    while (*it) {
+        if ((*it)->text(0) == itemName) {
+            QWidget* widget = itemWidget(*it, 1);
+            return qobject_cast<QCheckBox*>(widget);
+        }
+        ++it;
+    }
+    return nullptr;
 }
 
 } // namespace Widget

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <functional>
+#include <QDebug>
 
 namespace GridMap {
 
@@ -186,6 +187,240 @@ cv::Mat GridMapProcessor::visualizeGridMap(
     }
     
     return colorMap;
+}
+
+// 새로 추가: pointcloud_widget에서 사용할 함수
+bool GridMapProcessor::processPointCloud(
+    const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& cloud,
+    const GridMapParameters& params,
+    GridMapData& gridData) {
+    
+    if (!cloud || cloud->empty()) {
+        qDebug() << "GridMapProcessor::processPointCloud: Empty cloud provided";
+        return false;
+    }
+    
+    // 기존 convertPointCloudToGridMap 함수 활용
+    auto processedGridData = convertPointCloudToGridMap(cloud, params);
+    
+    if (!processedGridData || !processedGridData->isValid()) {
+        qDebug() << "GridMapProcessor::processPointCloud: Failed to convert point cloud";
+        return false;
+    }
+    
+    // 결과를 참조로 전달된 gridData에 복사
+    gridData.width = processedGridData->width;
+    gridData.height = processedGridData->height;
+    gridData.resolution = processedGridData->resolution;
+    gridData.originX = processedGridData->originX;
+    gridData.originY = processedGridData->originY;
+    gridData.occupancyMap = processedGridData->occupancyMap.clone();  // OpenCV Mat 복사
+    gridData.sourceCloudHash = processedGridData->sourceCloudHash;
+    gridData.timestamp = processedGridData->timestamp;
+    
+    // data 벡터 형태로도 변환 (렌더링용)
+    convertMatToVector(gridData);
+    
+    qDebug() << "GridMapProcessor::processPointCloud: Successfully processed" 
+             << cloud->size() << "points into" 
+             << gridData.width << "x" << gridData.height << "grid";
+    
+    return true;
+}
+
+// OpenCV Mat을 std::vector<float>로 변환하는 헬퍼 함수
+void GridMapProcessor::convertMatToVector(GridMapData& gridData) {
+    if (gridData.occupancyMap.empty()) {
+        gridData.data.clear();
+        return;
+    }
+    
+    const cv::Mat& occupancyMap = gridData.occupancyMap;
+    int totalCells = gridData.width * gridData.height;
+    gridData.data.resize(totalCells);
+    
+    // OpenCV Mat (uchar) → std::vector<float> 변환
+    for (int y = 0; y < gridData.height; ++y) {
+        for (int x = 0; x < gridData.width; ++x) {
+            int vectorIndex = y * gridData.width + x;
+            uchar occupancyValue = occupancyMap.at<uchar>(y, x);
+            
+            // uchar (0-255) → float (0.0-1.0) 변환
+            if (occupancyValue == 255) {
+                gridData.data[vectorIndex] = 1.0f;  // Occupied
+            } else if (occupancyValue == 0) {
+                gridData.data[vectorIndex] = -1.0f; // Unknown
+            } else {
+                gridData.data[vectorIndex] = occupancyValue / 255.0f;  // Probability
+            }
+        }
+    }
+}
+
+} // namespace GridMap
+
+namespace GridMap {
+
+// Path를 GridMap 좌표계로 프로젝션
+ProjectedPath GridMapProcessor::projectPathToGridMap(
+    const std::vector<geometry_msgs::msg::PoseStamped>& path,
+    const GridMapData& gridData,
+    const QString& robotName,
+    const glm::vec3& color) {
+    
+    ProjectedPath projectedPath;
+    projectedPath.robotName = robotName;
+    projectedPath.color = color;
+    
+    if (path.empty() || !gridData.isValid()) {
+        qDebug() << "GridMapProcessor: Invalid path or grid data for projection";
+        return projectedPath;
+    }
+    
+    projectedPath.points.reserve(path.size());
+    projectedPath.orientations.reserve(path.size());
+    
+    for (const auto& poseStamped : path) {
+        const auto& pose = poseStamped.pose;
+        
+        // 3D 위치를 2D 그리드 좌표로 변환
+        cv::Point2f gridPoint = worldToGrid(
+            pose.position.x, 
+            pose.position.y, 
+            gridData
+        );
+        
+        // 그리드 범위 체크
+        if (gridPoint.x >= 0 && gridPoint.x < gridData.width &&
+            gridPoint.y >= 0 && gridPoint.y < gridData.height) {
+            
+            projectedPath.points.push_back(gridPoint);
+            
+            // 방향각 계산 (쿼터니언 → 오일러)
+            float orientation = calculateOrientation(poseStamped);
+            projectedPath.orientations.push_back(orientation);
+        }
+    }
+    
+    projectedPath.isValid = !projectedPath.points.empty();
+    
+    qDebug() << "GridMapProcessor: Projected" << projectedPath.points.size() 
+             << "/" << path.size() << "path points for robot:" << robotName;
+    
+    return projectedPath;
+}
+
+// 그리드맵에 경로 그리기
+cv::Mat GridMapProcessor::drawPathOnGridMap(
+    const cv::Mat& gridMap,
+    const ProjectedPath& projectedPath,
+    float pathWidth) {
+    
+    if (!projectedPath.isValid || gridMap.empty()) {
+        return gridMap.clone();
+    }
+    
+    cv::Mat result = gridMap.clone();
+    
+    // 색상 변환 (glm::vec3 → cv::Scalar)
+    cv::Scalar pathColor(
+        projectedPath.color.b * 255,  // OpenCV는 BGR 순서
+        projectedPath.color.g * 255,
+        projectedPath.color.r * 255
+    );
+    
+    // 경로 선 그리기
+    for (size_t i = 1; i < projectedPath.points.size(); ++i) {
+        cv::line(result, 
+                projectedPath.points[i-1], 
+                projectedPath.points[i], 
+                pathColor, 
+                static_cast<int>(pathWidth));
+    }
+    
+    // 방향 화살표 그리기 (일정 간격마다)
+    int arrowInterval = std::max(1, static_cast<int>(projectedPath.points.size() / 10));
+    for (size_t i = 0; i < projectedPath.points.size(); i += arrowInterval) {
+        drawArrow(result, 
+                 projectedPath.points[i], 
+                 projectedPath.orientations[i], 
+                 pathColor, 
+                 pathWidth * 2.0f);
+    }
+    
+    return result;
+}
+
+// 여러 경로를 그리드맵에 합성
+cv::Mat GridMapProcessor::combineGridMapWithPaths(
+    const cv::Mat& gridMap,
+    const std::vector<ProjectedPath>& paths) {
+    
+    cv::Mat result = gridMap.clone();
+    
+    // 각 경로를 순차적으로 그리기
+    for (const auto& path : paths) {
+        if (path.isValid) {
+            result = drawPathOnGridMap(result, path, 3.0f);
+        }
+    }
+    
+    return result;
+}
+
+// 헬퍼 함수들
+cv::Point2f GridMapProcessor::worldToGrid(
+    float worldX, float worldY,
+    const GridMapData& gridData) {
+    
+    float gridX = (worldX - gridData.originX) / gridData.resolution;
+    float gridY = (worldY - gridData.originY) / gridData.resolution;
+    
+    return cv::Point2f(gridX, gridY);
+}
+
+float GridMapProcessor::calculateOrientation(
+    const geometry_msgs::msg::PoseStamped& poseStamped) {
+    
+    const auto& q = poseStamped.pose.orientation;
+    
+    // 쿼터니언을 오일러 각(yaw)으로 변환
+    float yaw = std::atan2(
+        2.0f * (q.w * q.z + q.x * q.y),
+        1.0f - 2.0f * (q.y * q.y + q.z * q.z)
+    );
+    
+    return yaw;
+}
+
+void GridMapProcessor::drawArrow(
+    cv::Mat& image,
+    const cv::Point2f& point,
+    float orientation,
+    const cv::Scalar& color,
+    float size) {
+    
+    // 화살표 끝점 계산
+    cv::Point2f arrowEnd(
+        point.x + size * std::cos(orientation),
+        point.y + size * std::sin(orientation)
+    );
+    
+    // 화살표 날개 계산
+    float arrowAngle = M_PI / 6;  // 30도
+    cv::Point2f wing1(
+        point.x + (size * 0.7f) * std::cos(orientation + arrowAngle),
+        point.y + (size * 0.7f) * std::sin(orientation + arrowAngle)
+    );
+    cv::Point2f wing2(
+        point.x + (size * 0.7f) * std::cos(orientation - arrowAngle),
+        point.y + (size * 0.7f) * std::sin(orientation - arrowAngle)
+    );
+    
+    // 화살표 그리기
+    cv::line(image, point, arrowEnd, color, 2);
+    cv::line(image, arrowEnd, wing1, color, 2);
+    cv::line(image, arrowEnd, wing2, color, 2);
 }
 
 } // namespace GridMap

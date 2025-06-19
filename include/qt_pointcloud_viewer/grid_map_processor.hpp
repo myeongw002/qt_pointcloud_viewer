@@ -5,8 +5,13 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <opencv2/opencv.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <memory>
 #include <vector>
+#include <QString>
 
 namespace GridMap {
 
@@ -22,16 +27,37 @@ struct GridMapParameters {
 };
 
 struct GridMapData {
-    cv::Mat occupancyMap;               // 단순 이진 맵: 0=Unknown, 255=Occupied
-    float resolution;                   // m/cell
-    float originX, originY;             // 맵 원점 (world coordinates)
-    int width, height;                  // 맵 크기 (cells)
-    size_t sourceCloudHash;             // 소스 클라우드 해시
+    int width = 0;
+    int height = 0;
+    float resolution = 0.1f;
+    float originX = 0.0f;
+    float originY = 0.0f;
+    
+    // OpenCV 형태의 점유도 맵 (기존)
+    cv::Mat occupancyMap;
+    
+    // 렌더링용 데이터 (pointcloud_widget용)
+    std::vector<float> data;  // 이미 있는지 확인하고 없으면 추가
+    
+    // 메타 정보
+    size_t sourceCloudHash = 0;
     std::chrono::steady_clock::time_point timestamp;
     
+    // 유효성 검사
     bool isValid() const {
-        return !occupancyMap.empty() && width > 0 && height > 0;
+        return width > 0 && height > 0 && resolution > 0.0f && 
+               !occupancyMap.empty() && 
+               occupancyMap.rows == height && occupancyMap.cols == width;
     }
+};
+
+// Path 데이터 구조체 추가
+struct ProjectedPath {
+    std::vector<cv::Point2f> points;  // 그리드 좌표계의 경로 점들
+    std::vector<float> orientations;  // 각 점에서의 방향각 (라디안)
+    QString robotName;
+    glm::vec3 color;
+    bool isValid = false;
 };
 
 class GridMapProcessor {
@@ -51,6 +77,31 @@ public:
         bool showProbability = false
     );
 
+    static bool processPointCloud(
+        const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& cloud,
+        const GridMapParameters& params,
+        GridMapData& gridData
+    );
+    
+    // 새로 추가: Path 프로젝션 함수들
+    static ProjectedPath projectPathToGridMap(
+        const std::vector<geometry_msgs::msg::PoseStamped>& path,
+        const GridMapData& gridData,
+        const QString& robotName,
+        const glm::vec3& color
+    );
+    
+    static cv::Mat drawPathOnGridMap(
+        const cv::Mat& gridMap,
+        const ProjectedPath& projectedPath,
+        float pathWidth = 3.0f
+    );
+    
+    static cv::Mat combineGridMapWithPaths(
+        const cv::Mat& gridMap,
+        const std::vector<ProjectedPath>& paths
+    );
+
 private:
     static std::vector<pcl::PointXYZI> filterPointsByHeight(
         const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& cloud,
@@ -67,6 +118,27 @@ private:
     
     static size_t calculateCloudHash(
         const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& cloud
+    );
+    
+    // 새로 추가: Mat을 Vector로 변환
+    static void convertMatToVector(GridMapData& gridData);
+    
+    // 새로 추가: Path 프로젝션 헬퍼 함수들
+    static cv::Point2f worldToGrid(
+        float worldX, float worldY,
+        const GridMapData& gridData
+    );
+    
+    static float calculateOrientation(
+        const geometry_msgs::msg::PoseStamped& pose
+    );
+    
+    static void drawArrow(
+        cv::Mat& image,
+        const cv::Point2f& point,
+        float orientation,
+        const cv::Scalar& color,
+        float size = 5.0f
     );
 };
 

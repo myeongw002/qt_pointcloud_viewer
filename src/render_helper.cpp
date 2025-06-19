@@ -50,7 +50,7 @@ void PointCloudRenderer::drawPoints(
 }
 
 void PointCloudRenderer::drawPaths(
-    const QHash<QString, PathConstPtr>& paths,
+    const QHash<QString, PathVector>& paths,  // 타입 변경
     const QString& currentRobot,
     const QHash<QString, glm::vec3>& robotColors,
     float pathWidth,
@@ -69,17 +69,17 @@ void PointCloudRenderer::drawPaths(
             continue;
         }
         
-        const auto& path = it.value();
-        if (path.empty()) continue;
+        const auto& path = it.value();  // 직접 벡터 참조
+        if (path.empty()) continue;     // .empty() 사용 가능
         
         // 로봇 색상 설정
         glm::vec3 color = robotColors.value(robotName, glm::vec3(0.0f, 1.0f, 0.0f));
         glColor3f(color.x, color.y, color.z);
         
         // 경로 라인 렌더링
-        for (size_t i = 1; i < path.size(); ++i) {
-            const auto& prev_pose = path[i-1];
-            const auto& curr_pose = path[i];
+        for (size_t i = 1; i < path.size(); ++i) {     // .size() 사용 가능
+            const auto& prev_pose = path[i-1];         // [] 연산자 사용 가능
+            const auto& curr_pose = path[i];           // [] 연산자 사용 가능
             
             // ROS → OpenGL 좌표 변환
             glVertex3f(-prev_pose.pose.position.y, prev_pose.pose.position.z, -prev_pose.pose.position.x);
@@ -91,14 +91,14 @@ void PointCloudRenderer::drawPaths(
 }
 
 void PointCloudRenderer::drawPositions(
-    const QHash<QString, PathConstPtr>& paths,
+    const QHash<QString, PathVector>& paths,
     const QString& currentRobot,
     const QHash<QString, glm::vec3>& robotColors,
     PositionMarkerType markerType,
-    float radius,
-    float height,
-    float axesLength,
-    float axesRadius,
+    float radius,           // Marker Size 슬라이더 값 (0.1 ~ 2.0)
+    float height,           // Cylinder 전용
+    float axesLength,       // 사용하지 않음 (radius로 대체)
+    float axesRadius,       // 사용하지 않음 (radius로 대체)
     std::mutex& pathMutex) {
     
     std::lock_guard<std::mutex> lock(pathMutex);
@@ -131,11 +131,19 @@ void PointCloudRenderer::drawPositions(
         // 마커 타입에 따른 렌더링
         switch (markerType) {
             case PositionMarkerType::CYLINDER:
+                // Cylinder: 기존과 동일 (radius, height 사용)
                 drawCylinderMarker(position, robotColor, radius, height);
                 break;
                 
             case PositionMarkerType::AXES:
-                drawPositionAxes(position, orientation, robotName, axesLength, axesRadius);
+                // Axes: radius 값을 기반으로 적절한 길이와 두께 계산
+                {
+                    float calculatedLength = radius * 3.0f;  // 슬라이더 값의 3배를 길이로
+                    float calculatedRadius = radius * 0.15f; // 슬라이더 값의 15%를 두께로
+                    
+                    drawPositionAxes(position, orientation, robotName, 
+                                   calculatedLength, calculatedRadius);
+                }
                 break;
         }
     }
@@ -256,27 +264,22 @@ void PointCloudRenderer::drawPositionAxes(
     const glm::vec3& position,
     const glm::quat& orientation,
     const QString& robotName,
-    float axesLength,
-    float axesRadius) {
+    float axesLength,    // 이제 Marker Size 슬라이더 기반 계산된 길이
+    float axesRadius) {  // 이제 Marker Size 슬라이더 기반 계산된 두께
     
-    // 로봇별 크기 조정
-    float scaledLength = axesLength * 0.5f;  // Position axes는 메인 axes의 50%
-    float scaledRadius = axesRadius * 0.6f;
+    // 로봇별 크기 조정 (기존 로직 유지)
+    float finalLength = axesLength;
+    float finalRadius = axesRadius;
     
-    if (robotName == "SUAV") {
-        scaledLength *= 1.2f;
-    } else if (robotName == "SUGV1" || robotName == "SUGV2") {
-        scaledLength *= 0.8f;
-    }
-    
-    glm::vec3 axesStart = position + glm::vec3(0, 0.05f, 0);
+    // 바닥에서 살짝 위에 시작점 설정
+    glm::vec3 axesStart = position + glm::vec3(0, finalRadius, 0);
     
     ShapeHelper::SimpleShape::drawRosAxes(
         axesStart,
         orientation,
-        scaledLength,
-        scaledRadius,
-        true
+        finalLength,
+        finalRadius,
+        true  // drawArrowheads
     );
 }
 
@@ -333,7 +336,7 @@ void PointCloudRenderer::drawSingleLabel(
 // GridMapRenderer Implementation
 // ============================================================================
 
-void GridMapRenderer::drawGridMaps(
+void GridMapRenderer::drawBasicGridMaps(
     const QHash<QString, std::shared_ptr<GridMap::GridMapData>>& gridMaps,
     const QString& currentRobot,
     const QHash<QString, glm::vec3>& robotColors,
@@ -344,28 +347,21 @@ void GridMapRenderer::drawGridMaps(
     if (gridMaps.isEmpty()) return;
     
     // OpenGL 상태 설정
-    glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     if (currentRobot == "COMBINED") {
-        // COMBINED 모드: 통합 그리드맵 생성
+        // ✅ 개선: 통합 렌더링 방식 사용
         drawCombinedGridMap(gridMaps, robotColors);
     } else {
-        // 개별 로봇 모드
-        for (auto it = gridMaps.cbegin(); it != gridMaps.cend(); ++it) {
-            const QString& robotName = it.key();
-            const auto& gridData = it.value();
-            
-            if (robotName != currentRobot) continue;
-            
-            glm::vec3 robotColor = robotColors.value(robotName, glm::vec3(0.0f, 1.0f, 0.0f));
-            drawSingleGridMap(gridData, robotColor);
+        // 특정 로봇의 그리드맵만 렌더링
+        if (gridMaps.contains(currentRobot)) {
+            auto gridData = gridMaps[currentRobot];
+            glm::vec3 gridColor = robotColors.value(currentRobot, glm::vec3(0.5f, 0.5f, 0.5f));
+            drawSingleGridMap(gridData, gridColor);
         }
     }
     
-    // OpenGL 상태 복원
-    glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
 }
 
@@ -395,7 +391,7 @@ void GridMapRenderer::drawCombinedGridMap(
     }
     
     // 2. 배경 먼저 그리기 (한 번만)
-    glColor4f(0.5f, 0.5f, 0.5f, 0.3f);
+    glColor4f(0.5f, 0.6f, 0.6f, 0.8f);
     glBegin(GL_QUADS);
     glVertex3f(minX, 0.01f, minY);
     glVertex3f(maxX, 0.01f, minY);
@@ -438,7 +434,7 @@ void GridMapRenderer::drawSingleGridMap(
                 glColor4f(robotColor.r, robotColor.g, robotColor.b, 0.8f);
             } else {
                 // 배경 (Unknown): 회색 (반투명)
-                glColor4f(0.5f, 0.5f, 0.5f, 0.3f);
+                glColor4f(0.5f, 0.6f, 0.6f, 0.8f);
             }
             
             // 셀의 월드 좌표 계산
@@ -455,6 +451,52 @@ void GridMapRenderer::drawSingleGridMap(
     }
     
     glEnd();
+}
+
+void GridMapRenderer::draw2DProjectedPaths(
+    const QHash<QString, PathVector>& paths,  // 타입 변경
+    const QString& currentRobot,
+    const QHash<QString, glm::vec3>& robotColors,
+    std::mutex& pathMutex,
+    float pathWidth) {
+    
+    std::lock_guard<std::mutex> lock(pathMutex);
+    
+    // 기존 PointCloudRenderer::drawPaths와 동일하되 Z좌표를 고정
+    glLineWidth(pathWidth);
+    glBegin(GL_LINES);
+    
+    for (auto it = paths.cbegin(); it != paths.cend(); ++it) {
+        const QString& robotName = it.key();
+        
+        // 현재 로봇 필터링
+        if (currentRobot != "COMBINED" && robotName != currentRobot) {
+            continue;
+        }
+        
+        const auto& path = it.value();  // 이제 직접 vector 참조
+        if (path.empty()) continue;     // 포인터 연산자 제거
+        
+        // 로봇 색상 설정
+        glm::vec3 color = robotColors.value(robotName, glm::vec3(0.0f, 1.0f, 0.0f));
+        glColor4f(color.x, color.y, color.z, 0.9f);  // 약간 투명
+        
+        // 경로 라인 렌더링 (Z좌표 고정으로 2D 평면화)
+        for (size_t i = 1; i < path.size(); ++i) {      // 포인터 연산자 제거
+            const auto& prev_pose = path[i-1];          // 역참조 연산자 제거
+            const auto& curr_pose = path[i];            // 역참조 연산자 제거
+            
+            // ROS → OpenGL 좌표 변환, Z좌표는 GridMap 위에 고정
+            float z = 0.02f;  // GridMap보다 살짝 위
+            glVertex3f(-prev_pose.pose.position.y, z, -prev_pose.pose.position.x);
+            glVertex3f(-curr_pose.pose.position.y, z, -curr_pose.pose.position.x);
+        }
+    }
+    
+    glEnd();
+    
+    // 방향 표시 (화살표 점들)
+    // drawPathDirectionMarkers(paths, currentRobot, robotColors, pathMutex);
 }
 
 void GridMapRenderer::drawObstaclesOnly(

@@ -443,50 +443,68 @@ void PointCloudWidget::setPathWidth(float width) {
 }
 
 // ============================================================================
-// Grid Map Functions (그리드 맵 관련 함수들)
+// Map Style Control Functions
 // ============================================================================
-
-void PointCloudWidget::setShowGridMap(bool show) {
-    showGridMap_ = show;
-    qDebug() << "Grid map display:" << (show ? "ON" : "OFF");
+void PointCloudWidget::setMapStyle(const QString& style) {
+    if (style.toLower() == "pointcloud") {
+        showPoints_ = true;
+        showGridMap_ = false;
+        
+        qDebug() << "Map style set to: PointCloud for robot:" << robotName_;
+    } else if (style.toLower() == "gridmap") {
+        showPoints_ = false;
+        showGridMap_ = true;
+        qDebug() << "Map style set to: Grid Map for robot:" << robotName_;
+    } else {
+        qWarning() << "Invalid map style:" << style << "- using PointCloud as default";
+        showPoints_ = true;
+        showGridMap_ = false;
+    }
+    mapStyle_ = style.toLower();
     update();
+}
+
+// Grid Map 함수들이 누락되어 있다면 추가
+void PointCloudWidget::setShowGridMap(bool show) {
+    if (showGridMap_ != show) {
+        showGridMap_ = show;
+        update();  // 화면 갱신
+        qDebug() << "GridMap display set to:" << (show ? "ON" : "OFF");
+    }
 }
 
 void PointCloudWidget::setGridMapParameters(const GridMap::GridMapParameters& params) {
     gridParams_ = params;
-    qDebug() << "Grid map parameters updated - Resolution:" << params.resolution 
-             << "Size:" << params.mapSizeX << "x" << params.mapSizeY;
     
-    // 파라미터가 변경되면 기존 그리드 맵 캐시 무효화
+    // 기존 그리드맵 데이터 클리어 (새 파라미터 적용)
     {
         std::lock_guard<std::mutex> lock(gridMapMutex_);
         gridMaps_.clear();
     }
     
-    if (showGridMap_) {
-        update();
-    }
+    qDebug() << "Grid map parameters updated for robot:" << robotName_;
+    update();
 }
 
 void PointCloudWidget::updateGridMapForRobot(const QString& robotName, CloudConstPtr cloud) {
-    if (!cloud || !showGridMap_) return;
+    if (!cloud || cloud->empty()) {
+        qDebug() << "PointCloudWidget::updateGridMapForRobot: Empty cloud for robot:" << robotName;
+        return;
+    }
     
-    // 백그라운드에서 그리드 맵 생성
-    auto gridData = GridMap::GridMapProcessor::convertPointCloudToGridMap(cloud, gridParams_);
+    // 그리드맵 프로세싱
+    std::lock_guard<std::mutex> lock(gridMapMutex_);
     
-    if (gridData && gridData->isValid()) {
-        {
-            std::lock_guard<std::mutex> lock(gridMapMutex_);
-            gridMaps_[robotName] = gridData;
-        }
-        
-        // qDebug() << "Grid map updated for robot:" << robotName 
-        //          << "Size:" << gridData->width << "x" << gridData->height;
-        
-        // UI 업데이트는 메인 스레드에서
-        QMetaObject::invokeMethod(this, [this]() {
-            update();
-        }, Qt::QueuedConnection);
+    auto gridData = std::make_shared<GridMap::GridMapData>();
+    
+    // GridMapProcessor::processPointCloud 사용
+    if (GridMap::GridMapProcessor::processPointCloud(cloud, gridParams_, *gridData)) {
+        gridMaps_[robotName] = gridData;
+        qDebug() << "PointCloudWidget: Grid map updated for robot:" << robotName 
+                 << "size:" << gridData->width << "x" << gridData->height
+                 << "points:" << cloud->size();
+    } else {
+        qDebug() << "PointCloudWidget: Failed to process grid map for robot:" << robotName;
     }
 }
 
@@ -506,39 +524,61 @@ void PointCloudWidget::paintGL() {
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixf(glm::value_ptr(viewMatrix_));
 
-    // 렌더링 (이제 타입이 일치함)
-    if (showGridMap_) {
-        RenderHelper::GridMapRenderer::drawGridMaps(
+    // Map Style에 따른 렌더링 분기
+    QString currentMapStyle = getMapStyle();
+    
+    if (currentMapStyle == "gridmap" && showGridMap_) {  // showGridMap_ 체크 추가
+        // GridMap 모드: 기본 OpenGL로 그리드맵 + 2D 평면화된 경로
+        RenderHelper::GridMapRenderer::drawBasicGridMaps(
             gridMaps_, robotName_, robotPointsColors_, gridMapMutex_
         );
+    } else if (currentMapStyle == "pointcloud") {
+        // PointCloud 모드: 기존 3D 렌더링
+        if (showPoints_) {
+            RenderHelper::PointCloudRenderer::drawPoints(
+                clouds_, robotName_, robotPointsColors_, pointSize_, cloudMutex_
+            );
+        }
     }
-    if (showPoints_) {
-        RenderHelper::PointCloudRenderer::drawPoints(
-            clouds_, robotName_, robotPointsColors_, pointSize_, cloudMutex_
-        );
-    }
+    
+    // Path는 showPath_ 플래그에 따라 모든 모드에서 렌더링 가능
     if (showPath_) {
-        RenderHelper::PointCloudRenderer::drawPaths(
-            paths_, robotName_, robotPathColors_, pathWidth_, pathMutex_
-        );
+        if (currentMapStyle == "gridmap") {
+            RenderHelper::GridMapRenderer::draw2DProjectedPaths(
+                paths_, robotName_, robotPathColors_, pathMutex_, pathWidth_
+            );
+        } else {
+            // PointCloud 모드에서는 3D Path 렌더링
+            RenderHelper::PointCloudRenderer::drawPaths(
+                paths_, robotName_, robotPathColors_, pathWidth_, pathMutex_
+            );
+        }
     }
+    
+    // 공통 요소들 (Map Style과 무관하게 항상 렌더링)
     if (showPosition_) {
         RenderHelper::PointCloudRenderer::drawPositions(
-            paths_, robotName_, robotPathColors_, positionMarkerType_,  // 이제 타입이 일치함
-            currentPositionRadius_, currentPositionHeight_, 
-            positionAxesLength_, positionAxesRadius_, pathMutex_
+            paths_, robotName_, robotPathColors_, positionMarkerType_,
+            currentPositionRadius_,        // Cylinder과 Axes 모두에서 사용될 기본 크기
+            currentPositionHeight_,        // Cylinder 높이 (Axes에서는 무시)
+            currentPositionRadius_ * 3.0f, // Axes 길이 = radius * 3 (적절한 비율)
+            currentPositionRadius_ * 0.2f, // Axes 두께 = radius * 0.2 (얇게)
+            pathMutex_
         );
     }
+    
     if (showAxes_) {
         RenderHelper::PointCloudRenderer::drawAxes(
             glm::vec3(0.0f, 0.01f, 0.0f), axesLength_, axesRadius_
         );
     }
+    
     if (showGrid_) {
         RenderHelper::PointCloudRenderer::drawGrid(
             planeCellCount_, cellSize_, gridLineWidth_
         );
     }
+    
     if (showIndicator_) {
         RenderHelper::PointCloudRenderer::drawCameraIndicator(focusPoint_);
     }
@@ -562,34 +602,6 @@ void PointCloudWidget::keyPressEvent(QKeyEvent *event) {
             // Reset camera to default position
             resetCamera();
             qDebug() << "Camera reset with Z key for robot:" << robotName_;
-            event->accept();
-            break;
-            
-        case Qt::Key_R:
-            // Reset all colors to default
-            resetAllColorsToDefault();
-            qDebug() << "Colors reset with R key for robot:" << robotName_;
-            event->accept();
-            break;
-            
-        case Qt::Key_T:
-            // Toggle top view
-            setTopView(!isTopView_);
-            qDebug() << "Top view toggled with T key for robot:" << robotName_;
-            event->accept();
-            break;
-            
-        case Qt::Key_G:
-            // Toggle grid display
-            setShowGrid(!showGrid_);
-            qDebug() << "Grid toggled with G key for robot:" << robotName_;
-            event->accept();
-            break;
-            
-        case Qt::Key_A:
-            // Toggle axes display
-            setShowAxes(!showAxes_);
-            qDebug() << "Axes toggled with A key for robot:" << robotName_;
             event->accept();
             break;
             
@@ -703,4 +715,67 @@ void PointCloudWidget::wheelEvent(QWheelEvent *event) {
     update();
 }
 
-} // namespace Widget
+// GridMap Resolution 제어 함수 구현
+
+void PointCloudWidget::setGridMapResolution(float resolution) {
+    if (gridMapResolution_ != resolution) {
+        gridMapResolution_ = std::clamp(resolution, 0.01f, 1.0f);  // 범위 제한
+        
+        // 모든 GridMap에 새로운 해상도 적용
+        std::lock_guard<std::mutex> lock(gridMapMutex_);
+        for (auto it = gridMaps_.begin(); it != gridMaps_.end(); ++it) {
+            if (it.value() && it.value()->isValid()) {
+                // GridMap 데이터를 새로운 해상도로 리샘플링
+                resampleGridMapResolution(it.value(), gridMapResolution_);
+            }
+        }
+        
+        update();  // 화면 갱신
+        qDebug() << "GridMap resolution set to:" << gridMapResolution_ << "meters";
+    }
+}
+
+float PointCloudWidget::getGridMapResolution() const {
+    return gridMapResolution_;
+}
+
+// GridMap 해상도 리샘플링 함수 (새로 추가)
+void PointCloudWidget::resampleGridMapResolution(
+    std::shared_ptr<GridMap::GridMapData> gridData, 
+    float newResolution) {
+    
+    if (!gridData || !gridData->isValid()) return;
+    
+    qDebug() << "Resampling GridMap from" << gridData->resolution 
+             << "to" << newResolution << "meters";
+    
+    // 원본 데이터 백업
+    cv::Mat originalMap = gridData->occupancyMap.clone();
+    float originalResolution = gridData->resolution;
+    
+    // 새로운 크기 계산
+    float scaleRatio = originalResolution / newResolution;
+    int newWidth = static_cast<int>(gridData->width * scaleRatio);
+    int newHeight = static_cast<int>(gridData->height * scaleRatio);
+    
+    qDebug() << "Resizing from" << gridData->width << "x" << gridData->height 
+             << "to" << newWidth << "x" << newHeight;
+    
+    // OpenCV 리사이즈 (INTER_NEAREST: 장애물 정보 보존)
+    cv::Mat resizedMap;
+    cv::resize(originalMap, resizedMap, cv::Size(newWidth, newHeight), 0, 0, cv::INTER_NEAREST);
+    
+    // GridMap 데이터 업데이트
+    gridData->occupancyMap = resizedMap;
+    gridData->width = newWidth;
+    gridData->height = newHeight;
+    gridData->resolution = newResolution;
+    
+    // Origin은 동일하게 유지 (같은 실제 위치)
+    
+    qDebug() << "GridMap resampling completed - New size:" 
+             << gridData->width << "x" << gridData->height 
+             << "at" << gridData->resolution << "m/cell";
+}
+
+}

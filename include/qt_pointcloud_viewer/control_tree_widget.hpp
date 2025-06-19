@@ -41,8 +41,15 @@ private:
     QString robotName_;
     PointCloudWidget* targetWidget_;
     QMainWindow* mainWindow_;
-    QComboBox* targetRobotCombo_;
+    QComboBox* targetRobotCombo_ = nullptr;
+    QComboBox* mapStyleCombo_ = nullptr;  // New combo box for map style selection
+    // Point Size / Resolution 슬라이더 참조 추가
+    QSlider* pointSizeSlider_ = nullptr;
+    QLabel* pointSizeLabel_ = nullptr;
+    QSlider* pathWidthSlider_ = nullptr;     // ← Path Width 슬라이더 참조 추가
+    QLabel* pathWidthLabel_ = nullptr;       // ← Path Width 레이블 참조 추가
     
+    QString currentMapStyle_ = "pointcloud";  // 현재 맵 스타일 추적
     // Tree group items (2-group structure only)
     QTreeWidgetItem* viewGroup_;
     QTreeWidgetItem* robotGroup_;
@@ -62,7 +69,7 @@ private:
     QCheckBox* createCheckBox(bool checked, std::function<void(bool)> callback);
     QPushButton* createButton(const QString& text, std::function<void()> callback);
     PointCloudWidget* findRobotWidget(const QString& robotName);
-    
+    QCheckBox* findCheckBoxInTree(const QString& itemName);
     // ============================================================================
     // Data Members
     // ============================================================================

@@ -122,6 +122,7 @@ ViewerSettings ViewerSettingsManager::extractSettings(PointCloudWidget* widget) 
     settings.showAxes = widget->getShowAxes();
     settings.showGrid = widget->getShowGrid();
     settings.showRobotLabel = widget->getShowRobotLabel();
+    settings.showGridMap = widget->getShowGridMap();  // 새로 추가
     
     // Extract style settings
     settings.pointSize = widget->getPointSize();
@@ -132,6 +133,7 @@ ViewerSettings ViewerSettingsManager::extractSettings(PointCloudWidget* widget) 
     settings.gridCellCount = widget->getGridCellCount();
     settings.axesSize = widget->getAxesSize();
     settings.markerType = widget->getPositionMarkerType();
+    settings.mapStyle = widget->getMapStyle();  // 새로 추가
     
     // Extract camera settings
     settings.isTopView = widget->isTopView();
@@ -164,6 +166,7 @@ void ViewerSettingsManager::applySettings(PointCloudWidget* widget, const Viewer
     widget->setShowAxes(settings.showAxes);
     widget->setShowGrid(settings.showGrid);
     widget->setShowRobotLabel(settings.showRobotLabel);
+    widget->setShowGridMap(settings.showGridMap);  // 새로 추가
     
     // Apply style settings
     widget->setPointSize(settings.pointSize);
@@ -174,6 +177,7 @@ void ViewerSettingsManager::applySettings(PointCloudWidget* widget, const Viewer
     widget->setGridCellCount(settings.gridCellCount);
     widget->setAxesSize(settings.axesSize);
     widget->setPositionMarkerType(settings.markerType);
+    widget->setMapStyle(settings.mapStyle);  // 새로 추가
     
     // Apply camera settings
     widget->setTopView(settings.isTopView);

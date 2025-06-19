@@ -21,6 +21,7 @@ struct ViewerSettings {
     bool showAxes = true;
     bool showGrid = true;
     bool showRobotLabel = true;
+    bool showGridMap = false;  // 새로 추가
     
     // Style settings
     float pointSize = 2.0f;
@@ -31,6 +32,7 @@ struct ViewerSettings {
     int gridCellCount = 10;
     float axesSize = 1.0f;
     RenderHelper::PositionMarkerType markerType = RenderHelper::PositionMarkerType::AXES;
+    QString mapStyle = "pointcloud";  // 새로 추가: "pointcloud" 또는 "gridmap"
     
     // Camera settings
     bool isTopView = false;
