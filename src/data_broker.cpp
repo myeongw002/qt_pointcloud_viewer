@@ -35,18 +35,21 @@ DataBroker::DataBroker(const QStringList& robots, QObject *parent)
     qDebug() << "DataBroker initialized with robots:" << robots;
 }
 
-void DataBroker::createPcdSub(const QString& robot, const std::string& topic)
-{
-    auto qos = rclcpp::SensorDataQoS();           // best-effort, depth 5
+void DataBroker::createPcdSub(const QString& robot, const std::string& topic) {
+    auto qos = rclcpp::SensorDataQoS();
     pcdSubs_[topic] = create_subscription<sensor_msgs::msg::PointCloud2>(
         topic, qos,
         [this, robot](const sensor_msgs::msg::PointCloud2::SharedPtr msg){
             auto tmp = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-            pcl::fromROSMsg(*msg, *tmp);               // Convert once
+            pcl::fromROSMsg(*msg, *tmp);
             CloudConstPtr cloud = tmp;
-            emit cloudArrived(robot, cloud);  // Qt → GUI thread
+            
+            // 포인트클라우드 신호 발송
+            emit cloudArrived(robot, cloud);
+            
+            // 그리드 맵 신호도 발송 (위젯에서 직접 처리하도록)
+            emit gridMapUpdateRequested(robot, cloud);
         });
-    // qDebug() << "Subscribed to" << robot << "at" << QString::fromStdString(topic);
 }
 
 void DataBroker::createPathSub(const QString& robot, const std::string& topic)

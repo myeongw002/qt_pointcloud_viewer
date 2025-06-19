@@ -262,4 +262,304 @@ void SimpleShape::drawRosAxes(const glm::vec3& position,
     drawRosAxes(position, rotationMatrix, axesLength, axesRadius, drawArrowheads);
 }
 
+void SimpleShape::drawSphere(const glm::vec3& center,
+                          float radius,
+                          const glm::vec4& color,
+                          int segments) {
+    // Enable blending for transparency handling
+    bool blendWasEnabled = glIsEnabled(GL_BLEND);
+    if (color.a < 1.0f && !blendWasEnabled) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+    
+    glColor4f(color.r, color.g, color.b, color.a);
+    
+    // Draw sphere using multiple slices and stacks
+    for (int i = 0; i < segments; ++i) {
+        float lat0 = M_PI * (-0.5f + float(i) / float(segments));
+        float z0 = radius * sin(lat0);
+        float r0 = radius * cos(lat0);
+        
+        float lat1 = M_PI * (-0.5f + float(i + 1) / float(segments));
+        float z1 = radius * sin(lat1);
+        float r1 = radius * cos(lat1);
+        
+        glBegin(GL_QUAD_STRIP);
+        for (int j = 0; j <= segments; ++j) {
+            float lon = 2 * M_PI * float(j) / float(segments);
+            float x = r0 * cos(lon);
+            float y = r0 * sin(lon);
+            glVertex3f(x + center.x, y + center.y, z0 + center.z);
+            x = r1 * cos(lon);
+            y = r1 * sin(lon);
+            glVertex3f(x + center.x, y + center.y, z1 + center.z);
+        }
+        glEnd();
+    }
+    
+    // Restore blending state
+    if (color.a < 1.0f && !blendWasEnabled) {
+        glDisable(GL_BLEND);
+    }
+}
+
+void SimpleShape::drawCube(const glm::vec3& center,
+                        float size,
+                        const glm::vec4& color) {
+    // Calculate half-size
+    float halfSize = size * 0.5f;
+    
+    // Define vertices for the cube
+    glm::vec3 vertices[8] = {
+        glm::vec3(-halfSize, -halfSize, -halfSize),
+        glm::vec3( halfSize, -halfSize, -halfSize),
+        glm::vec3( halfSize,  halfSize, -halfSize),
+        glm::vec3(-halfSize,  halfSize, -halfSize),
+        glm::vec3(-halfSize, -halfSize,  halfSize),
+        glm::vec3( halfSize, -halfSize,  halfSize),
+        glm::vec3( halfSize,  halfSize,  halfSize),
+        glm::vec3(-halfSize,  halfSize,  halfSize)
+    };
+    
+    // Enable blending for transparency handling
+    bool blendWasEnabled = glIsEnabled(GL_BLEND);
+    if (color.a < 1.0f && !blendWasEnabled) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+    
+    glColor4f(color.r, color.g, color.b, color.a);
+    
+    // Draw the cube using quads
+    glBegin(GL_QUADS);
+    // Front face
+    glVertex3f(vertices[0].x + center.x, vertices[0].y + center.y, vertices[0].z + center.z);
+    glVertex3f(vertices[1].x + center.x, vertices[1].y + center.y, vertices[1].z + center.z);
+    glVertex3f(vertices[2].x + center.x, vertices[2].y + center.y, vertices[2].z + center.z);
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    
+    // Back face
+    glVertex3f(vertices[4].x + center.x, vertices[4].y + center.y, vertices[4].z + center.z);
+    glVertex3f(vertices[5].x + center.x, vertices[5].y + center.y, vertices[5].z + center.z);
+    glVertex3f(vertices[6].x + center.x, vertices[6].y + center.y, vertices[6].z + center.z);
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    
+    // Top face
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    glVertex3f(vertices[2].x + center.x, vertices[2].y + center.y, vertices[2].z + center.z);
+    glVertex3f(vertices[6].x + center.x, vertices[6].y + center.y, vertices[6].z + center.z);
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    
+    // Bottom face
+    glVertex3f(vertices[0].x + center.x, vertices[0].y + center.y, vertices[0].z + center.z);
+    glVertex3f(vertices[4].x + center.x, vertices[4].y + center.y, vertices[4].z + center.z);
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    
+    // Left face
+    glVertex3f(vertices[0].x + center.x, vertices[0].y + center.y, vertices[0].z + center.z);
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    glVertex3f(vertices[4].x + center.x, vertices[4].y + center.y, vertices[4].z + center.z);
+    
+    // Right face
+    glVertex3f(vertices[1].x + center.x, vertices[1].y + center.y, vertices[1].z + center.z);
+    glVertex3f(vertices[5].x + center.x, vertices[5].y + center.y, vertices[5].z + center.z);
+    glVertex3f(vertices[6].x + center.x, vertices[6].y + center.y, vertices[6].z + center.z);
+    glVertex3f(vertices[2].x + center.x, vertices[2].y + center.y, vertices[2].z + center.z);
+    glEnd();
+    
+    // Restore blending state
+    if (color.a < 1.0f && !blendWasEnabled) {
+        glDisable(GL_BLEND);
+    }
+}
+
+void SimpleShape::drawBox(const glm::vec3& center,
+                       const glm::vec3& size,
+                       const glm::vec4& color) {
+    // Calculate half-size
+    glm::vec3 halfSize = size * 0.5f;
+    
+    // Define vertices for the box
+    glm::vec3 vertices[8] = {
+        glm::vec3(-halfSize.x, -halfSize.y, -halfSize.z),
+        glm::vec3( halfSize.x, -halfSize.y, -halfSize.z),
+        glm::vec3( halfSize.x,  halfSize.y, -halfSize.z),
+        glm::vec3(-halfSize.x,  halfSize.y, -halfSize.z),
+        glm::vec3(-halfSize.x, -halfSize.y,  halfSize.z),
+        glm::vec3( halfSize.x, -halfSize.y,  halfSize.z),
+        glm::vec3( halfSize.x,  halfSize.y,  halfSize.z),
+        glm::vec3(-halfSize.x,  halfSize.y,  halfSize.z)
+    };
+    
+    // Enable blending for transparency handling
+    bool blendWasEnabled = glIsEnabled(GL_BLEND);
+    if (color.a < 1.0f && !blendWasEnabled) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+    
+    glColor4f(color.r, color.g, color.b, color.a);
+    
+    // Draw the box using quads
+    glBegin(GL_QUADS);
+    // Front face
+    glVertex3f(vertices[0].x + center.x, vertices[0].y + center.y, vertices[0].z + center.z);
+    glVertex3f(vertices[1].x + center.x, vertices[1].y + center.y, vertices[1].z + center.z);
+    glVertex3f(vertices[2].x + center.x, vertices[2].y + center.y, vertices[2].z + center.z);
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    
+    // Back face
+    glVertex3f(vertices[4].x + center.x, vertices[4].y + center.y, vertices[4].z + center.z);
+    glVertex3f(vertices[5].x + center.x, vertices[5].y + center.y, vertices[5].z + center.z);
+    glVertex3f(vertices[6].x + center.x, vertices[6].y + center.y, vertices[6].z + center.z);
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    
+    // Top face
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    glVertex3f(vertices[2].x + center.x, vertices[2].y + center.y, vertices[2].z + center.z);
+    glVertex3f(vertices[6].x + center.x, vertices[6].y + center.y, vertices[6].z + center.z);
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    
+    // Bottom face
+    glVertex3f(vertices[0].x + center.x, vertices[0].y + center.y, vertices[0].z + center.z);
+    glVertex3f(vertices[4].x + center.x, vertices[4].y + center.y, vertices[4].z + center.z);
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    
+    // Left face
+    glVertex3f(vertices[0].x + center.x, vertices[0].y + center.y, vertices[0].z + center.z);
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    glVertex3f(vertices[4].x + center.x, vertices[4].y + center.y, vertices[4].z + center.z);
+    
+    // Right face
+    glVertex3f(vertices[1].x + center.x, vertices[1].y + center.y, vertices[1].z + center.z);
+    glVertex3f(vertices[5].x + center.x, vertices[5].y + center.y, vertices[5].z + center.z);
+    glVertex3f(vertices[6].x + center.x, vertices[6].y + center.y, vertices[6].z + center.z);
+    glVertex3f(vertices[2].x + center.x, vertices[2].y + center.y, vertices[2].z + center.z);
+    glEnd();
+    
+    // Restore blending state
+    if (color.a < 1.0f && !blendWasEnabled) {
+        glDisable(GL_BLEND);
+    }
+}
+
+void SimpleShape::drawWireSphere(const glm::vec3& center,
+                              float radius,
+                              const glm::vec4& color,
+                              int segments) {
+    glColor4f(color.r, color.g, color.b, color.a);
+    
+    // Draw sphere wireframe using multiple slices and stacks
+    for (int i = 0; i < segments; ++i) {
+        float lat0 = M_PI * (-0.5f + float(i) / float(segments));
+        float z0 = radius * sin(lat0);
+        float r0 = radius * cos(lat0);
+        
+        float lat1 = M_PI * (-0.5f + float(i + 1) / float(segments));
+        float z1 = radius * sin(lat1);
+        float r1 = radius * cos(lat1);
+        
+        glBegin(GL_LINE_STRIP);
+        for (int j = 0; j <= segments; ++j) {
+            float lon = 2 * M_PI * float(j) / float(segments);
+            float x = r0 * cos(lon);
+            float y = r0 * sin(lon);
+            glVertex3f(x + center.x, y + center.y, z0 + center.z);
+        }
+        glEnd();
+        
+        glBegin(GL_LINE_STRIP);
+        for (int j = 0; j <= segments; ++j) {
+            float lon = 2 * M_PI * float(j) / float(segments);
+            float x = r1 * cos(lon);
+            float y = r1 * sin(lon);
+            glVertex3f(x + center.x, y + center.y, z1 + center.z);
+        }
+        glEnd();
+    }
+}
+
+void SimpleShape::drawWireCube(const glm::vec3& center,
+                            float size,
+                            const glm::vec4& color) {
+    // Calculate half-size
+    float halfSize = size * 0.5f;
+    
+    // Define vertices for the cube
+    glm::vec3 vertices[8] = {
+        glm::vec3(-halfSize, -halfSize, -halfSize),
+        glm::vec3( halfSize, -halfSize, -halfSize),
+        glm::vec3( halfSize,  halfSize, -halfSize),
+        glm::vec3(-halfSize,  halfSize, -halfSize),
+        glm::vec3(-halfSize, -halfSize,  halfSize),
+        glm::vec3( halfSize, -halfSize,  halfSize),
+        glm::vec3( halfSize,  halfSize,  halfSize),
+        glm::vec3(-halfSize,  halfSize,  halfSize)
+    };
+    
+    glColor4f(color.r, color.g, color.b, color.a);
+    
+    // Draw the cube wireframe using lines
+    glBegin(GL_LINES);
+    // Front face
+    glVertex3f(vertices[0].x + center.x, vertices[0].y + center.y, vertices[0].z + center.z);
+    glVertex3f(vertices[1].x + center.x, vertices[1].y + center.y, vertices[1].z + center.z);
+    
+    glVertex3f(vertices[1].x + center.x, vertices[1].y + center.y, vertices[1].z + center.z);
+    glVertex3f(vertices[2].x + center.x, vertices[2].y + center.y, vertices[2].z + center.z);
+    
+    glVertex3f(vertices[2].x + center.x, vertices[2].y + center.y, vertices[2].z + center.z);
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    glVertex3f(vertices[0].x + center.x, vertices[0].y + center.y, vertices[0].z + center.z);
+    
+    // Back face
+    glVertex3f(vertices[4].x + center.x, vertices[4].y + center.y, vertices[4].z + center.z);
+    glVertex3f(vertices[5].x + center.x, vertices[5].y + center.y, vertices[5].z + center.z);
+    
+    glVertex3f(vertices[5].x + center.x, vertices[5].y + center.y, vertices[5].z + center.z);
+    glVertex3f(vertices[6].x + center.x, vertices[6].y + center.y, vertices[6].z + center.z);
+    
+    glVertex3f(vertices[6].x + center.x, vertices[6].y + center.y, vertices[6].z + center.z);
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    glVertex3f(vertices[4].x + center.x, vertices[4].y + center.y, vertices[4].z + center.z);
+    
+    // Top face
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    glVertex3f(vertices[2].x + center.x, vertices[2].y + center.y, vertices[2].z + center.z);
+    
+    glVertex3f(vertices[6].x + center.x, vertices[6].y + center.y, vertices[6].z + center.z);
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    
+    // Bottom face
+    glVertex3f(vertices[0].x + center.x, vertices[0].y + center.y, vertices[0].z + center.z);
+    glVertex3f(vertices[4].x + center.x, vertices[4].y + center.y, vertices[4].z + center.z);
+    
+    glVertex3f(vertices[5].x + center.x, vertices[5].y + center.y, vertices[5].z + center.z);
+    glVertex3f(vertices[1].x + center.x, vertices[1].y + center.y, vertices[1].z + center.z);
+    
+    // Left face
+    glVertex3f(vertices[0].x + center.x, vertices[0].y + center.y, vertices[0].z + center.z);
+    glVertex3f(vertices[3].x + center.x, vertices[3].y + center.y, vertices[3].z + center.z);
+    
+    glVertex3f(vertices[7].x + center.x, vertices[7].y + center.y, vertices[7].z + center.z);
+    glVertex3f(vertices[4].x + center.x, vertices[4].y + center.y, vertices[4].z + center.z);
+    
+    // Right face
+    glVertex3f(vertices[1].x + center.x, vertices[1].y + center.y, vertices[1].z + center.z);
+    glVertex3f(vertices[5].x + center.x, vertices[5].y + center.y, vertices[5].z + center.z);
+    
+    glVertex3f(vertices[6].x + center.x, vertices[6].y + center.y, vertices[6].z + center.z);
+    glVertex3f(vertices[2].x + center.x, vertices[2].y + center.y, vertices[2].z + center.z);
+    glEnd();
+}
+
 } // namespace ShapeHelper

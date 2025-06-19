@@ -1,4 +1,5 @@
 #include "viewer_settings_manager.hpp"
+#include "pointcloud_widget.hpp"  // 이 줄 추가!
 #include <QDebug>
 
 namespace Widget {
@@ -56,22 +57,6 @@ void ViewerSettingsManager::saveSettings(const QString& robotName, PointCloudWid
     robotSettings_[robotName] = settings;
     
     qDebug() << "ViewerSettingsManager: Settings saved for" << robotName;
-    
-    // Only save individual robot settings, do not propagate
-    // globalSettings_ = settings;  // Removed
-    
-    // Do not propagate to other widgets
-    /*
-    for (auto it = registeredWidgets_.begin(); it != registeredWidgets_.end(); ++it) {
-        PointCloudWidget* otherWidget = it.key();
-        QString otherRobot = it.value();
-        
-        if (otherWidget == widget) continue;
-        
-        applySettings(otherWidget, settings);  // Removed
-        qDebug() << "ViewerSettingsManager: Settings propagated to" << otherRobot;
-    }
-    */
     
     emit settingsChanged(robotName, settings);
 }
@@ -145,10 +130,10 @@ ViewerSettings ViewerSettingsManager::extractSettings(PointCloudWidget* widget) 
     settings.rotationSensitivity = widget->getRotationSensitivity();
     settings.gridSize = widget->getGridSize();
     settings.gridCellCount = widget->getGridCellCount();
-    settings.axesSize = widget->getAxesSize();  // 새로 추가
+    settings.axesSize = widget->getAxesSize();
     settings.markerType = widget->getPositionMarkerType();
     
-    // Extract camera settings - All functions now available
+    // Extract camera settings
     settings.isTopView = widget->isTopView();
     settings.focusPoint = widget->getFocusPoint();
     
@@ -187,7 +172,7 @@ void ViewerSettingsManager::applySettings(PointCloudWidget* widget, const Viewer
     widget->setRotationSensitivity(settings.rotationSensitivity);
     widget->setGridSize(settings.gridSize);
     widget->setGridCellCount(settings.gridCellCount);
-    widget->setAxesSize(settings.axesSize);  // 새로 추가
+    widget->setAxesSize(settings.axesSize);
     widget->setPositionMarkerType(settings.markerType);
     
     // Apply camera settings

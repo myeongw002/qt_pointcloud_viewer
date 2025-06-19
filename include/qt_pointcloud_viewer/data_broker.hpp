@@ -19,7 +19,7 @@ public:
 signals:
     void cloudArrived(const QString& robot, CloudConstPtr cloud);
     void pathArrived(const QString& robot, const std::vector<geometry_msgs::msg::PoseStamped>& path);
-
+    void gridMapUpdateRequested(const QString& robot, CloudConstPtr cloud);
 private:
     void createPcdSub(const QString& robot, const std::string& topic);
     void createPathSub(const QString& robot, const std::string& topic);

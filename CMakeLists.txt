@@ -17,6 +17,7 @@ find_package(pcl_conversions REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Widgets Core Gui OpenGL)
 find_package(OpenGL REQUIRED)
+find_package(OpenCV REQUIRED)
 
 # UI 파일 처리
 set(UI_FILES ui/mainwindow.ui)
@@ -34,6 +35,8 @@ add_executable(${PROJECT_NAME}
     src/control_tree_widget.cpp
     src/debug_console_widget.cpp
     src/viewer_settings_manager.cpp
+    src/grid_map_processor.cpp
+    src/render_helper.cpp
     ${UI_HEADERS}  # 생성된 UI 헤더 추가
 )
 
@@ -63,6 +66,7 @@ target_link_libraries(${PROJECT_NAME}
     ${PCL_LIBRARIES}
     ${rclcpp_LIBRARIES}
     ${OpenGL_LIBRARIES}
+    ${OpenCV_LIBS}
 )
 
 ament_target_dependencies(${PROJECT_NAME} 

@@ -67,6 +67,33 @@ public:
                              float radius,
                              const glm::vec4& color,
                              bool drawArrowhead = true);
+    
+    // 구체 (Sphere)
+    static void drawSphere(const glm::vec3& center,
+                          float radius,
+                          const glm::vec4& color,
+                          int segments = 16);
+    
+    // 정육면체 (Cube)
+    static void drawCube(const glm::vec3& center,
+                        float size,
+                        const glm::vec4& color);
+    
+    // 직육면체 (Box)
+    static void drawBox(const glm::vec3& center,
+                       const glm::vec3& size,
+                       const glm::vec4& color);
+    
+    // 와이어프레임 구체
+    static void drawWireSphere(const glm::vec3& center,
+                              float radius,
+                              const glm::vec4& color,
+                              int segments = 16);
+    
+    // 와이어프레임 큐브
+    static void drawWireCube(const glm::vec3& center,
+                            float size,
+                            const glm::vec4& color);
 };
 
 } // namespace ShapeHelper

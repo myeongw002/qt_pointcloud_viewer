@@ -1,15 +1,22 @@
 #include "pointcloud_widget.hpp"
 #include "shape_helper.hpp"
+#include "grid_map_processor.hpp"
+#include "render_helper.hpp"
 #include <QDebug>
 #include <QEvent>
 #include <QPainter>
 #include <QPaintEvent>
-#include <QKeyEvent>  // Added for keyboard events
+#include <QKeyEvent>
+#include <QMouseEvent>  // 추가
+#include <QWheelEvent>  // 추가
 #include <QPen>
 #include <QBrush>
 #include <QFont>
 #include <QColor>
 #include <QRect>
+#include <QTimer>       // 추가
+#include <algorithm>    // 추가
+#include <mutex>        // 추가
 
 namespace Widget {
 
@@ -24,22 +31,23 @@ PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
     // Enable keyboard focus for this widget
     setFocusPolicy(Qt::StrongFocus);
     
-    // Same default values as ViewerSettings (redundant but maintains consistency)
+    // 기본값 설정 (RenderHelper 타입 사용)
     showPoints_ = true;
     showPath_ = true;
     showPosition_ = true;
     showAxes_ = true;
     showGrid_ = true;
     showRobotLabel_ = true;
-    
+    showGridMap_ = true;
     pointSize_ = 2.0f;
     pathWidth_ = 3.0f;
+    positionMarkerType_ = RenderHelper::PositionMarkerType::AXES;  // 명시적으로 RenderHelper 타입 사용
     
     connect(&hideTimer_, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
     updateCameraPosition();
     initializeDefaultColors();
     
-    qDebug() << "PointCloudWidget created with keyboard support and standard defaults";
+    qDebug() << "PointCloudWidget created with RenderHelper integration";
 }
 
 PointCloudWidget::~PointCloudWidget() {
@@ -112,8 +120,16 @@ void PointCloudWidget::resetAllColorsToDefault() {
 // ============================================================================
 
 void PointCloudWidget::onCloudShared(const QString& robot, CloudConstPtr cloud) {
-    std::lock_guard<std::mutex> lock(cloudMutex_);
-    clouds_[robot] = cloud;
+    {
+        std::lock_guard<std::mutex> lock(cloudMutex_);
+        clouds_[robot] = cloud;
+    }
+    
+    // 그리드 맵 업데이트 (백그라운드에서 처리)
+    if (showGridMap_) {
+        updateGridMapForRobot(robot, cloud);
+    }
+    
     update();
 }
 
@@ -412,8 +428,133 @@ void PointCloudWidget::setAxesSize(float size) {
 }
 
 // ============================================================================
-// Qt Event Overrides
+// Point and Path Style Settings
 // ============================================================================
+void PointCloudWidget::setPointSize(float size) {
+    pointSize_ = size;
+    update();
+    qDebug() << "Point size set to:" << size << "for robot:" << robotName_;
+}
+
+void PointCloudWidget::setPathWidth(float width) {
+    pathWidth_ = width;
+    update();
+    qDebug() << "Path width set to:" << width << "for robot:" << robotName_;
+}
+
+// ============================================================================
+// Grid Map Functions (그리드 맵 관련 함수들)
+// ============================================================================
+
+void PointCloudWidget::setShowGridMap(bool show) {
+    showGridMap_ = show;
+    qDebug() << "Grid map display:" << (show ? "ON" : "OFF");
+    update();
+}
+
+void PointCloudWidget::setGridMapParameters(const GridMap::GridMapParameters& params) {
+    gridParams_ = params;
+    qDebug() << "Grid map parameters updated - Resolution:" << params.resolution 
+             << "Size:" << params.mapSizeX << "x" << params.mapSizeY;
+    
+    // 파라미터가 변경되면 기존 그리드 맵 캐시 무효화
+    {
+        std::lock_guard<std::mutex> lock(gridMapMutex_);
+        gridMaps_.clear();
+    }
+    
+    if (showGridMap_) {
+        update();
+    }
+}
+
+void PointCloudWidget::updateGridMapForRobot(const QString& robotName, CloudConstPtr cloud) {
+    if (!cloud || !showGridMap_) return;
+    
+    // 백그라운드에서 그리드 맵 생성
+    auto gridData = GridMap::GridMapProcessor::convertPointCloudToGridMap(cloud, gridParams_);
+    
+    if (gridData && gridData->isValid()) {
+        {
+            std::lock_guard<std::mutex> lock(gridMapMutex_);
+            gridMaps_[robotName] = gridData;
+        }
+        
+        // qDebug() << "Grid map updated for robot:" << robotName 
+        //          << "Size:" << gridData->width << "x" << gridData->height;
+        
+        // UI 업데이트는 메인 스레드에서
+        QMetaObject::invokeMethod(this, [this]() {
+            update();
+        }, Qt::QueuedConnection);
+    }
+}
+
+void PointCloudWidget::paintGL() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // 카메라 설정
+    if (isTopView_) {
+        updateTopViewCamera();
+    } else {
+        updateCameraPosition();
+        viewMatrix_ = glm::lookAt(cameraPos_, focusPoint_, glm::vec3(0, 1, 0));
+    }
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixf(glm::value_ptr(projectionMatrix_));
+    glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixf(glm::value_ptr(viewMatrix_));
+
+    // 렌더링 (이제 타입이 일치함)
+    if (showGridMap_) {
+        RenderHelper::GridMapRenderer::drawGridMaps(
+            gridMaps_, robotName_, robotPointsColors_, gridMapMutex_
+        );
+    }
+    if (showPoints_) {
+        RenderHelper::PointCloudRenderer::drawPoints(
+            clouds_, robotName_, robotPointsColors_, pointSize_, cloudMutex_
+        );
+    }
+    if (showPath_) {
+        RenderHelper::PointCloudRenderer::drawPaths(
+            paths_, robotName_, robotPathColors_, pathWidth_, pathMutex_
+        );
+    }
+    if (showPosition_) {
+        RenderHelper::PointCloudRenderer::drawPositions(
+            paths_, robotName_, robotPathColors_, positionMarkerType_,  // 이제 타입이 일치함
+            currentPositionRadius_, currentPositionHeight_, 
+            positionAxesLength_, positionAxesRadius_, pathMutex_
+        );
+    }
+    if (showAxes_) {
+        RenderHelper::PointCloudRenderer::drawAxes(
+            glm::vec3(0.0f, 0.01f, 0.0f), axesLength_, axesRadius_
+        );
+    }
+    if (showGrid_) {
+        RenderHelper::PointCloudRenderer::drawGrid(
+            planeCellCount_, cellSize_, gridLineWidth_
+        );
+    }
+    if (showIndicator_) {
+        RenderHelper::PointCloudRenderer::drawCameraIndicator(focusPoint_);
+    }
+}
+
+void PointCloudWidget::paintEvent(QPaintEvent* event) {
+    QOpenGLWidget::paintEvent(event);
+    
+    if (showRobotLabel_) {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        RenderHelper::PointCloudRenderer::drawRobotLabels(
+            painter, robotName_, robotPointsColors_
+        );
+    }
+}
 
 void PointCloudWidget::keyPressEvent(QKeyEvent *event) {
     switch (event->key()) {
@@ -425,14 +566,34 @@ void PointCloudWidget::keyPressEvent(QKeyEvent *event) {
             break;
             
         case Qt::Key_R:
-            // Additional: Reset colors with R key (optional)
+            // Reset all colors to default
             resetAllColorsToDefault();
             qDebug() << "Colors reset with R key for robot:" << robotName_;
             event->accept();
             break;
             
+        case Qt::Key_T:
+            // Toggle top view
+            setTopView(!isTopView_);
+            qDebug() << "Top view toggled with T key for robot:" << robotName_;
+            event->accept();
+            break;
+            
+        case Qt::Key_G:
+            // Toggle grid display
+            setShowGrid(!showGrid_);
+            qDebug() << "Grid toggled with G key for robot:" << robotName_;
+            event->accept();
+            break;
+            
+        case Qt::Key_A:
+            // Toggle axes display
+            setShowAxes(!showAxes_);
+            qDebug() << "Axes toggled with A key for robot:" << robotName_;
+            event->accept();
+            break;
+            
         default:
-            // Pass unhandled keys to parent
             QOpenGLWidget::keyPressEvent(event);
             break;
     }
@@ -452,40 +613,9 @@ void PointCloudWidget::resizeGL(int w, int h) {
     projectionMatrix_ = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 1000.0f);
 }
 
-void PointCloudWidget::paintGL() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    if (isTopView_) {
-        // In top view, use viewMatrix_ calculated in updateTopViewCamera
-    } else {
-        glm::vec3 openglUpVector = glm::vec3(0, 1, 0);
-        viewMatrix_ = glm::lookAt(cameraPos_, focusPoint_, openglUpVector);
-    }
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadMatrixf(glm::value_ptr(projectionMatrix_));
-    glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf(glm::value_ptr(viewMatrix_));
-
-    // Conditional rendering: check showPoints_ and showPath_
-    if (showPoints_) drawPoints();      // Display point cloud
-    if (showPath_) drawPath();          // Display path
-    
-    if (showPosition_) drawPositions();
-    if (showAxes_) drawAxes();
-    if (showGrid_) drawGrid();
-    if (showIndicator_) drawCameraIndicator();
-}
-
-void PointCloudWidget::paintEvent(QPaintEvent* event) {
-    QOpenGLWidget::paintEvent(event);
-    
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
-    
-    if (showRobotLabel_) drawRobotLabel(painter);
-}
-
+// ============================================================================
+// Mouse Event Handlers
+// ============================================================================
 void PointCloudWidget::mousePressEvent(QMouseEvent *event) {
     // Set focus to this widget so it can receive keyboard events
     setFocus();
@@ -494,6 +624,11 @@ void PointCloudWidget::mousePressEvent(QMouseEvent *event) {
     showIndicator_ = true;
     hideTimer_.stop();
     update();
+}
+
+void PointCloudWidget::mouseReleaseEvent(QMouseEvent *event) {
+    Q_UNUSED(event);
+    hideTimer_.start(timerInterval_);
 }
 
 void PointCloudWidget::mouseMoveEvent(QMouseEvent *event) {
@@ -551,11 +686,6 @@ void PointCloudWidget::mouseMoveEvent(QMouseEvent *event) {
     lastMousePos_ = event->pos();
 }
 
-void PointCloudWidget::mouseReleaseEvent(QMouseEvent *event) {
-    Q_UNUSED(event);
-    hideTimer_.start(timerInterval_);
-}
-
 void PointCloudWidget::wheelEvent(QWheelEvent *event) {
     float delta = event->angleDelta().y() / 120.0f;
     
@@ -571,332 +701,6 @@ void PointCloudWidget::wheelEvent(QWheelEvent *event) {
     }
     
     update();
-}
-
-// ============================================================================
-// Rendering System
-// ============================================================================
-
-void PointCloudWidget::setPointSize(float size) {
-    pointSize_ = glm::clamp(size, 0.5f, 10.0f);
-    qDebug() << "Point size set to:" << pointSize_;
-    update();
-}
-
-void PointCloudWidget::setPathWidth(float width) {
-    pathWidth_ = glm::clamp(width, 0.5f, 10.0f);
-    qDebug() << "Path width set to:" << pathWidth_;
-    update();
-}
-
-void PointCloudWidget::drawPoints() {
-    // Additional check: don't render if showPoints_ is false
-    if (!showPoints_) return;
-    
-    std::lock_guard<std::mutex> lock(cloudMutex_);
-
-    glPointSize(pointSize_);  // Dynamic point size
-    glBegin(GL_POINTS);
-
-    for (auto it = clouds_.cbegin(); it != clouds_.cend(); ++it) {
-        const QString& robotName = it.key();
-        
-        if (robotName_ != "COMBINED" && robotName != robotName_) {
-            continue;
-        }
-        
-        const auto& cloud = it.value();
-
-        if (cloud && !cloud->empty()) {
-            glm::vec3 color;
-            
-            if (robotName_ == "COMBINED") {
-                color = getRobotPointsColor(robotName);
-            } else {
-                color = getRobotPointsColor(robotName_);
-            }
-            
-            glColor3f(color.x, color.y, color.z);
-            
-            for (const auto& point : cloud->points) {
-                glVertex3f(-point.y, point.z, -point.x);
-            }
-        }
-    }
-    glEnd();
-}
-
-void PointCloudWidget::drawPath() {
-    // Additional check: don't render if showPath_ is false
-    if (!showPath_) return;
-    
-    std::lock_guard<std::mutex> lock(pathMutex_);
-    
-    glLineWidth(pathWidth_);  // Dynamic path width
-    glBegin(GL_LINES);
-    
-    for (auto it = paths_.cbegin(); it != paths_.cend(); ++it) {
-        const QString& robotName = it.key();
-        
-        if (robotName_ != "COMBINED" && robotName != robotName_) {
-            continue;
-        }
-        
-        const auto& path = it.value();
-        
-        if (!path.empty()) {
-            glm::vec3 color;
-            
-            if (robotName_ == "COMBINED") {
-                color = getRobotPathColor(robotName);
-            } else {
-                color = getRobotPathColor(robotName_);
-            }
-            
-            glColor3f(color.x, color.y, color.z);
-            
-            for (size_t i = 1; i < path.size(); ++i) {
-                const auto& prev_pose = path[i-1];
-                const auto& curr_pose = path[i];
-                
-                glVertex3f(-prev_pose.pose.position.y, prev_pose.pose.position.z, -prev_pose.pose.position.x);
-                glVertex3f(-curr_pose.pose.position.y, curr_pose.pose.position.z, -curr_pose.pose.position.x);
-            }
-        }
-    }
-    
-    glEnd();
-}
-
-void PointCloudWidget::drawAxes() {
-    if (!showAxes_) return;
-    
-    glm::vec3 origin = glm::vec3(0.0f, 0.01f, 0.0f);
-    glm::mat4 identityMatrix = glm::mat4(1.0f);
-    
-    ShapeHelper::SimpleShape::drawRosAxes(
-        origin,
-        identityMatrix,
-        axesLength_,    // 동적 크기 사용
-        axesRadius_,    // 동적 반지름 사용
-        true
-    );
-}
-
-void PointCloudWidget::drawGrid() {
-    if (!showGrid_) return;
-    
-    glColor3f(0.3f, 0.3f, 0.3f);
-    glLineWidth(gridLineWidth_);
-    
-    glBegin(GL_LINES);
-    
-    // planeCellCount_와 cellSize_ 모두 동적으로 사용
-    float halfSize = planeCellCount_ * cellSize_ * 0.5f;
-    
-    // X 방향 선들 (Y축을 따라)
-    for (int i = -planeCellCount_/2; i <= planeCellCount_/2; ++i) {
-        float pos = i * cellSize_;
-        glVertex3f(-halfSize, 0.0f, pos);
-        glVertex3f(halfSize, 0.0f, pos);
-    }
-    
-    // Z 방향 선들 (X축을 따라)
-    for (int i = -planeCellCount_/2; i <= planeCellCount_/2; ++i) {
-        float pos = i * cellSize_;
-        glVertex3f(pos, 0.0f, -halfSize);
-        glVertex3f(pos, 0.0f, halfSize);
-    }
-    
-    glEnd();
-    
-    // 디버그 정보
-    // qDebug() << "Grid drawn with" << planeCellCount_ << "x" << planeCellCount_ 
-    //          << "cells, each" << cellSize_ << "m size"
-    //          << "(total area:" << (planeCellCount_ * cellSize_) << "m x" << (planeCellCount_ * cellSize_) << "m)";
-}
-
-void PointCloudWidget::drawCameraIndicator() {
-    glDisable(GL_DEPTH_TEST);
-    
-    ShapeHelper::SimpleShape::drawCylinder(
-        focusPoint_,
-        glm::vec3(0, 1, 0),
-        0.1f,
-        0.3f,
-        glm::vec4(1.0f, 1.0f, 0.0f, 0.7f)
-    );
-    
-    glEnable(GL_DEPTH_TEST);
-}
-
-void PointCloudWidget::drawPositions() {
-    if (!showPosition_) return;
-    
-    std::lock_guard<std::mutex> lock(pathMutex_);
-    
-    for (auto it = paths_.cbegin(); it != paths_.cend(); ++it) {
-        const QString& robotName = it.key();
-        
-        if (robotName_ != "COMBINED" && robotName != robotName_) {
-            continue;
-        }
-        
-        const auto& path = it.value();
-        
-        if (!path.empty()) {
-            const auto& currentPose = path.back();
-            
-            glm::vec3 position(
-                -currentPose.pose.position.y,
-                currentPose.pose.position.z,
-                -currentPose.pose.position.x
-            );
-            
-            auto quat = currentPose.pose.orientation;
-            glm::quat orientation(quat.w, quat.x, quat.y, quat.z);
-            
-            glm::vec3 robotColor;
-            if (robotName_ == "COMBINED") {
-                robotColor = getRobotPathColor(robotName);
-            } else {
-                robotColor = getRobotPathColor(robotName_);
-            }
-            
-            switch (positionMarkerType_) {
-                case PositionMarkerType::CYLINDER:
-                    drawCylinderMarker(position, robotColor, robotName);
-                    break;
-                    
-                case PositionMarkerType::AXES:
-                    drawPositionAxes(position, orientation, robotName);
-                    break;
-            }
-        }
-    }
-}
-
-void PointCloudWidget::drawCylinderMarker(const glm::vec3& position, const glm::vec3& robotColor, const QString& robotName) {
-    ShapeHelper::SimpleShape::drawCylinder(
-        position + glm::vec3(0, currentPositionHeight_/2, 0),
-        glm::vec3(0, 1, 0),
-        currentPositionHeight_,
-        currentPositionRadius_,
-        glm::vec4(robotColor.x, robotColor.y, robotColor.z, 0.8f)
-    );
-    
-    ShapeHelper::SimpleShape::drawCylinder(
-        position + glm::vec3(0, currentPositionHeight_ + 0.05f, 0),
-        glm::vec3(0, 1, 0),
-        0.05f,
-        currentPositionRadius_ * 0.7f,
-        glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)
-    );
-}
-
-void PointCloudWidget::drawPositionAxes(const glm::vec3& position, const glm::quat& orientation, const QString& robotName) {
-    // Base axes size from main setting
-    float axesLength = axesLength_ * 0.5f;  // Position axes는 main axes의 50% 크기
-    float axesRadius = axesRadius_ * 0.6f;  // 상대적으로 조금 더 굵게
-    
-    // Robot-specific scaling
-    if (robotName == "SUAV") {
-        axesLength *= 1.2f;
-    } else if (robotName == "SUGV1" || robotName == "SUGV2") {
-        axesLength *= 0.8f;
-    }
-    
-    glm::vec3 axesStart = position + glm::vec3(0, 0.05f, 0);
-    
-    ShapeHelper::SimpleShape::drawRosAxes(axesStart, orientation, axesLength, axesRadius, true);
-}
-
-void PointCloudWidget::drawCustomAxes(const glm::vec3& position, const glm::quat& orientation) {
-    // Custom axes drawing (implement if needed)
-}
-
-// ============================================================================
-// Robot Label Rendering
-// ============================================================================
-
-void PointCloudWidget::drawRobotLabel(QPainter& painter) {
-    if (robotName_ == "TUGV") {
-        QString robotText = "TUGV";
-        glm::vec3 color = getRobotPointsColor("TUGV");
-        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
-        drawSingleLabel(painter, robotText, robotColor, QPoint(10, 10));
-        
-    } else if (robotName_ == "MUGV") {
-        QString robotText = "MUGV";
-        glm::vec3 color = getRobotPointsColor("MUGV");
-        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
-        drawSingleLabel(painter, robotText, robotColor, QPoint(10, 10));
-        
-    } else if (robotName_ == "SUGV1") {
-        QString robotText = "SUGV1";
-        glm::vec3 color = getRobotPointsColor("SUGV1");
-        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
-        drawSingleLabel(painter, robotText, robotColor, QPoint(10, 10));
-        
-    } else if (robotName_ == "SUGV2") {
-        QString robotText = "SUGV2";
-        glm::vec3 color = getRobotPointsColor("SUGV2");
-        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
-        drawSingleLabel(painter, robotText, robotColor, QPoint(10, 10));
-        
-    } else if (robotName_ == "SUAV") {
-        QString robotText = "SUAV";
-        glm::vec3 color = getRobotPointsColor("SUAV");
-        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
-        drawSingleLabel(painter, robotText, robotColor, QPoint(10, 10));
-        
-    } else if (robotName_ == "COMBINED") {
-        QStringList robots = {"TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
-        
-        for (int i = 0; i < robots.size(); ++i) {
-            QString robotName = robots[i];
-            glm::vec3 color = getRobotPointsColor(robotName);
-            QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
-            
-            int yOffset = 10 + i * 40;
-            drawSingleLabel(painter, robotName, robotColor, QPoint(10, yOffset));
-        }
-    }
-}
-
-void PointCloudWidget::drawSingleLabel(QPainter& painter, const QString& text, const QColor& robotColor, const QPoint& position) {
-    painter.setFont(QFont("Arial", fontSize_, QFont::Bold));
-    QFontMetrics fm(painter.font());
-    
-    QRect textBounds = fm.boundingRect(text);
-    int textWidth = textBounds.width();
-    int textHeight = fm.height();
-    
-    int boxWidth = horizontalMargin_ + circleSize_ + circleMargin_ + textWidth + horizontalMargin_;
-    int boxHeight = std::max(circleSize_ + verticalMargin_ * 2, textHeight + verticalMargin_ * 2);
-    
-    QRect labelRect(position.x(), position.y(), boxWidth, boxHeight);
-    
-    painter.setBrush(QBrush(QColor(0, 0, 0, 100)));
-    painter.setPen(Qt::NoPen);
-    painter.fillRect(labelRect, QColor(0, 0, 0, 100));
-    
-    painter.setBrush(Qt::NoBrush);
-    painter.setPen(QPen(Qt::white, 1));
-    painter.drawRect(labelRect);
-    
-    int boxCenterY = labelRect.top() + labelRect.height() / 2;
-    
-    painter.setBrush(QBrush(robotColor));
-    painter.setPen(Qt::NoPen);
-    int circleX = labelRect.left() + horizontalMargin_;
-    painter.drawEllipse(circleX, boxCenterY - circleSize_/2, circleSize_, circleSize_);
-    
-    painter.setBrush(Qt::NoBrush);
-    painter.setPen(Qt::white);
-    int textX = circleX + circleSize_ + circleMargin_;
-    int textY = boxCenterY + fm.ascent()/2 - fm.descent()/2;
-    painter.drawText(textX, textY, text);
 }
 
 } // namespace Widget

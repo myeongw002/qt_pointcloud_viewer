@@ -1,11 +1,13 @@
 // control_tree_widget.cpp
 #include "control_tree_widget.hpp"
+#include "pointcloud_widget.hpp"  // 이 줄 추가!
 #include "viewer_settings_manager.hpp"
 #include <QApplication>
 #include <QStyle>
 #include <QDebug>
 #include <QColorDialog>
 #include <QSlider>
+#include <QSpinBox>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QPushButton>
@@ -242,15 +244,16 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     markerTypeCombo->setCurrentIndex(1);
     connect(markerTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             [this, markerTypeCombo](int index) {
-        if (targetWidget_) {
-            Widget::PointCloudWidget::PositionMarkerType markerType = 
-                (index == 0) ? Widget::PointCloudWidget::PositionMarkerType::CYLINDER 
-                             : Widget::PointCloudWidget::PositionMarkerType::AXES;
-            targetWidget_->setPositionMarkerType(markerType);
-            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
-            qDebug() << "Position marker type:" << markerTypeCombo->currentText();
-        }
-    });
+                if (!targetWidget_) return;
+                
+                // RenderHelper 타입으로 변환
+                RenderHelper::PositionMarkerType type = 
+                    (index == 0) ? RenderHelper::PositionMarkerType::CYLINDER 
+                                 : RenderHelper::PositionMarkerType::AXES;
+                
+                targetWidget_->setPositionMarkerType(type);
+                qDebug() << "Marker type changed to:" << markerTypeCombo->currentText();
+            });
     setItemWidget(markerTypeItem, 1, markerTypeCombo);
     
     // Marker Size slider

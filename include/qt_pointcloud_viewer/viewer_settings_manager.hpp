@@ -4,7 +4,12 @@
 #include <QObject>
 #include <QHash>
 #include <glm/glm.hpp>
-#include "pointcloud_widget.hpp"
+#include "render_helper.hpp"  // RenderHelper의 타입들을 위해
+
+// Forward declaration (헤더에서는 전방 선언만 유지)
+namespace Widget {
+    class PointCloudWidget;
+}
 
 namespace Widget {
 
@@ -22,10 +27,10 @@ struct ViewerSettings {
     float pathWidth = 3.0f;
     float positionRadius = 0.3f;
     float rotationSensitivity = 0.3f;
-    float gridSize = 1.0f;          // Grid cell size
-    int gridCellCount = 10;         // Grid cell count
-    float axesSize = 1.0f;          // Axes size (새로 추가)
-    PointCloudWidget::PositionMarkerType markerType = PointCloudWidget::PositionMarkerType::AXES;
+    float gridSize = 1.0f;
+    int gridCellCount = 10;
+    float axesSize = 1.0f;
+    RenderHelper::PositionMarkerType markerType = RenderHelper::PositionMarkerType::AXES;
     
     // Camera settings
     bool isTopView = false;

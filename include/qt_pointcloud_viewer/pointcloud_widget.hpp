@@ -14,6 +14,9 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include "grid_map_processor.hpp"
+#include "pointcloud_widget.hpp"
+#include "render_helper.hpp"  // 이 include를 맨 위로 이동
 
 class QPainter;
 class QPaintEvent;
@@ -23,17 +26,21 @@ namespace Widget {
     using CloudConstPtr = Cloud::ConstPtr;
     using PathConstPtr = std::vector<geometry_msgs::msg::PoseStamped>;
     
+    // RenderHelper의 타입을 사용하도록 변경
+    using PositionMarkerType = RenderHelper::PositionMarkerType;
+    
     class PointCloudWidget : public QOpenGLWidget, protected QOpenGLFunctions {
         Q_OBJECT
     
     public:
         explicit PointCloudWidget(QWidget *parent = nullptr);
         ~PointCloudWidget();
-    
-        enum class PositionMarkerType {
-            CYLINDER,
-            AXES
-        };
+
+        // 기존 enum 제거하고 using 선언으로 대체
+        // enum class PositionMarkerType {
+        //     CYLINDER,
+        //     AXES
+        // }; // 이 부분 제거
 
         // ============================================================================
         // Robot Related Functions
@@ -74,7 +81,7 @@ namespace Widget {
         void setShowGrid(bool show);
         void setGridSize(float size);
         void setGridCellCount(int count);
-        void setAxesSize(float size);  // 새로 추가
+        void setAxesSize(float size);
         void setShowPosition(bool show);
         void setShowRobotLabel(bool show);
         void setPositionRadius(float radius);
@@ -85,7 +92,7 @@ namespace Widget {
         bool getShowGrid() const { return showGrid_; }
         float getGridSize() const { return cellSize_; }
         int getGridCellCount() const { return planeCellCount_; }
-        float getAxesSize() const { return axesLength_; }  // 새로 추가
+        float getAxesSize() const { return axesLength_; }
         bool getShowPosition() const { return showPosition_; }
         bool getShowRobotLabel() const { return showRobotLabel_; }
         float getPositionRadius() const { return currentPositionRadius_; }
@@ -130,7 +137,7 @@ namespace Widget {
         void mouseReleaseEvent(QMouseEvent *event) override;
         void mouseMoveEvent(QMouseEvent *event) override;
         void wheelEvent(QWheelEvent *event) override;
-        void keyPressEvent(QKeyEvent *event) override;  // Added keyboard event handler
+        void keyPressEvent(QKeyEvent *event) override;
 
     private:
         // ============================================================================
@@ -202,25 +209,19 @@ namespace Widget {
         // ============================================================================
         // Rendering System
         // ============================================================================
-        // Basic rendering functions
-        void drawPoints();
-        void drawPath();
-        void drawAxes();
-        void drawGrid();
-        void drawCameraIndicator();
-        
         // Position marker related
         bool showPosition_ = true;
-        PositionMarkerType positionMarkerType_ = PositionMarkerType::AXES;
+        PositionMarkerType positionMarkerType_ = PositionMarkerType::AXES;  // RenderHelper 타입 사용
         float currentPositionRadius_ = 0.3f;
         float currentPositionHeight_ = 0.2f;
         float positionAxesLength_ = 0.5f;
         float positionAxesRadius_ = 0.03f;
         
-        void drawPositions();
-        void drawCylinderMarker(const glm::vec3& position, const glm::vec3& robotColor, const QString& robotName);
-        void drawPositionAxes(const glm::vec3& position, const glm::quat& orientation, const QString& robotName);
-        void drawCustomAxes(const glm::vec3& position, const glm::quat& orientation);
+        // 그리드 맵 관련
+        bool showGridMap_ = false;
+        GridMap::GridMapParameters gridParams_;
+        QHash<QString, std::shared_ptr<GridMap::GridMapData>> gridMaps_;
+        mutable std::mutex gridMapMutex_;
         
         // ============================================================================
         // UI Display Options
@@ -231,8 +232,8 @@ namespace Widget {
         int planeCellCount_ = 10;
         float cellSize_ = 1.0f;
         float gridLineWidth_ = 0.1f;
-        float axesLength_ = 1.0f;     // 조절 가능
-        float axesRadius_ = 0.05f;    // axesLength_에 비례하여 자동 계산
+        float axesLength_ = 1.0f;
+        float axesRadius_ = 0.05f;
         
         // Robot label
         bool showRobotLabel_ = true;
@@ -242,15 +243,20 @@ namespace Widget {
         const int horizontalMargin_ = 8;
         const int verticalMargin_ = 4;
         
-        void drawRobotLabel(QPainter& painter);
-        void drawSingleLabel(QPainter& painter, const QString& text, const QColor& color, const QPoint& pos);
-        
         // Point and path display settings
-        bool showPoints_ = true;  // Point display toggle
-        bool showPath_ = true;    // Path display toggle
-        // Point and path style variables
-        float pointSize_ = 2.0f;      // Point size
-        float pathWidth_ = 3.0f;      // Path line thickness
+        bool showPoints_ = true;
+        bool showPath_ = true;
+        float pointSize_ = 2.0f;
+        float pathWidth_ = 3.0f;
+
+        // ============================================================================
+        // Grid Map Functions
+        // ============================================================================
+        void setShowGridMap(bool show);
+        void setGridMapParameters(const GridMap::GridMapParameters& params);
+        void updateGridMapForRobot(const QString& robotName, CloudConstPtr cloud);
+        bool getShowGridMap() const { return showGridMap_; }
+        GridMap::GridMapParameters getGridMapParameters() const { return gridParams_; }
     };
 }
 
