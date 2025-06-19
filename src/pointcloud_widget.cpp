@@ -389,6 +389,11 @@ void PointCloudWidget::setShowPoints(bool show) {
     update();
 }
 
+void PointCloudWidget::setShowPositionNames(bool show) {
+    showPositionNames_ = show;
+    qDebug() << "Position names display:" << (show ? "ON" : "OFF");
+    update();
+}
 // Newly added: Path display setting
 void PointCloudWidget::setShowPath(bool show) {
     showPath_ = show;
@@ -587,13 +592,33 @@ void PointCloudWidget::paintGL() {
 void PointCloudWidget::paintEvent(QPaintEvent* event) {
     QOpenGLWidget::paintEvent(event);
     
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+    
+    // 기존 로봇 라벨 (좌측 상단)
     if (showRobotLabel_) {
-        QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);
         RenderHelper::PointCloudRenderer::drawRobotLabels(
             painter, robotName_, robotPointsColors_
         );
     }
+    
+    // 로봇 위치에 이름 표시 (수정된 조건)
+    if (showPosition_ && showPositionNames_) {
+        RenderHelper::PointCloudRenderer::drawRobotNamesAtPositions(
+            painter,
+            paths_,
+            robotName_,
+            robotPointsColors_,
+            viewMatrix_,
+            projectionMatrix_,
+            width(),
+            height(),
+            positionNameFontSize_,
+            pathMutex_
+        );
+    }
+    
+    painter.end();
 }
 
 void PointCloudWidget::keyPressEvent(QKeyEvent *event) {

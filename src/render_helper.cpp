@@ -231,6 +231,132 @@ void PointCloudRenderer::drawRobotLabels(
     }
 }
 
+void PointCloudRenderer::drawRobotNamesAtPositions(
+    QPainter& painter,
+    const QHash<QString, PathVector>& paths,
+    const QString& currentRobot,
+    const QHash<QString, glm::vec3>& robotColors,
+    const glm::mat4& viewMatrix,
+    const glm::mat4& projectionMatrix,
+    int screenWidth,
+    int screenHeight,
+    float textSize,
+    std::mutex& pathMutex) {
+    
+    std::lock_guard<std::mutex> lock(pathMutex);
+    
+    for (auto it = paths.cbegin(); it != paths.cend(); ++it) {
+        const QString& robotName = it.key();
+        
+        // 현재 로봇 필터링
+        if (currentRobot != "COMBINED" && robotName != currentRobot) {
+            continue;
+        }
+        
+        const auto& path = it.value();
+        if (path.empty()) continue;
+        
+        // 로봇의 현재 위치 (마지막 경로 포인트)
+        const auto& currentPose = path.back();
+        
+        // ROS → OpenGL 좌표 변환
+        glm::vec3 worldPosition(
+            -currentPose.pose.position.y,
+            currentPose.pose.position.z + 2.0f,  // 로봇 위 50cm에 텍스트 표시
+            -currentPose.pose.position.x
+        );
+        
+        // 3D 위치를 화면 좌표로 변환
+        QPoint screenPos = worldToScreen(worldPosition, viewMatrix, projectionMatrix, 
+                                       screenWidth, screenHeight);
+        
+        // 화면 범위 내에 있는지 확인
+        if (screenPos.x() >= 0 && screenPos.x() < screenWidth && 
+            screenPos.y() >= 0 && screenPos.y() < screenHeight) {
+            
+            // 로봇 색상 설정
+            glm::vec3 color = robotColors.value(robotName, glm::vec3(0.0f, 1.0f, 0.0f));
+            QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
+            
+            // 로봇 이름 텍스트 그리기
+            drawRobotNameText(painter, robotName, robotColor, screenPos, textSize);
+        }
+    }
+}
+
+QPoint PointCloudRenderer::worldToScreen(
+    const glm::vec3& worldPos,
+    const glm::mat4& viewMatrix,
+    const glm::mat4& projectionMatrix,
+    int screenWidth,
+    int screenHeight) {
+    
+    // MVP 변환 매트릭스
+    glm::mat4 mvpMatrix = projectionMatrix * viewMatrix;
+    
+    // 월드 좌표를 동차 좌표로 변환
+    glm::vec4 worldPos4(worldPos.x, worldPos.y, worldPos.z, 1.0f);
+    
+    // MVP 변환 적용
+    glm::vec4 clipSpacePos = mvpMatrix * worldPos4;
+    
+    // 원근 나누기 (Perspective Division)
+    if (clipSpacePos.w != 0.0f) {
+        clipSpacePos.x /= clipSpacePos.w;
+        clipSpacePos.y /= clipSpacePos.w;
+        clipSpacePos.z /= clipSpacePos.w;
+    }
+    
+    // NDC [-1, 1] → 화면 좌표 [0, screen_size] 변환
+    int screenX = static_cast<int>((clipSpacePos.x + 1.0f) * 0.5f * screenWidth);
+    int screenY = static_cast<int>((1.0f - clipSpacePos.y) * 0.5f * screenHeight);  // Y축 뒤집기
+    
+    return QPoint(screenX, screenY);
+}
+
+void PointCloudRenderer::drawRobotNameText(
+    QPainter& painter,
+    const QString& robotName,
+    const QColor& robotColor,
+    const QPoint& screenPos,
+    float textSize) {
+    
+    // 폰트 설정
+    QFont font("Arial", static_cast<int>(textSize), QFont::Bold);
+    painter.setFont(font);
+    QFontMetrics fm(font);
+    
+    // 텍스트 크기 계산
+    QRect textRect = fm.boundingRect(robotName);
+    int textWidth = textRect.width();
+    int textHeight = fm.height();
+    
+    // 배경 박스 크기 계산
+    int padding = 4;
+    int boxWidth = textWidth + padding * 2;
+    int boxHeight = textHeight + padding * 2;
+    
+    // 텍스트 중앙 정렬을 위한 위치 조정
+    QPoint adjustedPos(screenPos.x() - boxWidth / 2, screenPos.y() - boxHeight / 2);
+    QRect backgroundRect(adjustedPos.x(), adjustedPos.y(), boxWidth, boxHeight);
+    
+    // 배경 박스 그리기 (반투명 검은색)
+    painter.setBrush(QBrush(QColor(0, 0, 0, 150)));
+    painter.setPen(Qt::NoPen);
+    painter.drawRoundedRect(backgroundRect, 3, 3);
+    
+    // 테두리 그리기 (로봇 색상)
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(robotColor, 2));
+    painter.drawRoundedRect(backgroundRect, 3, 3);
+    
+    // 텍스트 그리기 (흰색)
+    painter.setPen(QPen(Qt::white));
+    int textX = adjustedPos.x() + padding;
+    int textY = adjustedPos.y() + padding + fm.ascent();
+    painter.drawText(textX, textY, robotName);
+}
+
 // ============================================================================
 // Private Helper Functions
 // ============================================================================

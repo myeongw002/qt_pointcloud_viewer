@@ -109,6 +109,8 @@ namespace Widget {
         void setPositionMarkerType(PositionMarkerType type);
         void setGridMapResolution(float resolution);
         float getGridMapResolution() const;        
+        void setShowPositionNames(bool show);
+        bool getShowPositionNames() const;
         // Map Style 제어 함수 추가
         void setMapStyle(const QString& style);  // "pointcloud" 또는 "gridmap"
         QString getMapStyle() const { return mapStyle_; }
@@ -242,7 +244,8 @@ namespace Widget {
         const int circleMargin_ = 5;
         const int horizontalMargin_ = 8;
         const int verticalMargin_ = 4;
-        
+        bool showPositionNames_ = true;  // Position 이름 표시 여부
+        const float positionNameFontSize_ = 9.0f;
         // Point and path display settings
         bool showPoints_ = true;
         bool showPath_ = true;

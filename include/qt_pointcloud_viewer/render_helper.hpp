@@ -67,12 +67,44 @@ public:
     static void drawGrid(int cellCount, float cellSize, float lineWidth);
     static void drawCameraIndicator(const glm::vec3& focusPoint);
     static void drawRobotLabels(QPainter& painter, const QString& currentRobot, const QHash<QString, glm::vec3>& robotColors);
+    
+    // 로봇 위치에 이름 표시 (새로 추가)
+    static void drawRobotNamesAtPositions(
+        QPainter& painter,
+        const QHash<QString, PathVector>& paths,
+        const QString& currentRobot,
+        const QHash<QString, glm::vec3>& robotColors,
+        const glm::mat4& viewMatrix,
+        const glm::mat4& projectionMatrix,
+        int screenWidth,
+        int screenHeight,
+        float textSize,
+        std::mutex& pathMutex
+    );
 
 private:
     // Private helper functions
     static void drawCylinderMarker(const glm::vec3& position, const glm::vec3& robotColor, float radius, float height);
     static void drawPositionAxes(const glm::vec3& position, const glm::quat& orientation, const QString& robotName, float axesLength, float axesRadius);
     static void drawSingleLabel(QPainter& painter, const QString& text, const QColor& robotColor, const QPoint& position);
+    
+    // 3D 위치를 화면 좌표로 변환
+    static QPoint worldToScreen(
+        const glm::vec3& worldPos,
+        const glm::mat4& viewMatrix,
+        const glm::mat4& projectionMatrix,
+        int screenWidth,
+        int screenHeight
+    );
+    
+    // 단일 로봇 이름 텍스트 그리기
+    static void drawRobotNameText(
+        QPainter& painter,
+        const QString& robotName,
+        const QColor& robotColor,
+        const QPoint& screenPos,
+        float textSize
+    );
 };
 
 class GridMapRenderer {

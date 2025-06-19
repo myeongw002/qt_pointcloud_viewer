@@ -398,7 +398,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     // ============================================================================
     
     // Show Current Position
-    auto positionItem = new QTreeWidgetItem(mapStylingGroup, {"Show Current Position"});
+    auto positionItem = new QTreeWidgetItem(mapStylingGroup, {"Show Position"});
     auto positionCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
             targetWidget_->setShowPosition(checked);
@@ -407,6 +407,17 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
         }
     });
     setItemWidget(positionItem, 1, positionCheck);
+    
+    // Show Position Names checkbox (새로 추가됨)
+    auto positionNamesItem = new QTreeWidgetItem(mapStylingGroup, {"Show Names"});
+    auto positionNamesCheck = createCheckBox(true, [this](bool checked) {
+        if (targetWidget_) {
+            targetWidget_->setShowPositionNames(checked);
+            ViewerSettingsManager::instance()->saveSettings(robotName_, targetWidget_);
+            qDebug() << "Position names:" << (checked ? "ON" : "OFF");
+        }
+    });
+    setItemWidget(positionNamesItem, 1, positionNamesCheck);
     
     // Position Marker Type
     auto markerTypeItem = new QTreeWidgetItem(mapStylingGroup, {"Marker Type"});
