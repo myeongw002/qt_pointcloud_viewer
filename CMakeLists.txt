@@ -12,6 +12,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(u2_icd_pkg REQUIRED)
+find_package(vision_msgs REQUIRED)
 find_package(PCL REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(pcl_ros REQUIRED)
@@ -73,6 +75,8 @@ ament_target_dependencies(${PROJECT_NAME}
     rclcpp 
     sensor_msgs 
     nav_msgs
+    u2_icd_pkg
+    vision_msgs
     pcl_conversions 
     pcl_ros
 )
