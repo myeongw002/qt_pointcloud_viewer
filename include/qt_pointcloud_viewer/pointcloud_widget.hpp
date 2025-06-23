@@ -12,6 +12,7 @@
 #include "common_types.hpp"
 #include "grid_map_processor.hpp"
 #include "render_helper.hpp"
+#include "interest_object_manager.hpp"
 
 class QPainter;
 class QPaintEvent;
@@ -112,7 +113,12 @@ namespace Widget {
         
         // Getter functions
         MarkerType getPositionMarkerType() const { return positionMarkerType_; }
-    
+
+        // ============================================================================
+        // Interest Objects Functions (전역 매니저 사용으로 간소화)
+        // ============================================================================
+        void registerInterestObject(Types::ObjectType type, const QString& robotName);
+        
     public slots:
         // ============================================================================
         // Data Reception Slots
@@ -120,6 +126,14 @@ namespace Widget {
         void onCloudShared(const QString& robot, CloudConstPtr cloud);
         void onPathShared(const QString& robot, PathConstPtr path);
         
+        // 전역 매니저 시그널 수신용
+        void onGlobalInterestObjectUpdated();
+        
+    signals:
+        // Interest Object 관련 시그널들 제거 (전역 매니저에서 처리)
+        // void interestObjectRegistered(...);  // 제거
+        // void interestObjectRemoved(...);     // 제거
+
     protected:
         // Qt Event Overrides
         void initializeGL() override;
@@ -138,11 +152,13 @@ namespace Widget {
         // ============================================================================
         // Robot Data Management (Types 사용)
         // ============================================================================
-        QString robotName_ = "";
+        QString robotName_;
         QHash<QString, CloudConstPtr> clouds_;
         QHash<QString, PathConstPtr> paths_;
+        QHash<QString, Types::Vec3> robotPositions_;  // 로봇 위치 저장용 추가
         mutable std::mutex cloudMutex_;
         mutable std::mutex pathMutex_;
+        mutable std::mutex robotPositionsMutex_;      // 로봇 위치 뮤텍스 추가
         
         // ============================================================================
         // Color Management (Types::ColorRGB 사용)
@@ -241,6 +257,7 @@ namespace Widget {
         float pathWidth_ = 3.0f;
         float gridMapResolution_ = 0.05f;
         QString mapStyle_ = "pointcloud";
+
         
         // ============================================================================
         // Grid Map Functions
@@ -248,6 +265,13 @@ namespace Widget {
         GridMap::GridMapParameters gridParams_;  // Add this line
         void updateGridMapForRobot(const QString& robotName, CloudConstPtr cloud);
         void resampleGridMapResolution(Types::GridMapPtr gridData, float newResolution);
+
+        // ============================================================================
+        // Interest Objects
+        // ============================================================================
+        Types::Vec3 getRobotPosition(const QString& robotName) const;
+        void renderInterestObjects();  // 전역 매니저에서 데이터 가져와서 렌더링
+        bool showInterestObjects_ = true;
     };
 }
 

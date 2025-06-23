@@ -204,6 +204,55 @@ void PointCloudRenderer::drawRobotNamesAtPositions(
     }
 }
 
+void PointCloudRenderer::drawSingleLabel(
+    QPainter& painter,
+    const QString& text,
+    const QColor& robotColor,
+    const QPoint& position) {
+    
+    const int fontSize = 9;
+    const int circleSize = 12;
+    const int circleMargin = 5;
+    const int horizontalMargin = 8;
+    const int verticalMargin = 4;
+    
+    painter.setFont(QFont("Arial", fontSize, QFont::Bold));
+    QFontMetrics fm(painter.font());
+    
+    QRect textBounds = fm.boundingRect(text);
+    int textWidth = textBounds.width();
+    int textHeight = fm.height();
+    
+    int boxWidth = horizontalMargin + circleSize + circleMargin + textWidth + horizontalMargin;
+    int boxHeight = std::max(circleSize + verticalMargin * 2, textHeight + verticalMargin * 2);
+    
+    QRect labelRect(position.x(), position.y(), boxWidth, boxHeight);
+    
+    // 배경 박스
+    painter.setBrush(QBrush(QColor(0, 0, 0, 100)));
+    painter.setPen(Qt::NoPen);
+    painter.fillRect(labelRect, QColor(0, 0, 0, 100));
+    
+    // 테두리
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(Qt::white, 1));
+    painter.drawRect(labelRect);
+    
+    // 로봇 색상 원
+    int boxCenterY = labelRect.top() + labelRect.height() / 2;
+    painter.setBrush(QBrush(robotColor));
+    painter.setPen(Qt::NoPen);
+    int circleX = labelRect.left() + horizontalMargin;
+    painter.drawEllipse(circleX, boxCenterY - circleSize/2, circleSize, circleSize);
+    
+    // 텍스트
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(Qt::white);
+    int textX = circleX + circleSize + circleMargin;
+    int textY = boxCenterY + fm.ascent()/2 - fm.descent()/2;
+    painter.drawText(textX, textY, text);
+}
+
 // ============================================================================
 // Private Helper Functions
 // ============================================================================
@@ -477,58 +526,30 @@ void PointCloudRenderer::drawCameraIndicator(const glm::vec3& focusPoint) {
 }
 
 void PointCloudRenderer::drawRobotLabels(
-    QPainter& painter, 
-    const QString& currentRobot, 
-    const QHash<QString, Types::ColorRGB>& robotColors) {
+    QPainter& painter,
+    const QString& currentRobot,
+    const QHash<QString, glm::vec3>& robotColors) {
     
-    // 좌상단에 로봇 목록과 색상 표시
-    const int margin = 10;
-    const int circleSize = 12;
-    const int textHeight = 16;
-    int yOffset = margin;
-    
-    painter.setFont(QFont("Arial", 10));
-    
-    // 현재 로봇 먼저 표시
-    if (!currentRobot.isEmpty() && currentRobot != "COMBINED") {
-        Types::ColorRGB color = robotColors.value(currentRobot, Types::ColorRGB(1.0f, 1.0f, 1.0f));
-        QColor qcolor(color.x * 255, color.y * 255, color.z * 255);
+    if (currentRobot == "COMBINED") {
+        QStringList robots = {"TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
         
-        // 색상 원
-        painter.setBrush(QBrush(qcolor));
-        painter.setPen(QPen(Qt::white, 2));
-        painter.drawEllipse(margin, yOffset, circleSize, circleSize);
-        
-        // 로봇 이름 (굵게)
-        painter.setPen(QPen(Qt::white));
-        painter.setFont(QFont("Arial", 10, QFont::Bold));
-        painter.drawText(margin + circleSize + 8, yOffset + circleSize, 
-                        currentRobot + " (Current)");
-        
-        yOffset += textHeight + 5;
-    }
-    
-    // 다른 로봇들 표시
-    painter.setFont(QFont("Arial", 9));
-    for (auto it = robotColors.cbegin(); it != robotColors.cend(); ++it) {
-        const QString& robotName = it.key();
-        if (robotName == currentRobot || robotName == "DEFAULT") continue;
-        
-        Types::ColorRGB color = it.value();
-        QColor qcolor(color.x * 255, color.y * 255, color.z * 255);
-        
-        // 색상 원
-        painter.setBrush(QBrush(qcolor));
-        painter.setPen(QPen(Qt::white, 1));
-        painter.drawEllipse(margin, yOffset, circleSize, circleSize);
-        
-        // 로봇 이름
-        painter.setPen(QPen(Qt::lightGray));
-        painter.drawText(margin + circleSize + 8, yOffset + circleSize, robotName);
-        
-        yOffset += textHeight;
+        for (int i = 0; i < robots.size(); ++i) {
+            QString robotName = robots[i];
+            glm::vec3 color = robotColors.value(robotName, glm::vec3(0.0f, 1.0f, 0.0f));
+            QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
+            
+            int yOffset = 10 + i * 40;
+            drawSingleLabel(painter, robotName, robotColor, QPoint(10, yOffset));  // 이 부분 수정됨
+        }
+    } else {
+        glm::vec3 color = robotColors.value(currentRobot, glm::vec3(0.0f, 1.0f, 0.0f));
+        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
+        drawSingleLabel(painter, currentRobot, robotColor, QPoint(10, 10));
     }
 }
+
+
+
 
 QPoint PointCloudRenderer::worldToScreen(
     const Types::Vec3& worldPos,
@@ -611,4 +632,178 @@ void GridMapRenderer::drawBasicGridMaps(
     }
 }
 
-} // namespace RenderHelper
+// ============================================================================
+// InterestObjectRenderer Implementation (새로 추가)
+// ============================================================================
+
+void InterestObjectRenderer::drawInterestObjects(
+    const QHash<QString, Types::InterestObjectPtr>& allObjects,
+    const QString& currentRobot) {
+    
+    if (allObjects.isEmpty()) return;
+    
+    // OpenGL 상태 설정
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_DEPTH_TEST);
+    
+    for (auto it = allObjects.cbegin(); it != allObjects.cend(); ++it) {
+        const auto& obj = it.value();
+        if (!obj || !obj->isActive) continue;
+        
+        // 로봇 필터링: COMBINED 모드가 아니면 해당 로봇이 발견한 객체만 표시
+        if (currentRobot != "COMBINED" && obj->discoveredBy != currentRobot) {
+            continue;
+        }
+        
+        // Interest Object 렌더링
+        drawSingleInterestObject(obj, true);
+    }
+    
+    glDisable(GL_BLEND);
+}
+
+void InterestObjectRenderer::drawSingleInterestObject(
+    const Types::InterestObjectPtr& obj,
+    bool drawWireframe) {
+    
+    if (!obj) return;
+    
+    // 타입에 따른 색상 조정
+    Types::ColorRGB renderColor = obj->color;
+    float alpha = 0.8f;
+
+    Types::Vec4 renderColorAlpha(
+        renderColor.x, renderColor.y, renderColor.z, alpha
+    );
+    // 정육면체 렌더링 (ShapeHelper 사용)
+    ShapeHelper::SimpleShape::drawCube(obj->position, obj->size, renderColorAlpha);
+}
+
+void InterestObjectRenderer::drawInterestObjectLabels(
+    QPainter& painter,
+    const QHash<QString, Types::InterestObjectPtr>& allObjects,
+    const QString& currentRobot,
+    const Types::Mat4& viewMatrix,
+    const Types::Mat4& projectionMatrix,
+    int screenWidth,
+    int screenHeight,
+    float textSize) {
+    
+    if (allObjects.isEmpty()) return;
+    
+    for (auto it = allObjects.cbegin(); it != allObjects.cend(); ++it) {
+        const auto& obj = it.value();
+        if (!obj || !obj->isActive) continue;
+        
+        // 로봇 필터링
+        if (currentRobot != "COMBINED" && obj->discoveredBy != currentRobot) {
+            continue;
+        }
+        
+        
+        // 객체 위치보다 위에 라벨 표시
+        Types::Vec3 labelPosition = obj->position;
+        labelPosition += Types::Vec3(0.0f, 2.0f, 0.0f);  // Y축으로 약간 위로 이동
+        
+        // 3D 위치를 화면 좌표로 변환
+        QPoint screenPos = worldToScreen(labelPosition, viewMatrix, projectionMatrix, 
+                                       screenWidth, screenHeight);
+        
+        // 화면 범위 내에 있는지 확인
+        if (screenPos.x() >= 0 && screenPos.x() < screenWidth && 
+            screenPos.y() >= 0 && screenPos.y() < screenHeight) {
+            
+            // 라벨 텍스트 생성
+            QString labelText = QString("%1\n[%2]")
+                .arg(Types::objectTypeToString(obj->type))
+                .arg(obj->discoveredBy);
+            
+            // 객체 색상 사용
+            QColor labelColor(obj->color.x * 255, obj->color.y * 255, obj->color.z * 255);
+            
+            // 라벨 그리기
+            drawObjectLabel(painter, labelText, labelColor, screenPos, textSize);
+        }
+    }
+}
+
+QPoint InterestObjectRenderer::worldToScreen(
+    const Types::Vec3& worldPos,
+    const Types::Mat4& viewMatrix,
+    const Types::Mat4& projectionMatrix,
+    int screenWidth,
+    int screenHeight) {
+    
+    // 월드 좌표를 클립 공간으로 변환
+    Types::Vec4 clipPos = projectionMatrix * viewMatrix * Types::Vec4(worldPos, 1.0f);
+    
+    // 동차 나눗셈
+    if (clipPos.w != 0.0f) {
+        clipPos.x /= clipPos.w;
+        clipPos.y /= clipPos.w;
+        clipPos.z /= clipPos.w;
+    }
+    
+    // NDC를 화면 좌표로 변환
+    int screenX = static_cast<int>((clipPos.x + 1.0f) * 0.5f * screenWidth);
+    int screenY = static_cast<int>((1.0f - clipPos.y) * 0.5f * screenHeight);  // Y축 뒤집기
+    
+    return QPoint(screenX, screenY);
+}
+
+void InterestObjectRenderer::drawObjectLabel(
+    QPainter& painter,
+    const QString& text,
+    const QColor& color,
+    const QPoint& screenPos,
+    float textSize) {
+    
+    // 텍스트 설정
+    QFont font("Arial", static_cast<int>(textSize), QFont::Bold);
+    painter.setFont(font);
+    
+    // 멀티라인 텍스트 처리
+    QStringList lines = text.split('\n');
+    QFontMetrics metrics(font);
+    
+    int maxWidth = 0;
+    int totalHeight = 0;
+    
+    // 텍스트 크기 계산
+    for (const QString& line : lines) {
+        QRect lineRect = metrics.boundingRect(line);
+        maxWidth = std::max(maxWidth, lineRect.width());
+        totalHeight += metrics.height();
+    }
+    
+    // 배경 박스 계산
+    QRect bgRect(screenPos.x() - maxWidth / 2 - 8,
+                 screenPos.y() - totalHeight / 2 - 4,
+                 maxWidth + 16,
+                 totalHeight + 8);
+    
+    // 반투명 배경 그리기
+    painter.setBrush(QBrush(QColor(0, 0, 0, 150)));
+    painter.setPen(QPen(color, 1));
+    painter.drawRoundedRect(bgRect, 4, 4);
+    
+    // 텍스트 그리기
+    painter.setPen(QPen(Qt::white));
+    int yOffset = bgRect.top() + 4 + metrics.ascent();
+    
+    for (const QString& line : lines) {
+        QRect lineRect = metrics.boundingRect(line);
+        int xPos = bgRect.center().x() - lineRect.width() / 2;
+        painter.drawText(xPos, yOffset, line);
+        yOffset += metrics.height();
+    }
+    
+    // 타입별 아이콘 추가 (작은 사각형)
+    painter.setBrush(QBrush(color));
+    painter.setPen(Qt::NoPen);
+    QRect iconRect(bgRect.right() - 12, bgRect.top() + 2, 8, 8);
+    painter.drawRect(iconRect);
+}
+
+} // namespace Renderer

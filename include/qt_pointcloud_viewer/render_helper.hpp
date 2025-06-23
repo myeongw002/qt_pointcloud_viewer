@@ -28,8 +28,7 @@ public:
         const QString& currentRobot,
         const QHash<QString, Types::ColorRGB>& robotColors,
         float pointSize,
-        std::mutex& cloudMutex
-    );
+        std::mutex& cloudMutex);
     
     // Paths 렌더링 (PathConstPtr 사용)
     static void drawPaths(
@@ -103,6 +102,57 @@ private:
         const QPoint& screenPos,
         float textSize
     );
+};
+
+// ============================================================================
+// InterestObjectRenderer Class (새로 추가)
+// ============================================================================
+class InterestObjectRenderer {
+public:
+    // Interest Object 렌더링 (로봇 필터링 포함)
+    static void drawInterestObjects(
+        const QHash<QString, Types::InterestObjectPtr>& allObjects,
+        const QString& currentRobot);
+        
+    // 개별 Interest Object 렌더링
+    static void drawSingleInterestObject(
+        const Types::InterestObjectPtr& obj,
+        bool drawWireframe = true);
+        
+    // Interest Object 라벨 렌더링
+    static void drawInterestObjectLabels(
+        QPainter& painter,
+        const QHash<QString, Types::InterestObjectPtr>& allObjects,
+        const QString& currentRobot,
+        const Types::Mat4& viewMatrix,
+        const Types::Mat4& projectionMatrix,
+        int screenWidth,
+        int screenHeight,
+        float textSize = 10.0f);
+
+private:
+    // 정육면체 렌더링 (ShapeHelper 사용)
+    static void drawCubeShape(
+        const Types::Vec3& position,
+        float size,
+        const Types::ColorRGB& color,
+        bool drawWireframe);
+        
+    // 화면 좌표 변환
+    static QPoint worldToScreen(
+        const Types::Vec3& worldPos,
+        const Types::Mat4& viewMatrix,
+        const Types::Mat4& projectionMatrix,
+        int screenWidth,
+        int screenHeight);
+        
+    // 라벨 텍스트 그리기
+    static void drawObjectLabel(
+        QPainter& painter,
+        const QString& text,
+        const QColor& color,
+        const QPoint& screenPos,
+        float textSize);
 };
 
 class GridMapRenderer {

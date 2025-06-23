@@ -3,6 +3,7 @@
 #include "grid_map_processor.hpp"
 #include "render_helper.hpp"
 #include "common_types.hpp"
+#include "interest_object_manager.hpp"
 #include <QDebug>
 #include <QEvent>
 #include <QPainter>
@@ -16,6 +17,7 @@
 #include <QColor>
 #include <QRect>
 #include <QTimer>       // 추가
+#include <QDateTime>    // 추가
 #include <algorithm>    // 추가
 #include <mutex>        // 추가
 
@@ -39,15 +41,33 @@ PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
     showGrid_ = true;
     showRobotLabel_ = true;
     showGridMap_ = true;
+    showInterestObjects_ = true;  // 추가
     pointSize_ = 2.0f;
     pathWidth_ = 3.0f;
     positionMarkerType_ = MarkerType::AXES;
+    
+    // 로봇 위치 초기화 추가
+    robotPositions_["TUGV"] = Types::Vec3(0.0f, 0.0f, 0.0f);
+    robotPositions_["MUGV"] = Types::Vec3(0.0f, 0.0f, 0.0f);
+    robotPositions_["SUGV1"] = Types::Vec3(0.0f, 0.0f, 0.0f);
+    robotPositions_["SUGV2"] = Types::Vec3(0.0f, 0.0f, 0.0f);
+    robotPositions_["SUAV"] = Types::Vec3(0.0f, 0.0f, 0.0f);
     
     connect(&hideTimer_, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
     updateCameraPosition();
     initializeDefaultColors();
     
-    qDebug() << "PointCloudWidget created with Types integration";
+    // 전역 InterestObject 매니저와 연결
+    auto& manager = ObjectManager::InterestObjectManager::instance();
+    connect(&manager, &ObjectManager::InterestObjectManager::interestObjectUpdated,
+            this, &PointCloudWidget::onGlobalInterestObjectUpdated);
+    connect(&manager, &ObjectManager::InterestObjectManager::showInterestObjectsChanged,
+            this, [this](bool show) { 
+                showInterestObjects_ = show;
+                update(); 
+            });
+    
+    qDebug() << "PointCloudWidget created with robot positions initialized";
 }
 
 PointCloudWidget::~PointCloudWidget() {
@@ -320,11 +340,69 @@ void PointCloudWidget::updateIndicatorPosition() {
     }
 }
 
-bool PointCloudWidget::hasValidCurrentPosition(const QString& robot) const {
-    std::lock_guard<std::mutex> lock(pathMutex_);
+Types::Vec3 PointCloudWidget::getRobotPosition(const QString& robotName) const {
+    // 1. robotPositions_에서 먼저 찾기
+    {
+        std::lock_guard<std::mutex> lock(robotPositionsMutex_);
+        auto it = robotPositions_.find(robotName);
+        if (it != robotPositions_.end()) {
+            const Types::Vec3& pos = it.value();
+            // 유효한 위치인지 확인 (원점이 아닌 경우)
+            if (!(pos.x == 0.0f && pos.y == 0.0f && pos.z == 0.0f)) {
+                qDebug() << "Found robot position for" << robotName 
+                         << "at (" << pos.x << "," << pos.y << "," << pos.z << ")";
+                return pos;
+            }
+        }
+    }
     
-    auto it = paths_.find(robot);
-    return (it != paths_.end() && it.value() && !it.value()->empty());
+    // 2. robotPositions_에 없거나 원점이면 path에서 계산
+    Types::Vec3 pathPosition = getCurrentRobotPosition(robotName);
+    
+    // 3. path에서 유효한 위치를 찾았으면 robotPositions_에 캐시
+    if (pathPosition != Types::Vec3(0.0f, 0.0f, 0.0f)) {
+        {
+            std::lock_guard<std::mutex> lock(robotPositionsMutex_);
+            const_cast<QHash<QString, Types::Vec3>&>(robotPositions_)[robotName] = pathPosition;
+        }
+        qDebug() << "Calculated robot position for" << robotName 
+                 << "from path at (" << pathPosition.x << "," << pathPosition.y << "," << pathPosition.z << ")";
+        return pathPosition;
+    }
+    
+    // 4. 모든 방법이 실패하면 기본 위치 반환
+    qDebug() << "Robot position not found for:" << robotName << ", using default position (0,0,0)";
+    return Types::Vec3(0.0f, 0.0f, 0.0f);
+}
+
+bool PointCloudWidget::hasValidCurrentPosition(const QString& robotName) const {
+    // 1. robotPositions_에서 먼저 확인
+    {
+        std::lock_guard<std::mutex> lock(robotPositionsMutex_);
+        auto it = robotPositions_.find(robotName);
+        if (it != robotPositions_.end()) {
+            const Types::Vec3& pos = it.value();
+            // 원점이 아닌 위치가 있으면 유효한 것으로 간주
+            bool isValid = !(pos.x == 0.0f && pos.y == 0.0f && pos.z == 0.0f);
+            if (isValid) {
+                qDebug() << "Valid position found in robotPositions_ for" << robotName;
+                return true;
+            }
+        }
+    }
+    
+    // 2. robotPositions_에 없거나 원점이면 path에서 확인
+    {
+        std::lock_guard<std::mutex> lock(pathMutex_);
+        auto it = paths_.find(robotName);
+        if (it != paths_.end() && it.value() && !it.value()->empty()) {
+            qDebug() << "Valid position found in path for" << robotName << "with" << it.value()->size() << "poses";
+            return true;
+        }
+    }
+    
+    qDebug() << "No valid position found for" << robotName;
+    return false;
 }
 
 // ============================================================================
@@ -602,6 +680,9 @@ void PointCloudWidget::paintGL() {
     if (showIndicator_) {
         RenderHelper::PointCloudRenderer::drawCameraIndicator(focusPoint_);
     }
+    if (showInterestObjects_) {
+        renderInterestObjects();
+    }
 }
 
 void PointCloudWidget::paintEvent(QPaintEvent* event) {
@@ -811,4 +892,47 @@ void PointCloudWidget::resampleGridMapResolution(
              << "at" << gridData->resolution << "m/cell";
 }
 
+// ============================================================================
+// Interest Objects Implementation (전역 매니저 사용)
+// ============================================================================
+
+void PointCloudWidget::registerInterestObject(Types::ObjectType type, const QString& robotName) {
+    // 로봇의 현재 위치 가져오기
+    Types::Vec3 robotPosition = getRobotPosition(robotName);
+    
+    if (robotPosition == lastKnownPosition_ && !hasValidCurrentPosition(robotName)) {
+        qDebug() << "Cannot register object: Robot" << robotName << "position not available";
+        return;
+    }
+    
+    // 전역 매니저에 등록
+    auto& manager = ObjectManager::InterestObjectManager::instance();
+    QString objectId = manager.registerInterestObject(type, robotName, robotPosition);
+    
+    update();  // 화면 갱신
+    
+    qDebug() << "Interest object registered via global manager, ID:" << objectId;
 }
+
+void PointCloudWidget::onGlobalInterestObjectUpdated() {
+    update();  // 전역 InterestObject가 변경되면 화면 갱신
+}
+
+void PointCloudWidget::renderInterestObjects() {
+    auto& manager = ObjectManager::InterestObjectManager::instance();
+    
+    if (!manager.getShowInterestObjects()) return;
+    
+    // 전역 매니저에서 모든 InterestObject 가져오기
+    auto allObjects = manager.getAllInterestObjects();
+    
+    if (allObjects.isEmpty()) return;
+    
+    // RenderHelper를 사용하여 InterestObject 렌더링
+    RenderHelper::InterestObjectRenderer::drawInterestObjects(
+        allObjects,
+        robotName_
+    );
+}
+
+} // namespace PointCloudWidget

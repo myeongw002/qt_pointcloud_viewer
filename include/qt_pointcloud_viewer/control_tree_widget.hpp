@@ -17,6 +17,8 @@
 #include <functional>
 
 #include "pointcloud_widget.hpp"
+#include "interest_object_manager.hpp"
+#include "common_types.hpp"
 
 namespace Widget {
 
@@ -33,27 +35,35 @@ public:
 
 private slots:
     void onItemChanged(QTreeWidgetItem* item, int column);
+    void onInterestObjectRegistered(const QString& objectId, const QString& objectName);
+    void onInterestObjectRemoved(const QString& objectId);
 
 private:
     // ============================================================================
     // Core Members
     // ============================================================================
     QString robotName_;
+    QTreeWidgetItem* viewGroup_;
+    QTreeWidgetItem* robotGroup_;
     PointCloudWidget* targetWidget_;
+    PointCloudWidget* pointCloudWidget_;  // 이 라인 추가
     QMainWindow* mainWindow_;
-    QComboBox* targetRobotCombo_ = nullptr;
-    QComboBox* mapStyleCombo_ = nullptr;  // New combo box for map style selection
     // Point Size / Resolution 슬라이더 참조 추가
     QSlider* pointSizeSlider_ = nullptr;
     QLabel* pointSizeLabel_ = nullptr;
     QSlider* pathWidthSlider_ = nullptr;     // ← Path Width 슬라이더 참조 추가
     QLabel* pathWidthLabel_ = nullptr;       // ← Path Width 레이블 참조 추가
-    
     QString currentMapStyle_ = "pointcloud";  // 현재 맵 스타일 추적
-    // Tree group items (2-group structure only)
-    QTreeWidgetItem* viewGroup_;
-    QTreeWidgetItem* robotGroup_;
-    
+    // Interest Objects 관련 UI 요소들
+    QTreeWidgetItem* interestObjectsGroup_;
+    QComboBox* robotSelectorCombo_;
+    QComboBox* objectTypeCombo_;
+    QPushButton* registerObjectBtn_;
+    QPushButton* clearObjectsBtn_;
+    QCheckBox* showInterestObjectsCheck_;
+    QTreeWidgetItem* objectListGroup_;
+    QComboBox* targetRobotCombo_;
+    QComboBox* mapStyleCombo_ = nullptr;  // New combo box for map style selection
     // ============================================================================
     // Core Functions
     // ============================================================================
@@ -62,6 +72,13 @@ private:
     void addRobotControls(QTreeWidgetItem* parent);
     void syncWithWidget();
     void updateColorButtons();
+    void setupInterestObjectsGroup();
+    void addInterestObjectsControls(QTreeWidgetItem* parent);
+    void updateRobotSelector();
+    void registerCurrentObject();
+    void clearAllObjects();
+    void updateObjectTypeCombo();
+    QString getCurrentRobot() const;  // 추가
     
     // ============================================================================
     // Helper Functions

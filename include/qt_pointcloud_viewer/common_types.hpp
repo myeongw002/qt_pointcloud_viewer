@@ -8,6 +8,7 @@
 
 // Qt (Qt 메타타입 등록을 위해)
 #include <QMetaType>
+#include <QString>
 
 // Third-party math
 #include <glm/glm.hpp>
@@ -42,6 +43,8 @@ using PoseStamped = geometry_msgs::msg::PoseStamped;
 using Path = std::vector<PoseStamped>;
 using PathPtr = std::shared_ptr<Path>;
 using PathConstPtr = std::shared_ptr<const Path>;
+
+
 
 // ── 그리드맵 구조체 정의 ───────────────────────────────
 struct GridMapData {
@@ -80,11 +83,70 @@ using Duration = std::chrono::steady_clock::duration;
 using ColorRGB = Vec3;
 constexpr ColorRGB kDefaultColor{1.0f, 1.0f, 1.0f};
 
+using ColorRGBA = glm::vec4;  // RGBA 형식 (투명도 포함)
+constexpr ColorRGBA kDefaultColorRGBA{1.0f, 1.0f, 1.0f, 1.0f};  // 기본 흰색 불투명
+
+
+// ── 관심물체 구조체 정의 ───────────────────────────────
+enum class ObjectType {
+    UNKNOWN = 0,
+    OBSTACLE,
+    CUSTOM
+};
+
+struct InterestObject {
+    QString id;                    // 고유 ID
+    ObjectType type;               // 물체 타입
+    Vec3 position;                 // 3D 위치 (OpenGL 좌표계)
+    float size;                     // 크기 (width, height, depth)
+    ColorRGB color;                // 색상
+    QString discoveredBy;          // 발견한 로봇 이름
+    std::chrono::steady_clock::time_point timestamp;  // 등록 시간
+    bool isActive;                 // 활성 상태
+    QString description;           // 설명
+    
+    // 생성자
+    InterestObject() 
+        : type(ObjectType::UNKNOWN)
+        , position(0.0f, 0.0f, 0.0f)
+        , size(1.0f)
+        , color(1.0f, 1.0f, 0.0f)  // 기본 노란색
+        , timestamp(std::chrono::steady_clock::now())
+        , isActive(true) {}
+    
+    InterestObject(const QString& objectId, ObjectType objectType, 
+                  const Vec3& pos, const QString& robot)
+        : id(objectId), type(objectType), position(pos)
+        , size(1.0f), color(1.0f, 1.0f, 0.0f)
+        , discoveredBy(robot), timestamp(std::chrono::steady_clock::now())
+        , isActive(true) {}
+};
+
+// ── 유틸리티 함수들 ────────────────────────────────────
+inline QString objectTypeToString(ObjectType type) {
+    switch (type) {
+        case ObjectType::OBSTACLE: return "Obstacle";
+        case ObjectType::CUSTOM: return "Custom";
+        default: return "Unknown";
+    }
+}
+
+inline ObjectType stringToObjectType(const QString& str) {
+    if (str == "Obstacle") return ObjectType::OBSTACLE;
+    if (str == "Custom") return ObjectType::CUSTOM;
+    return ObjectType::UNKNOWN;
+}
+
+using InterestObjectPtr = std::shared_ptr<InterestObject>;
+using InterestObjectConstPtr = std::shared_ptr<const InterestObject>;
+
 } // namespace Types
 
 // ── Qt 메타타입 등록 ──────────────────────────────────
 Q_DECLARE_METATYPE(Types::CloudConstPtr)
 Q_DECLARE_METATYPE(Types::PathConstPtr)
 Q_DECLARE_METATYPE(Types::GridMapPtr)
+Q_DECLARE_METATYPE(Types::InterestObjectPtr)
+Q_DECLARE_METATYPE(Types::ObjectType)
 
 #endif // QT_POINTCLOUD_VIEWER_COMMON_TYPES_HPP

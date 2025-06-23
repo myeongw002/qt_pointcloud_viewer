@@ -2,6 +2,7 @@
 #include "control_tree_widget.hpp"
 #include "pointcloud_widget.hpp"  // 이 줄 추가!
 #include "viewer_settings_manager.hpp"
+#include "interest_object_manager.hpp"
 #include <QApplication>
 #include <QStyle>
 #include <QDebug>
@@ -13,6 +14,9 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QHBoxLayout>
+#include <QLineEdit>      // 추가
+#include <QMessageBox>    // 추가
+#include <QDateTime>      // 추가
 
 namespace Widget {
 
@@ -26,7 +30,7 @@ const QStringList ControlTreeWidget::ROBOT_COLORS = {"#888888", "#FF0000", "#00F
 // Constructor
 // ============================================================================
 ControlTreeWidget::ControlTreeWidget(QWidget* parent) 
-    : QTreeWidget(parent), targetWidget_(nullptr), mainWindow_(nullptr) {
+    : QTreeWidget(parent), targetWidget_(nullptr), pointCloudWidget_(nullptr), mainWindow_(nullptr) {
     
     // Tree basic configuration
     setHeaderLabels({"Property", "Value"});
@@ -56,8 +60,19 @@ void ControlTreeWidget::setTargetWidget(PointCloudWidget* widget) {
     qDebug() << "Setting target widget for robot:" << robotName_;
     
     targetWidget_ = widget;
+    pointCloudWidget_ = widget;  // Interest Objects용으로 동일한 위젯 설정
+    
     if (targetWidget_) {
         qDebug() << "Target widget set successfully, starting synchronization...";
+        
+        // Interest Objects 시그널 연결 (위젯이 설정된 후)
+        if (interestObjectsGroup_) {
+            auto& manager = ObjectManager::InterestObjectManager::instance();
+            connect(&manager, &ObjectManager::InterestObjectManager::interestObjectRegistered,
+                    this, &ControlTreeWidget::onInterestObjectRegistered);
+            connect(&manager, &ObjectManager::InterestObjectManager::interestObjectRemoved,
+                    this, &ControlTreeWidget::onInterestObjectRemoved);
+        }
         
         // 약간의 지연 후 동기화 (위젯이 완전히 초기화될 때까지 대기)
         QTimer::singleShot(100, [this]() {
@@ -65,6 +80,7 @@ void ControlTreeWidget::setTargetWidget(PointCloudWidget* widget) {
         });
     } else {
         qDebug() << "Target widget set to nullptr";
+        pointCloudWidget_ = nullptr;
     }
 }
 
@@ -76,9 +92,12 @@ void ControlTreeWidget::setMainWindow(QMainWindow* mainWindow) {
 // Core Tree Structure
 // ============================================================================
 void ControlTreeWidget::setupTreeStructure() {
-    // Create 2 main groups only
+    // Create main groups
     viewGroup_ = new QTreeWidgetItem(this, {"Viewer Settings"});
     robotGroup_ = new QTreeWidgetItem(this, {"Robot Controls"});
+    
+    // Interest Objects 그룹 추가
+    setupInterestObjectsGroup();
     
     // Set group expansion state
     viewGroup_->setExpanded(true);
@@ -244,7 +263,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
                 // 멤버 변수 업데이트
                 currentMapStyle_ = style.toLower();
                 
-                if (style == "PointCloud") {
+                if (style == "pointcloud") {
                     targetWidget_->setMapStyle("pointcloud");
                     
                     // Point Size 모드로 슬라이더 레이블 업데이트
@@ -254,7 +273,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
                         pointSizeLabel_->setText(QString("%1").arg(pointSize, 0, 'f', 1));
                     }
                     
-                } else if (style == "GridMap") {
+                } else if (style == "gridmap") {
                     targetWidget_->setMapStyle("gridmap");
                     
                     // Resolution 모드로 슬라이더 레이블 업데이트
@@ -962,5 +981,187 @@ QCheckBox* ControlTreeWidget::findCheckBoxInTree(const QString& itemName) {
     }
     return nullptr;
 }
+
+void ControlTreeWidget::setupInterestObjectsGroup() {
+    interestObjectsGroup_ = new QTreeWidgetItem(this);
+    interestObjectsGroup_->setText(0, "Interest Objects");
+    interestObjectsGroup_->setExpanded(true);
+    
+    addInterestObjectsControls(interestObjectsGroup_);
+    
+    // 전역 매니저와 시그널 연결
+    auto& manager = ObjectManager::InterestObjectManager::instance();
+    connect(&manager, &ObjectManager::InterestObjectManager::interestObjectRegistered,
+            this, &ControlTreeWidget::onInterestObjectRegistered);
+    connect(&manager, &ObjectManager::InterestObjectManager::interestObjectRemoved,
+            this, &ControlTreeWidget::onInterestObjectRemoved);
+}
+
+void ControlTreeWidget::addInterestObjectsControls(QTreeWidgetItem* parent) {
+    // Show Interest Objects 체크박스
+    auto showItem = new QTreeWidgetItem(parent);
+    showItem->setText(0, "Show Objects");
+    showInterestObjectsCheck_ = new QCheckBox();
+    showInterestObjectsCheck_->setChecked(true);
+    setItemWidget(showItem, 1, showInterestObjectsCheck_);
+    
+    connect(showInterestObjectsCheck_, &QCheckBox::toggled, [this](bool checked) {
+        auto& manager = ObjectManager::InterestObjectManager::instance();
+        manager.setShowInterestObjects(checked);
+    });
+    
+    // Robot Selector
+    auto robotSelectorItem = new QTreeWidgetItem(parent);
+    robotSelectorItem->setText(0, "Discovery Robot");
+    robotSelectorCombo_ = new QComboBox();
+    setItemWidget(robotSelectorItem, 1, robotSelectorCombo_);
+    updateRobotSelector();
+    
+    // Object Type Selector
+    auto objectTypeItem = new QTreeWidgetItem(parent);
+    objectTypeItem->setText(0, "Object Type");
+    objectTypeCombo_ = new QComboBox();
+    setItemWidget(objectTypeItem, 1, objectTypeCombo_);
+    updateObjectTypeCombo();
+    
+    // Register Object Button
+    auto registerItem = new QTreeWidgetItem(parent);
+    registerItem->setText(0, "Register Object");
+    registerObjectBtn_ = new QPushButton("Register at Robot Position");
+    setItemWidget(registerItem, 1, registerObjectBtn_);
+    
+    connect(registerObjectBtn_, &QPushButton::clicked, [this]() {
+        registerCurrentObject();
+    });
+    
+    // Clear Objects Button
+    auto clearItem = new QTreeWidgetItem(parent);
+    clearItem->setText(0, "Clear All");
+    clearObjectsBtn_ = new QPushButton("Clear All Objects");
+    setItemWidget(clearItem, 1, clearObjectsBtn_);
+    
+    connect(clearObjectsBtn_, &QPushButton::clicked, [this]() {
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this, "Confirm", "Are you sure you want to clear all interest objects?",
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        
+        if (reply == QMessageBox::Yes) {
+            auto& manager = ObjectManager::InterestObjectManager::instance();
+            manager.clearAllInterestObjects();
+        }
+    });
+    
+    // Object List Group
+    objectListGroup_ = new QTreeWidgetItem(parent);
+    objectListGroup_->setText(0, "Registered Objects");
+    objectListGroup_->setExpanded(true);
+}
+
+void ControlTreeWidget::onInterestObjectRegistered(const QString& objectId, const QString& objectType) {
+    if (!objectListGroup_) return;
+    
+    // 객체 목록에 새 항목 추가
+    auto objectItem = new QTreeWidgetItem(objectListGroup_);
+    objectItem->setText(0, QString("%1 [%2]").arg(objectType, objectId.mid(0, 8)));
+    objectItem->setData(0, Qt::UserRole, objectId);
+    
+    // 삭제 버튼 추가
+    auto deleteBtn = new QPushButton("Remove");
+    deleteBtn->setMaximumSize(60, 25);
+    setItemWidget(objectItem, 1, deleteBtn);
+    
+    connect(deleteBtn, &QPushButton::clicked, [objectId]() {
+        auto& manager = ObjectManager::InterestObjectManager::instance();
+        manager.removeInterestObject(objectId);
+    });
+    
+    // 트리 확장
+    objectListGroup_->setExpanded(true);
+    expandItem(objectListGroup_);
+    
+    qDebug() << "Global InterestObject added to UI:" << objectType << "ID:" << objectId;
+}
+
+void ControlTreeWidget::onInterestObjectRemoved(const QString& objectId) {
+    if (!objectListGroup_) return;
+    
+    // UI에서 해당 객체 항목 제거
+    for (int i = 0; i < objectListGroup_->childCount(); ++i) {
+        QTreeWidgetItem* child = objectListGroup_->child(i);
+        if (child->data(0, Qt::UserRole).toString() == objectId) {
+            delete objectListGroup_->takeChild(i);
+            break;
+        }
+    }
+    
+    qDebug() << "Interest object removed from UI, ID:" << objectId;
+}
+
+void ControlTreeWidget::registerCurrentObject() {
+    if (!pointCloudWidget_ || !robotSelectorCombo_ || !objectTypeCombo_) {
+        return;
+    }
+    
+    QString robotName = robotSelectorCombo_->currentText();
+    
+    if (robotName.isEmpty()) {
+        QMessageBox::warning(this, "Warning", "Please select a robot.");
+        return;
+    }
+    
+    // 선택된 객체 타입 가져오기
+    int typeIndex = objectTypeCombo_->currentData().toInt();
+    Types::ObjectType objectType = static_cast<Types::ObjectType>(typeIndex);
+    
+    // 관심물체 등록
+    pointCloudWidget_->registerInterestObject(objectType, robotName);
+    
+    QString objectTypeStr = Types::objectTypeToString(objectType);
+    qDebug() << "Interest object registered:" << objectTypeStr << "by robot:" << robotName;
+}
+
+void ControlTreeWidget::updateRobotSelector() {
+    if (!robotSelectorCombo_) return;
+    
+    robotSelectorCombo_->clear();
+    
+    // 현재 활성화된 로봇들을 추가
+    QStringList robots = {"TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};  // 기본 로봇 목록
+    
+    for (const QString& robot : robots) {
+        robotSelectorCombo_->addItem(robot);
+    }
+    
+    // 현재 선택된 로봇이 있다면 해당 로봇을 기본 선택
+    QString currentRobot = getCurrentRobot();
+    if (!currentRobot.isEmpty() && currentRobot != "COMBINED") {
+        int index = robotSelectorCombo_->findText(currentRobot);
+        if (index >= 0) {
+            robotSelectorCombo_->setCurrentIndex(index);
+        }
+    }
+}
+
+void ControlTreeWidget::updateObjectTypeCombo() {
+    if (!objectTypeCombo_) return;
+    
+    objectTypeCombo_->clear();
+    
+    // 사용 가능한 객체 타입들 추가
+    objectTypeCombo_->addItem("Unknown", static_cast<int>(Types::ObjectType::UNKNOWN));
+    objectTypeCombo_->addItem("Obstacle", static_cast<int>(Types::ObjectType::OBSTACLE));
+    objectTypeCombo_->addItem("Custom", static_cast<int>(Types::ObjectType::CUSTOM));
+    
+    // 기본값을 Obstacle로 설정
+    int obstacleIndex = objectTypeCombo_->findData(static_cast<int>(Types::ObjectType::OBSTACLE));
+    if (obstacleIndex >= 0) {
+        objectTypeCombo_->setCurrentIndex(obstacleIndex);
+    }
+}
+
+QString ControlTreeWidget::getCurrentRobot() const {
+    return robotName_;
+}
+
 
 } // namespace Widget
