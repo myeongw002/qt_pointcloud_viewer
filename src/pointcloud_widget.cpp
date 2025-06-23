@@ -138,13 +138,11 @@ void PointCloudWidget::onCloudShared(const QString& robot, CloudConstPtr cloud) 
     {
         std::lock_guard<std::mutex> lock(cloudMutex_);
         clouds_[robot] = cloud;
-    }
-    
-    // 그리드 맵 업데이트 (백그라운드에서 처리)
-    if (showGridMap_) {
+
+        // 그리드 맵 업데이트 (백그라운드에서 처리)
         updateGridMapForRobot(robot, cloud);
+        // qDebug() << "Grid map updated for robot:" << robot;
     }
-    
     update();
 }
 
@@ -571,12 +569,13 @@ void PointCloudWidget::setMapStyle(const QString& style) {
     if (style.toLower() == "pointcloud") {
         showPoints_ = true;
         showGridMap_ = false;
-        
-        qDebug() << "Map style set to: PointCloud for robot:" << robotName_;
+        // mapStyle_ = "pointcloud";
+        // qDebug() << "Map style set to: PointCloud for robot:" << robotName_;
     } else if (style.toLower() == "gridmap") {
         showPoints_ = false;
         showGridMap_ = true;
-        qDebug() << "Map style set to: Grid Map for robot:" << robotName_;
+        // mapStyle_ = "gridmap";
+        // qDebug() << "Map style set to: Grid Map for robot:" << robotName_;
     } else {
         qWarning() << "Invalid map style:" << style << "- using PointCloud as default";
         showPoints_ = true;
@@ -608,9 +607,9 @@ void PointCloudWidget::updateGridMapForRobot(const QString& robotName, CloudCons
         std::lock_guard<std::mutex> lock(gridMapMutex_);
         gridMaps_[robotName] = gridData;  // 캐스팅 불필요
         
-        qDebug() << "PointCloudWidget: Grid map updated for robot:" << robotName 
-                 << "size:" << gridData->width << "x" << gridData->height
-                 << "points:" << cloud->size();
+        // qDebug() << "PointCloudWidget: Grid map updated for robot:" << robotName 
+        //          << "size:" << gridData->width << "x" << gridData->height
+        //          << "points:" << cloud->size();
     } else {
         qDebug() << "PointCloudWidget: Failed to process grid map for robot:" << robotName;
     }
@@ -634,7 +633,10 @@ void PointCloudWidget::paintGL() {
 
     // Map Style에 따른 렌더링 분기
     QString currentMapStyle = getMapStyle();
-    
+    // qDebug() << "showPoints_:" << showPoints_ 
+    //          << "showGridMap_:" << showGridMap_ 
+    //          << "robotName:" << robotName_;
+    // qDebug() << "map style:" << currentMapStyle << "for robot:" << robotName_;
     if (currentMapStyle == "gridmap" && showGridMap_) {  // showGridMap_ 체크 추가
         // GridMap 모드: 기본 OpenGL로 그리드맵 + 2D 평면화된 경로
         RenderHelper::GridMapRenderer::drawBasicGridMaps(

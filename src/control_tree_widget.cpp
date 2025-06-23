@@ -256,14 +256,16 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     mapStyleCombo->setCurrentText("PointCloud");
     connect(mapStyleCombo, QOverload<const QString&>::of(&QComboBox::currentTextChanged),
             [this, mapStyleCombo](const QString& style) {
-                if (!targetWidget_) return;
-                
-                qDebug() << "Map style changing to:" << style;
+                if (!targetWidget_) {
+                    qDebug() << "Target widget is not set, cannot change map style.";
+                    return;
+                }
+                // qDebug() << "Map style changing to:" << style;
                 
                 // 멤버 변수 업데이트
                 currentMapStyle_ = style.toLower();
                 
-                if (style == "pointcloud") {
+                if (currentMapStyle_ == "pointcloud") {
                     targetWidget_->setMapStyle("pointcloud");
                     
                     // Point Size 모드로 슬라이더 레이블 업데이트
@@ -273,7 +275,7 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
                         pointSizeLabel_->setText(QString("%1").arg(pointSize, 0, 'f', 1));
                     }
                     
-                } else if (style == "gridmap") {
+                } else if (currentMapStyle_ == "gridmap") {
                     targetWidget_->setMapStyle("gridmap");
                     
                     // Resolution 모드로 슬라이더 레이블 업데이트
@@ -305,13 +307,13 @@ void ControlTreeWidget::addViewerSettings(QTreeWidgetItem* parent) {
     auto showMapItem = new QTreeWidgetItem(mapStylingGroup, {"Show Map"});
     auto showMapCheck = createCheckBox(true, [this](bool checked) {
         if (targetWidget_) {
-            QString currentStyle = targetWidget_->getMapStyle();
+            // currentMapStyle_ = targetWidget_->getMapStyle();
             
-            if (currentStyle == "pointcloud") {
+            if (currentMapStyle_ == "pointcloud") {
                 // PointCloud 모드: Show Points 제어
                 targetWidget_->setShowPoints(checked);
                 qDebug() << "Points display:" << (checked ? "ON" : "OFF");
-            } else if (currentStyle == "gridmap") {
+            } else if (currentMapStyle_ == "gridmap") {
                 // GridMap 모드: Show GridMap 제어
                 targetWidget_->setShowGridMap(checked);
                 qDebug() << "GridMap display:" << (checked ? "ON" : "OFF");

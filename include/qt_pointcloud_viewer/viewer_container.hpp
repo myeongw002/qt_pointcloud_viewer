@@ -1,6 +1,7 @@
 /* viewer_container.hpp */
 #pragma once
 #include <QWidget>
+#include <memory>
 #include "viewer_window.hpp"
 
 
@@ -14,8 +15,13 @@ public:
                     rclcpp::Node::SharedPtr node,
                     QOpenGLContext *share,
                     QWidget *parent = nullptr);
+    ~ViewerContainer();
+    
+    // 안전한 접근자
+    ViewerWindow* getViewerWindow() const;
+    
 private:
-    QWidget *container_{nullptr};
+    std::unique_ptr<ViewerWindow> viewerWindow_;  // Smart pointer로 변경
 };
 
 } // namespace Widget

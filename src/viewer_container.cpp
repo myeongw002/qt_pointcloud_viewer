@@ -11,16 +11,25 @@ ViewerContainer::ViewerContainer(const QString &robot,
                                  QWidget *parent)
     : QWidget(parent)
 {
-    auto *win = new Widget::ViewerWindow(robot, node, parent);
-    // container_ = QWidget::createWindowContainer(win, this);
-    // container_->setAttribute(Qt::WA_DeleteOnClose);
-
+    // Smart pointer로 ViewerWindow 생성
+    viewerWindow_ = std::make_unique<ViewerWindow>(robot, node, this);
+    
+    // 레이아웃 설정
     auto *lay = new QVBoxLayout(this);
     lay->setContentsMargins(0,0,0,0);
-    lay->addWidget(container_);
-    resize(800,600);
+    lay->addWidget(viewerWindow_.get());  // raw pointer를 레이아웃에 추가
+    
+    resize(800, 600);
     setAttribute(Qt::WA_DeleteOnClose);
     show();
+}
+
+ViewerContainer::~ViewerContainer() {
+    // Smart pointer가 자동으로 정리함
+}
+
+ViewerWindow* ViewerContainer::getViewerWindow() const {
+    return viewerWindow_.get();
 }
 
 } // namespace Widget

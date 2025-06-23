@@ -221,9 +221,9 @@ bool GridMapProcessor::processPointCloud(
     // data 벡터 형태로도 변환 (렌더링용)
     convertMatToVector(gridData);
     
-    qDebug() << "GridMapProcessor::processPointCloud: Successfully processed" 
-             << cloud->size() << "points into" 
-             << gridData.width << "x" << gridData.height << "grid";
+    // qDebug() << "GridMapProcessor::processPointCloud: Successfully processed" 
+    //          << cloud->size() << "points into" 
+    //          << gridData.width << "x" << gridData.height << "grid";
     
     return true;
 }

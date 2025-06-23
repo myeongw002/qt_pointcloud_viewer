@@ -1,21 +1,152 @@
 #include "render_helper.hpp"
 #include "shape_helper.hpp"
-#include "grid_map_processor.hpp"  // GridMap 기능 사용
+#include "grid_map_processor.hpp"
 #include <QFontMetrics>
 #include <QBrush>
 #include <QPen>
 #include <QRect>
 #include <algorithm>
 #include <limits>
+#include <cmath>
 
 namespace RenderHelper {
 
 // ============================================================================
-// PointCloudRenderer Implementation
+// RenderUtils Implementation (공통 유틸리티)
+// ============================================================================
+
+QPoint RenderUtils::worldToScreen(
+    const Types::Vec3& worldPos,
+    const Types::Mat4& viewMatrix,
+    const Types::Mat4& projectionMatrix,
+    int screenWidth,
+    int screenHeight) {
+    
+    // 월드 좌표를 클립 공간으로 변환
+    Types::Vec4 clipPos = projectionMatrix * viewMatrix * Types::Vec4(worldPos, 1.0f);
+    
+    // 동차 나눗셈
+    if (clipPos.w != 0.0f) {
+        clipPos.x /= clipPos.w;
+        clipPos.y /= clipPos.w;
+        clipPos.z /= clipPos.w;
+    }
+    
+    // NDC를 화면 좌표로 변환
+    int screenX = static_cast<int>((clipPos.x + 1.0f) * 0.5f * screenWidth);
+    int screenY = static_cast<int>((1.0f - clipPos.y) * 0.5f * screenHeight);  // Y축 뒤집기
+    
+    return QPoint(screenX, screenY);
+}
+
+void RenderUtils::drawStraightConnectorLine(
+    QPainter& painter,
+    const QPoint& objectPos,
+    const QPoint& labelPos,
+    const QColor& color) {
+    
+    // 연결선 스타일 설정
+    QPen connectorPen(color, 2, Qt::SolidLine);
+    connectorPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(connectorPen);
+    
+    // 직선으로 연결
+    painter.drawLine(objectPos, labelPos);
+    
+    // 시작점에 작은 원 (객체/로봇 위치 표시)
+    painter.setBrush(QBrush(color));
+    painter.setPen(QPen(Qt::white, 1));
+    painter.drawEllipse(objectPos, 4, 4);
+    
+    // 끝점에 작은 화살표 (라벨 방향 표시)
+    drawArrowHead(painter, objectPos, labelPos, color, 8);
+}
+
+void RenderUtils::drawArrowHead(
+    QPainter& painter,
+    const QPoint& from,
+    const QPoint& to,
+    const QColor& color,
+    int size) {
+    
+    // 방향 벡터 계산
+    QPoint direction = to - from;
+    double length = sqrt(direction.x() * direction.x() + direction.y() * direction.y());
+    
+    if (length < 0.001) return;  // 너무 짧으면 그리지 않음
+    
+    // 정규화된 방향 벡터
+    double dx = direction.x() / length;
+    double dy = direction.y() / length;
+    
+    // 화살표 머리 점들 계산
+    double arrowLength = size;
+    double arrowAngle = M_PI / 6;  // 30도
+    
+    QPoint arrowP1(
+        to.x() - arrowLength * (dx * cos(arrowAngle) + dy * sin(arrowAngle)),
+        to.y() - arrowLength * (dy * cos(arrowAngle) - dx * sin(arrowAngle))
+    );
+    
+    QPoint arrowP2(
+        to.x() - arrowLength * (dx * cos(arrowAngle) - dy * sin(arrowAngle)),
+        to.y() - arrowLength * (dy * cos(arrowAngle) + dx * sin(arrowAngle))
+    );
+    
+    // 화살표 머리 그리기
+    painter.setBrush(QBrush(color));
+    painter.setPen(QPen(color, 1));
+    
+    QPolygon arrowHead;
+    arrowHead << to << arrowP1 << arrowP2;
+    painter.drawPolygon(arrowHead);
+}
+
+void RenderUtils::drawLabelBackground(
+    QPainter& painter,
+    const QRect& textRect,
+    const QColor& borderColor,
+    const QColor& backgroundColor,
+    int padding,
+    int borderRadius) {
+    
+    QRect bgRect = textRect.adjusted(-padding, -padding, padding, padding);
+    
+    // 배경 그리기
+    painter.setBrush(QBrush(backgroundColor));
+    painter.setPen(QPen(borderColor, 2));
+    painter.drawRoundedRect(bgRect, borderRadius, borderRadius);
+}
+
+QRect RenderUtils::calculateMultilineTextRect(
+    const QString& text,
+    const QFont& font,
+    const QPoint& centerPos) {
+    
+    QFontMetrics metrics(font);
+    QStringList lines = text.split('\n');
+    
+    int maxWidth = 0;
+    int totalHeight = 0;
+    
+    for (const QString& line : lines) {
+        QRect lineRect = metrics.boundingRect(line);
+        maxWidth = std::max(maxWidth, lineRect.width());
+        totalHeight += metrics.height();
+    }
+    
+    return QRect(centerPos.x() - maxWidth / 2,
+                 centerPos.y() - totalHeight / 2,
+                 maxWidth,
+                 totalHeight);
+}
+
+// ============================================================================
+// PointCloudRenderer Implementation (중복 제거된 버전)
 // ============================================================================
 
 void PointCloudRenderer::drawPoints(
-    const QHash<QString, CloudConstPtr>& clouds,
+    const QHash<QString, Types::CloudConstPtr>& clouds,
     const QString& currentRobot,
     const QHash<QString, Types::ColorRGB>& robotColors,
     float pointSize,
@@ -49,7 +180,6 @@ void PointCloudRenderer::drawPoints(
     
     glEnd();
 }
-
 void PointCloudRenderer::drawPaths(
     const QHash<QString, PathConstPtr>& paths,
     const QString& currentRobot,
@@ -91,6 +221,182 @@ void PointCloudRenderer::drawPaths(
     }
     
     glEnd();
+}
+void PointCloudRenderer::drawRobotNamesAtPositions(
+    QPainter& painter,
+    const QHash<QString, Types::PathConstPtr>& paths,
+    const QString& currentRobot,
+    const QHash<QString, Types::ColorRGB>& robotColors,
+    const Types::Mat4& viewMatrix,
+    const Types::Mat4& projectionMatrix,
+    int screenWidth,
+    int screenHeight,
+    float textSize,
+    std::mutex& pathMutex) {
+    
+    std::lock_guard<std::mutex> lock(pathMutex);
+    
+    for (auto it = paths.cbegin(); it != paths.cend(); ++it) {
+        const QString& robotName = it.key();
+        
+        // 현재 로봇 필터링
+        if (currentRobot != "COMBINED" && robotName != currentRobot) {
+            continue;
+        }
+        
+        const auto& pathPtr = it.value();
+        if (!pathPtr || pathPtr->empty()) continue;
+        
+        const auto& path = *pathPtr;
+        const auto& currentPose = path.back();
+        
+        // 로봇의 실제 위치 (ROS → OpenGL 좌표 변환)
+        Types::Vec3 robotWorldPosition(
+            -currentPose.pose.position.y,
+            currentPose.pose.position.z,
+            -currentPose.pose.position.x
+        );
+        
+        // 라벨 위치 (로봇 위에)
+        Types::Vec3 labelWorldPosition = robotWorldPosition + Types::Vec3(0.0f, 5.0f, 0.0f);
+        
+        // RenderUtils 사용 (중복 제거)
+        QPoint robotScreenPos = RenderUtils::worldToScreen(robotWorldPosition, viewMatrix, 
+                                                         projectionMatrix, screenWidth, screenHeight);
+        QPoint labelScreenPos = RenderUtils::worldToScreen(labelWorldPosition, viewMatrix, 
+                                                         projectionMatrix, screenWidth, screenHeight);
+        
+        // 화면 범위 내에 있는지 확인
+        if (labelScreenPos.x() >= 0 && labelScreenPos.x() < screenWidth && 
+            labelScreenPos.y() >= 0 && labelScreenPos.y() < screenHeight) {
+            
+            // 로봇 색상 설정
+            Types::ColorRGB color = robotColors.value(robotName, Types::ColorRGB(0.0f, 1.0f, 0.0f));
+            QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
+            
+            // RenderUtils 사용 (중복 제거)
+            RenderUtils::drawStraightConnectorLine(painter, robotScreenPos, labelScreenPos, robotColor);
+            
+            // 로봇 이름 텍스트 그리기
+            drawRobotNameText(painter, robotName, robotColor, labelScreenPos, textSize);
+        }
+    }
+}
+
+void PointCloudRenderer::drawRobotNameText(
+    QPainter& painter,
+    const QString& robotName,
+    const QColor& robotColor,
+    const QPoint& screenPos,
+    float textSize) {
+    
+    // 텍스트 설정
+    QFont font("Arial", static_cast<int>(textSize), QFont::Bold);
+    painter.setFont(font);
+    
+    // RenderUtils 사용해서 텍스트 영역 계산
+    QRect textRect = RenderUtils::calculateMultilineTextRect(robotName, font, screenPos);
+    
+    // RenderUtils 사용해서 배경 그리기
+    RenderUtils::drawLabelBackground(painter, textRect, robotColor);
+    
+    // 텍스트 그리기
+    painter.setPen(QPen(Qt::white));
+    painter.drawText(textRect, Qt::AlignCenter, robotName);
+}
+
+// ============================================================================
+// Private Helper Functions
+// ============================================================================
+
+void PointCloudRenderer::drawCylinderMarker(
+    const Types::Vec3& position,
+    const Types::ColorRGB& robotColor,
+    float radius,
+    float height) {
+    
+    // 메인 실린더
+    ShapeHelper::SimpleShape::drawCylinder(
+        position + Types::Vec3(0, height/2, 0),
+        Types::Vec3(0, 1, 0),
+        height,
+        radius,
+        Types::Vec4(robotColor.x, robotColor.y, robotColor.z, 0.8f)
+    );
+    
+    // 상단 표시등
+    ShapeHelper::SimpleShape::drawCylinder(
+        position + Types::Vec3(0, height + 0.05f, 0),
+        Types::Vec3(0, 1, 0),
+        0.05f,
+        radius * 0.7f,
+        Types::Vec4(1.0f, 1.0f, 1.0f, 1.0f)
+    );
+}
+void PointCloudRenderer::drawAxes(const Types::Vec3& origin, float axesLength, float axesRadius) {
+    ShapeHelper::SimpleShape::drawRosAxes(
+        origin,
+        Types::Quat(1.0f, 0.0f, 0.0f, 0.0f),  // 단위 쿼터니언
+        axesLength,
+        axesRadius,
+        true  // drawArrowheads
+    );
+}
+
+void PointCloudRenderer::drawGrid(int cellCount, float cellSize, float lineWidth) {
+    glLineWidth(lineWidth);
+    glColor3f(0.5f, 0.5f, 0.5f);  // 회색
+    glBegin(GL_LINES);
+    
+    float halfSize = (cellCount * cellSize) / 2.0f;
+    
+    // X 방향 선들
+    for (int i = -cellCount/2; i <= cellCount/2; ++i) {
+        float x = i * cellSize;
+        glVertex3f(x, 0.0f, -halfSize);
+        glVertex3f(x, 0.0f, halfSize);
+    }
+    
+    // Z 방향 선들
+    for (int i = -cellCount/2; i <= cellCount/2; ++i) {
+        float z = i * cellSize;
+        glVertex3f(-halfSize, 0.0f, z);
+        glVertex3f(halfSize, 0.0f, z);
+    }
+    
+    glEnd();
+}
+
+void PointCloudRenderer::drawCameraIndicator(const glm::vec3& focusPoint) {
+    glDisable(GL_DEPTH_TEST);
+    
+    ShapeHelper::SimpleShape::drawCylinder(
+        focusPoint,
+        glm::vec3(0, 1, 0),
+        0.1f,
+        0.3f,
+        glm::vec4(1.0f, 1.0f, 0.0f, 0.7f)
+    );
+    
+    glEnable(GL_DEPTH_TEST);
+}
+void PointCloudRenderer::drawPositionAxes(
+    const Types::Vec3& position,
+    const Types::Quat& orientation,
+    const QString& robotName,
+    float axesLength,
+    float axesRadius) {
+    
+    // 바닥에서 살짝 위에 시작점 설정
+    Types::Vec3 axesStart = position + Types::Vec3(0, axesRadius, 0);
+    
+    ShapeHelper::SimpleShape::drawRosAxes(
+        axesStart,
+        orientation,
+        axesLength,
+        axesRadius,
+        true  // drawArrowheads
+    );
 }
 
 void PointCloudRenderer::drawPositions(
@@ -150,68 +456,28 @@ void PointCloudRenderer::drawPositions(
         }
     }
 }
-
-void PointCloudRenderer::drawRobotNamesAtPositions(
+void PointCloudRenderer::drawRobotLabels(
     QPainter& painter,
-    const QHash<QString, PathConstPtr>& paths,
     const QString& currentRobot,
-    const QHash<QString, Types::ColorRGB>& robotColors,
-    const Types::Mat4& viewMatrix,
-    const Types::Mat4& projectionMatrix,
-    int screenWidth,
-    int screenHeight,
-    float textSize,
-    std::mutex& pathMutex) {
+    const QHash<QString, glm::vec3>& robotColors) {
     
-    std::lock_guard<std::mutex> lock(pathMutex);
-    
-    for (auto it = paths.cbegin(); it != paths.cend(); ++it) {
-        const QString& robotName = it.key();
+    if (currentRobot == "COMBINED") {
+        QStringList robots = {"TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
         
-        // 현재 로봇 필터링
-        if (currentRobot != "COMBINED" && robotName != currentRobot) {
-            continue;
-        }
-        
-        const auto& pathPtr = it.value();
-        if (!pathPtr || pathPtr->empty()) continue;
-        
-        const auto& path = *pathPtr;
-        const auto& currentPose = path.back();
-        
-        // 로봇의 실제 위치 (ROS → OpenGL 좌표 변환)
-        Types::Vec3 robotWorldPosition(
-            -currentPose.pose.position.y,
-            currentPose.pose.position.z,
-            -currentPose.pose.position.x
-        );
-        
-        // 라벨 위치 (로봇 위에)
-        Types::Vec3 labelWorldPosition = robotWorldPosition + Types::Vec3(0.0f, 5.0f, 0.0f);
-        
-        // 3D 위치를 화면 좌표로 변환
-        QPoint robotScreenPos = worldToScreen(robotWorldPosition, viewMatrix, projectionMatrix, 
-                                            screenWidth, screenHeight);
-        QPoint labelScreenPos = worldToScreen(labelWorldPosition, viewMatrix, projectionMatrix, 
-                                            screenWidth, screenHeight);
-        
-        // 화면 범위 내에 있는지 확인
-        if (labelScreenPos.x() >= 0 && labelScreenPos.x() < screenWidth && 
-            labelScreenPos.y() >= 0 && labelScreenPos.y() < screenHeight) {
-            
-            // 로봇 색상 설정
-            Types::ColorRGB color = robotColors.value(robotName, Types::ColorRGB(0.0f, 1.0f, 0.0f));
+        for (int i = 0; i < robots.size(); ++i) {
+            QString robotName = robots[i];
+            glm::vec3 color = robotColors.value(robotName, glm::vec3(0.0f, 1.0f, 0.0f));
             QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
             
-            // 직선 연결선 그리기 (로봇 위치 → 라벨)
-            drawStraightConnectorLine(painter, robotScreenPos, labelScreenPos, robotColor);
-            
-            // 로봇 이름 텍스트 그리기
-            drawRobotNameText(painter, robotName, robotColor, labelScreenPos, textSize);
+            int yOffset = 10 + i * 30;
+            drawSingleLabel(painter, robotName, robotColor, QPoint(10, yOffset));  // 이 부분 수정됨
         }
+    } else {
+        glm::vec3 color = robotColors.value(currentRobot, glm::vec3(0.0f, 1.0f, 0.0f));
+        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
+        drawSingleLabel(painter, currentRobot, robotColor, QPoint(10, 10));
     }
 }
-
 void PointCloudRenderer::drawSingleLabel(
     QPainter& painter,
     const QString& text,
@@ -221,7 +487,7 @@ void PointCloudRenderer::drawSingleLabel(
     const int fontSize = 9;
     const int circleSize = 12;
     const int circleMargin = 5;
-    const int horizontalMargin = 8;
+    const int horizontalMargin = 6;
     const int verticalMargin = 4;
     
     painter.setFont(QFont("Arial", fontSize, QFont::Bold));
@@ -260,55 +526,6 @@ void PointCloudRenderer::drawSingleLabel(
     int textY = boxCenterY + fm.ascent()/2 - fm.descent()/2;
     painter.drawText(textX, textY, text);
 }
-
-// ============================================================================
-// Private Helper Functions
-// ============================================================================
-
-void PointCloudRenderer::drawCylinderMarker(
-    const Types::Vec3& position,
-    const Types::ColorRGB& robotColor,
-    float radius,
-    float height) {
-    
-    // 메인 실린더
-    ShapeHelper::SimpleShape::drawCylinder(
-        position + Types::Vec3(0, height/2, 0),
-        Types::Vec3(0, 1, 0),
-        height,
-        radius,
-        Types::Vec4(robotColor.x, robotColor.y, robotColor.z, 0.8f)
-    );
-    
-    // 상단 표시등
-    ShapeHelper::SimpleShape::drawCylinder(
-        position + Types::Vec3(0, height + 0.05f, 0),
-        Types::Vec3(0, 1, 0),
-        0.05f,
-        radius * 0.7f,
-        Types::Vec4(1.0f, 1.0f, 1.0f, 1.0f)
-    );
-}
-
-void PointCloudRenderer::drawPositionAxes(
-    const Types::Vec3& position,
-    const Types::Quat& orientation,
-    const QString& robotName,
-    float axesLength,
-    float axesRadius) {
-    
-    // 바닥에서 살짝 위에 시작점 설정
-    Types::Vec3 axesStart = position + Types::Vec3(0, axesRadius, 0);
-    
-    ShapeHelper::SimpleShape::drawRosAxes(
-        axesStart,
-        orientation,
-        axesLength,
-        axesRadius,
-        true  // drawArrowheads
-    );
-}
-
 // ============================================================================
 // GridMapRenderer Implementation
 // ============================================================================
@@ -480,143 +697,6 @@ void GridMapRenderer::drawObstaclesOnly(
     
     glEnd();
 }
-
-// ============================================================================
-// PointCloudRenderer 누락된 함수들 구현
-// ============================================================================
-
-void PointCloudRenderer::drawAxes(const Types::Vec3& origin, float axesLength, float axesRadius) {
-    ShapeHelper::SimpleShape::drawRosAxes(
-        origin,
-        Types::Quat(1.0f, 0.0f, 0.0f, 0.0f),  // 단위 쿼터니언
-        axesLength,
-        axesRadius,
-        true  // drawArrowheads
-    );
-}
-
-void PointCloudRenderer::drawGrid(int cellCount, float cellSize, float lineWidth) {
-    glLineWidth(lineWidth);
-    glColor3f(0.5f, 0.5f, 0.5f);  // 회색
-    glBegin(GL_LINES);
-    
-    float halfSize = (cellCount * cellSize) / 2.0f;
-    
-    // X 방향 선들
-    for (int i = -cellCount/2; i <= cellCount/2; ++i) {
-        float x = i * cellSize;
-        glVertex3f(x, 0.0f, -halfSize);
-        glVertex3f(x, 0.0f, halfSize);
-    }
-    
-    // Z 방향 선들
-    for (int i = -cellCount/2; i <= cellCount/2; ++i) {
-        float z = i * cellSize;
-        glVertex3f(-halfSize, 0.0f, z);
-        glVertex3f(halfSize, 0.0f, z);
-    }
-    
-    glEnd();
-}
-
-void PointCloudRenderer::drawCameraIndicator(const glm::vec3& focusPoint) {
-    glDisable(GL_DEPTH_TEST);
-    
-    ShapeHelper::SimpleShape::drawCylinder(
-        focusPoint,
-        glm::vec3(0, 1, 0),
-        0.1f,
-        0.3f,
-        glm::vec4(1.0f, 1.0f, 0.0f, 0.7f)
-    );
-    
-    glEnable(GL_DEPTH_TEST);
-}
-
-void PointCloudRenderer::drawRobotLabels(
-    QPainter& painter,
-    const QString& currentRobot,
-    const QHash<QString, glm::vec3>& robotColors) {
-    
-    if (currentRobot == "COMBINED") {
-        QStringList robots = {"TUGV", "MUGV", "SUGV1", "SUGV2", "SUAV"};
-        
-        for (int i = 0; i < robots.size(); ++i) {
-            QString robotName = robots[i];
-            glm::vec3 color = robotColors.value(robotName, glm::vec3(0.0f, 1.0f, 0.0f));
-            QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
-            
-            int yOffset = 10 + i * 40;
-            drawSingleLabel(painter, robotName, robotColor, QPoint(10, yOffset));  // 이 부분 수정됨
-        }
-    } else {
-        glm::vec3 color = robotColors.value(currentRobot, glm::vec3(0.0f, 1.0f, 0.0f));
-        QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
-        drawSingleLabel(painter, currentRobot, robotColor, QPoint(10, 10));
-    }
-}
-
-
-
-
-QPoint PointCloudRenderer::worldToScreen(
-    const Types::Vec3& worldPos,
-    const Types::Mat4& viewMatrix,
-    const Types::Mat4& projectionMatrix,
-    int screenWidth,
-    int screenHeight) {
-    
-    // 월드 좌표를 클립 공간으로 변환
-    Types::Vec4 clipPos = projectionMatrix * viewMatrix * Types::Vec4(worldPos, 1.0f);
-    
-    // 동차 나눗셈
-    if (clipPos.w != 0.0f) {
-        clipPos.x /= clipPos.w;
-        clipPos.y /= clipPos.w;
-        clipPos.z /= clipPos.w;
-    }
-    
-    // NDC를 화면 좌표로 변환
-    int screenX = static_cast<int>((clipPos.x + 1.0f) * 0.5f * screenWidth);
-    int screenY = static_cast<int>((1.0f - clipPos.y) * 0.5f * screenHeight);  // Y축 뒤집기
-    
-    return QPoint(screenX, screenY);
-}
-
-void PointCloudRenderer::drawRobotNameText(
-    QPainter& painter,
-    const QString& robotName,
-    const QColor& robotColor,
-    const QPoint& screenPos,
-    float textSize) {
-    
-    // 텍스트 설정
-    QFont font("Arial", static_cast<int>(textSize), QFont::Bold);
-    painter.setFont(font);
-    
-    // 텍스트 크기 측정
-    QFontMetrics metrics(font);
-    QRect textRect = metrics.boundingRect(robotName);
-    
-    // 배경 박스 그리기
-    QRect bgRect = textRect;
-    bgRect.moveTo(screenPos.x() - bgRect.width() / 2, screenPos.y() - bgRect.height() / 2);
-    bgRect = bgRect.adjusted(-4, -2, 4, 2);  // 패딩 추가
-    
-    // 반투명 배경
-    painter.setBrush(QBrush(QColor(0, 0, 0, 180)));
-    painter.setPen(QPen(robotColor, 1));
-    painter.drawRoundedRect(bgRect, 3, 3);
-    
-    // 텍스트 그리기
-    painter.setPen(QPen(Qt::white));
-    painter.drawText(bgRect, Qt::AlignCenter, robotName);
-}
-
-// ============================================================================
-// GridMapRenderer 누락된 함수들 구현
-// ============================================================================
-
 void GridMapRenderer::drawBasicGridMaps(
     const QHash<QString, Types::GridMapPtr>& gridMaps,
     const QString& currentRobot,
@@ -639,10 +719,106 @@ void GridMapRenderer::drawBasicGridMaps(
         drawCombinedGridMap(gridMaps, robotColors);
     }
 }
+// ============================================================================
+// InterestObjectRenderer Implementation (중복 제거된 버전)
+// ============================================================================
 
-// ============================================================================
-// InterestObjectRenderer Implementation (새로 추가)
-// ============================================================================
+void InterestObjectRenderer::drawInterestObjectLabels(
+    QPainter& painter,
+    const QHash<QString, Types::InterestObjectPtr>& allObjects,
+    const QString& currentRobot,
+    const Types::Mat4& viewMatrix,
+    const Types::Mat4& projectionMatrix,
+    int screenWidth,
+    int screenHeight,
+    float textSize) {
+    
+    if (allObjects.isEmpty()) return;
+    
+    for (auto it = allObjects.cbegin(); it != allObjects.cend(); ++it) {
+        const auto& obj = it.value();
+        if (!obj || !obj->isActive) continue;
+        
+        // 로봇 필터링
+        if (currentRobot != "COMBINED" && obj->discoveredBy != currentRobot) {
+            continue;
+        }
+        
+        // 객체의 실제 위치
+        Types::Vec3 objectWorldPosition = obj->position;
+        
+        // 라벨 위치 (객체 위에)
+        Types::Vec3 labelWorldPosition = obj->position + Types::Vec3(0.0f, 3.0f, 0.0f);
+        
+        // RenderUtils 사용 (중복 제거)
+        QPoint objectScreenPos = RenderUtils::worldToScreen(objectWorldPosition, viewMatrix, 
+                                                          projectionMatrix, screenWidth, screenHeight);
+        QPoint labelScreenPos = RenderUtils::worldToScreen(labelWorldPosition, viewMatrix, 
+                                                         projectionMatrix, screenWidth, screenHeight);
+        
+        // 화면 범위 내에 있는지 확인
+        if (labelScreenPos.x() >= 0 && labelScreenPos.x() < screenWidth && 
+            labelScreenPos.y() >= 0 && labelScreenPos.y() < screenHeight) {
+            
+            // 새로운 라벨 형식: #obj_id[obj_class]
+            QString labelText;
+            
+            if (currentRobot == "COMBINED") {
+                // COMBINED 모드일 때: #obj_id[obj_class]\n{robot}
+                labelText = QString("#%1[%2]{%3}")
+                    .arg(obj->id)
+                    .arg(obj->type)  // 문자열 직접 사용
+                    .arg(obj->discoveredBy);
+            } else {
+                // 단일 로봇 모드일 때: #obj_id[obj_class]
+                labelText = QString("#%1[%2]")
+                    .arg(obj->id)
+                    .arg(obj->type);  // 문자열 직접 사용
+            }
+            
+            // 객체 색상 사용
+            QColor labelColor(obj->color.x * 255, obj->color.y * 255, obj->color.z * 255);
+            
+            // RenderUtils 사용 (중복 제거)
+            RenderUtils::drawStraightConnectorLine(painter, objectScreenPos, labelScreenPos, labelColor);
+            
+            // 라벨 그리기
+            drawObjectLabel(painter, labelText, labelColor, labelScreenPos, textSize);
+        }
+    }
+}
+
+void InterestObjectRenderer::drawObjectLabel(
+    QPainter& painter,
+    const QString& text,
+    const QColor& color,
+    const QPoint& screenPos,
+    float textSize) {
+    
+    // 텍스트 설정 - 더 읽기 쉽게 조정
+    QFont font("Consolas", static_cast<int>(textSize + 2), QFont::Bold);
+    painter.setFont(font);
+    
+    // RenderUtils 사용해서 텍스트 영역 계산
+    QRect textRect = RenderUtils::calculateMultilineTextRect(text, font, screenPos);
+    
+    // RenderUtils 사용해서 배경 그리기
+    RenderUtils::drawLabelBackground(painter, textRect, color);
+    
+    // 멀티라인 텍스트 그리기
+    QStringList lines = text.split('\n');
+    QFontMetrics metrics(font);
+    
+    int yOffset = textRect.top() + metrics.ascent();
+    
+    painter.setPen(QPen(Qt::white));
+    for (const QString& line : lines) {
+        QRect lineRect = metrics.boundingRect(line);
+        int xPos = textRect.center().x() - lineRect.width() / 2;
+        painter.drawText(xPos, yOffset, line);
+        yOffset += metrics.height();
+    }
+}
 
 void InterestObjectRenderer::drawInterestObjects(
     const QHash<QString, Types::InterestObjectPtr>& allObjects,
@@ -688,275 +864,6 @@ void InterestObjectRenderer::drawSingleInterestObject(
     ShapeHelper::SimpleShape::drawCube(obj->position, obj->size, renderColorAlpha);
 }
 
-void InterestObjectRenderer::drawInterestObjectLabels(
-    QPainter& painter,
-    const QHash<QString, Types::InterestObjectPtr>& allObjects,
-    const QString& currentRobot,
-    const Types::Mat4& viewMatrix,
-    const Types::Mat4& projectionMatrix,
-    int screenWidth,
-    int screenHeight,
-    float textSize) {
-    
-    if (allObjects.isEmpty()) return;
-    
-    for (auto it = allObjects.cbegin(); it != allObjects.cend(); ++it) {
-        const auto& obj = it.value();
-        if (!obj || !obj->isActive) continue;
-        
-        // 로봇 필터링
-        if (currentRobot != "COMBINED" && obj->discoveredBy != currentRobot) {
-            continue;
-        }
-        
-        // 객체의 실제 위치
-        Types::Vec3 objectWorldPosition = obj->position;
-        
-        // 라벨 위치 (객체 위에)
-        Types::Vec3 labelWorldPosition = obj->position + Types::Vec3(0.0f, 3.0f, 0.0f);
-        
-        // 3D 위치를 화면 좌표로 변환
-        QPoint objectScreenPos = worldToScreen(objectWorldPosition, viewMatrix, projectionMatrix, 
-                                             screenWidth, screenHeight);
-        QPoint labelScreenPos = worldToScreen(labelWorldPosition, viewMatrix, projectionMatrix, 
-                                            screenWidth, screenHeight);
-        
-        // 화면 범위 내에 있는지 확인
-        if (labelScreenPos.x() >= 0 && labelScreenPos.x() < screenWidth && 
-            labelScreenPos.y() >= 0 && labelScreenPos.y() < screenHeight) {
-            
-            // 새로운 라벨 형식: #obj_id[obj_class]
-            QString labelText;
-            
-            if (currentRobot == "COMBINED") {
-                // COMBINED 모드일 때: #obj_id[obj_class]\n{robot}
-                labelText = QString("#%1[%2]{%3}")
-                    .arg(obj->id)
-                    .arg(obj->type)  // 문자열 직접 사용
-                    .arg(obj->discoveredBy);
-            } else {
-                // 단일 로봇 모드일 때: #obj_id[obj_class]
-                labelText = QString("#%1[%2]")
-                    .arg(obj->id)
-                    .arg(obj->type);  // 문자열 직접 사용
-            }
-            
-            // 객체 색상 사용
-            QColor labelColor(obj->color.x * 255, obj->color.y * 255, obj->color.z * 255);
-            
-            // 직선 연결선 그리기 (객체 위치 → 라벨)
-            drawStraightConnectorLine(painter, objectScreenPos, labelScreenPos, labelColor);
-            
-            // 라벨 그리기
-            drawObjectLabel(painter, labelText, labelColor, labelScreenPos, textSize);
-        }
-    }
-}
+// 나머지 함수들은 기존과 동일하되, RenderUtils 사용하도록 수정...
 
-QPoint InterestObjectRenderer::worldToScreen(
-    const Types::Vec3& worldPos,
-    const Types::Mat4& viewMatrix,
-    const Types::Mat4& projectionMatrix,
-    int screenWidth,
-    int screenHeight) {
-    
-    // 월드 좌표를 클립 공간으로 변환
-    Types::Vec4 clipPos = projectionMatrix * viewMatrix * Types::Vec4(worldPos, 1.0f);
-    
-    // 동차 나눗셈
-    if (clipPos.w != 0.0f) {
-        clipPos.x /= clipPos.w;
-        clipPos.y /= clipPos.w;
-        clipPos.z /= clipPos.w;
-    }
-    
-    // NDC를 화면 좌표로 변환
-    int screenX = static_cast<int>((clipPos.x + 1.0f) * 0.5f * screenWidth);
-    int screenY = static_cast<int>((1.0f - clipPos.y) * 0.5f * screenHeight);  // Y축 뒤집기
-    
-    return QPoint(screenX, screenY);
-}
-
-void InterestObjectRenderer::drawObjectLabel(
-    QPainter& painter,
-    const QString& text,
-    const QColor& color,
-    const QPoint& screenPos,
-    float textSize) {
-    
-    // 텍스트 설정 - 더 읽기 쉽게 조정
-    QFont font("Consolas", static_cast<int>(textSize + 2), QFont::Bold);  // 고정폭 폰트 사용
-    painter.setFont(font);
-    
-    // 멀티라인 텍스트 처리
-    QStringList lines = text.split('\n');
-    QFontMetrics metrics(font);
-    
-    int maxWidth = 0;
-    int totalHeight = 0;
-    
-    // 텍스트 크기 계산
-    for (const QString& line : lines) {
-        QRect lineRect = metrics.boundingRect(line);
-        maxWidth = std::max(maxWidth, lineRect.width());
-        totalHeight += metrics.height();
-    }
-    
-    // 배경 박스 계산 (여백 증가)
-    int hPadding = 10;
-    int vPadding = 6;
-    QRect bgRect(screenPos.x() - maxWidth / 2 - hPadding,
-                 screenPos.y() - totalHeight / 2 - vPadding,
-                 maxWidth + (hPadding * 2),
-                 totalHeight + (vPadding * 2));
-    
-    // 개선된 배경 그리기
-    painter.setBrush(QBrush(QColor(0, 0, 0, 180)));  // 더 진한 배경
-    painter.setPen(QPen(color, 2));  // 더 굵은 테두리
-    painter.drawRoundedRect(bgRect, 6, 6);  // 더 둥근 모서리
-
-    int yOffset = bgRect.top() + vPadding + metrics.ascent();
-    
-    // 실제 텍스트
-    painter.setPen(QPen(Qt::white));
-    yOffset = bgRect.top() + vPadding + metrics.ascent();
-    
-    for (const QString& line : lines) {
-        QRect lineRect = metrics.boundingRect(line);
-        int xPos = bgRect.center().x() - lineRect.width() / 2;
-        painter.drawText(xPos, yOffset, line);
-        yOffset += metrics.height();
-    }
-}
-
-// 새로 추가: 직선 연결선 그리기 함수
-void PointCloudRenderer::drawStraightConnectorLine(
-    QPainter& painter,
-    const QPoint& objectPos,
-    const QPoint& labelPos,
-    const QColor& color) {
-    
-    // 연결선 스타일 설정
-    QPen connectorPen(color, 2, Qt::SolidLine);
-    connectorPen.setCapStyle(Qt::RoundCap);
-    painter.setPen(connectorPen);
-    
-    // 직선으로 연결
-    painter.drawLine(objectPos, labelPos);
-    
-    // 시작점에 작은 원 (객체/로봇 위치 표시)
-    painter.setBrush(QBrush(color));
-    painter.setPen(QPen(Qt::white, 1));
-    painter.drawEllipse(objectPos, 4, 4);
-    
-    // 끝점에 작은 화살표 (라벨 방향 표시)
-    drawArrowHead(painter, objectPos, labelPos, color, 8);
-}
-
-// InterestObjectRenderer에도 동일한 함수 추가
-void InterestObjectRenderer::drawStraightConnectorLine(
-    QPainter& painter,
-    const QPoint& objectPos,
-    const QPoint& labelPos,
-    const QColor& color) {
-    
-    // 연결선 스타일 설정
-    QPen connectorPen(color, 2, Qt::SolidLine);
-    connectorPen.setCapStyle(Qt::RoundCap);
-    painter.setPen(connectorPen);
-    
-    // 직선으로 연결
-    painter.drawLine(objectPos, labelPos);
-    
-    // 시작점에 작은 원 (객체 위치 표시)
-    painter.setBrush(QBrush(color));
-    painter.setPen(QPen(Qt::white, 1));
-    painter.drawEllipse(objectPos, 4, 4);
-    
-    // 끝점에 작은 화살표 (라벨 방향 표시)
-    drawArrowHead(painter, objectPos, labelPos, color, 8);
-}
-
-// 화살표 머리 그리기 헬퍼 함수
-void PointCloudRenderer::drawArrowHead(
-    QPainter& painter,
-    const QPoint& from,
-    const QPoint& to,
-    const QColor& color,
-    int size) {
-    
-    // 방향 벡터 계산
-    QPoint direction = to - from;
-    double length = sqrt(direction.x() * direction.x() + direction.y() * direction.y());
-    
-    if (length < 0.001) return;  // 너무 짧으면 그리지 않음
-    
-    // 정규화된 방향 벡터
-    double dx = direction.x() / length;
-    double dy = direction.y() / length;
-    
-    // 화살표 머리 점들 계산
-    double arrowLength = size;
-    double arrowAngle = M_PI / 6;  // 30도
-    
-    QPoint arrowP1(
-        to.x() - arrowLength * (dx * cos(arrowAngle) + dy * sin(arrowAngle)),
-        to.y() - arrowLength * (dy * cos(arrowAngle) - dx * sin(arrowAngle))
-    );
-    
-    QPoint arrowP2(
-        to.x() - arrowLength * (dx * cos(arrowAngle) - dy * sin(arrowAngle)),
-        to.y() - arrowLength * (dy * cos(arrowAngle) + dx * sin(arrowAngle))
-    );
-    
-    // 화살표 머리 그리기
-    painter.setBrush(QBrush(color));
-    painter.setPen(QPen(color, 1));
-    
-    QPolygon arrowHead;
-    arrowHead << to << arrowP1 << arrowP2;
-    painter.drawPolygon(arrowHead);
-}
-
-// InterestObjectRenderer에도 동일한 함수 추가
-void InterestObjectRenderer::drawArrowHead(
-    QPainter& painter,
-    const QPoint& from,
-    const QPoint& to,
-    const QColor& color,
-    int size) {
-    
-    // 방향 벡터 계산
-    QPoint direction = to - from;
-    double length = sqrt(direction.x() * direction.x() + direction.y() * direction.y());
-    
-    if (length < 0.001) return;  // 너무 짧으면 그리지 않음
-    
-    // 정규화된 방향 벡터
-    double dx = direction.x() / length;
-    double dy = direction.y() / length;
-    
-    // 화살표 머리 점들 계산
-    double arrowLength = size;
-    double arrowAngle = M_PI / 6;  // 30도
-    
-    QPoint arrowP1(
-        to.x() - arrowLength * (dx * cos(arrowAngle) + dy * sin(arrowAngle)),
-        to.y() - arrowLength * (dy * cos(arrowAngle) - dx * sin(arrowAngle))
-    );
-    
-    QPoint arrowP2(
-        to.x() - arrowLength * (dx * cos(arrowAngle) - dy * sin(arrowAngle)),
-        to.y() - arrowLength * (dy * cos(arrowAngle) + dx * sin(arrowAngle))
-    );
-    
-    // 화살표 머리 그리기
-    painter.setBrush(QBrush(color));
-    painter.setPen(QPen(color, 1));
-    
-    QPolygon arrowHead;
-    arrowHead << to << arrowP1 << arrowP2;
-    painter.drawPolygon(arrowHead);
-}
-
-} // namespace Renderer
+} // namespace RenderHelper
