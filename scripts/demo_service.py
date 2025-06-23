@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# filepath: /home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/scripts/demo_interest_objects_client.py
 
 import rclpy
 from rclpy.node import Node
@@ -8,7 +7,6 @@ from geometry_msgs.msg import Pose
 from std_msgs.msg import Header
 from builtin_interfaces.msg import Time
 from vision_msgs.msg import BoundingBox2D
-# from geometry_msgs.msg import Point2D
 from sensor_msgs.msg import CompressedImage
 import random
 import time
@@ -30,38 +28,50 @@ class DemoInterestObjectsClient(Node):
         
         self.get_logger().info('Demo Interest Objects Client ready!')
         self.get_logger().info('Press keys to send demo objects:')
-        self.get_logger().info('  1: Send 1 obstacle from TUGV')
-        self.get_logger().info('  2: Send 2 objects from MUGV')
-        self.get_logger().info('  3: Send 3 objects from SUGV1')
-        self.get_logger().info('  4: Send random objects from SUGV2')
-        self.get_logger().info('  5: Send custom objects from SUAV')
-        self.get_logger().info('  c: Clear all objects (send empty request)')
+        self.get_logger().info('  1: Send obstacle from TUGV at random position')
+        self.get_logger().info('  2: Send person from MUGV at random position')
+        self.get_logger().info('  3: Send car from SUGV1 at random position')
+        self.get_logger().info('  4: Send custom from SUGV2 at random position')
+        self.get_logger().info('  5: Send obstacle from SUAV at random position')
+        self.get_logger().info('  r: Send random object from random robot at random position')
+        self.get_logger().info('  c: Clear all objects')
         self.get_logger().info('  q: Quit')
+        
+        # 객체 ID 카운터 (0부터 시작)
+        self.object_id_counter = 0
         
         # 키보드 입력을 위한 스레드 시작
         self.keyboard_thread = threading.Thread(target=self.keyboard_listener, daemon=True)
         self.keyboard_thread.start()
         
-        # 데모 데이터
-        self.robot_positions = {
-            'TUGV': [5.0, 2.0, 0.0],
-            'MUGV': [-3.0, -2.0, 0.0],
-            'SUGV1': [0.0, 5.0, 0.0],
-            'SUGV2': [3.0, -3.0, 0.0],
-            'SUAV': [0.0, 0.0, 2.0]  # 공중 로봇
-        }
+        # 로봇 목록 (위치는 랜덤으로 생성)
+        self.robot_names = ['TUGV', 'MUGV', 'SUGV1', 'SUGV2', 'SUAV']
         
-        self.object_classes = ['obstacle', 'person', 'car', 'custom', 'unknown']
+        # 물체 클래스 목록
+        self.object_classes = ['obstacle', 'person', 'car', 'custom']
         
         # 기본 압축 이미지 데이터 (빈 이미지)
         self.dummy_image = CompressedImage()
         self.dummy_image.header.frame_id = "camera_link"
         self.dummy_image.format = "jpeg"
-        self.dummy_image.data = b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xff\xdb\x00C\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14\x1d\x1a\x1f\x1e\x1d\x1a\x1c\x1c $.\' ",#\x1c\x1c(7),01444\x1f\'9=82<.342\xff\xc0\x00\x11\x08\x00\x01\x00\x01\x01\x01\x11\x00\x02\x11\x01\x03\x11\x01\xff\xc4\x00\x1f\x00\x00\x01\x05\x01\x01\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\xff\xc4\x00\xb5\x10\x00\x02\x01\x03\x03\x02\x04\x03\x05\x05\x04\x04\x00\x00\x01}\x01\x02\x03\x00\x04\x11\x05\x12!1A\x06\x13Qa\x07"q\x142\x81\x91\xa1\x08#B\xb1\xc1\x15R\xd1\xf0$3br\x82\t\n\x16\x17\x18\x19\x1a%&\'()*456789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz\x83\x84\x85\x86\x87\x88\x89\x8a\x92\x93\x94\x95\x96\x97\x98\x99\x9a\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xff\xda\x00\x08\x01\x01\x00\x00?\x00\xffd\xff\xd9'
+        self.dummy_image.data = b'\xff\xd8\xff\xe0\x00\x10JFIF'  # 최소한의 JPEG 헤더
+
+    def get_next_object_id(self):
+        """다음 객체 ID를 반환하고 카운터 증가"""
+        current_id = self.object_id_counter
+        self.object_id_counter += 1
+        return current_id
+
+    def generate_random_position(self):
+        """랜덤 위치 생성"""
+        return [
+            random.uniform(-15.0, 15.0),  # X: -15m ~ +15m
+            random.uniform(-15.0, 15.0),  # Y: -15m ~ +15m
+            random.uniform(0.0, 2.0)      # Z: 0m ~ 5m (지면 위)
+        ]
 
     def keyboard_listener(self):
         """키보드 입력을 감지하는 함수"""
-        # 터미널 설정
         old_settings = termios.tcgetattr(sys.stdin)
         try:
             tty.setcbreak(sys.stdin.fileno())
@@ -70,18 +80,26 @@ class DemoInterestObjectsClient(Node):
                 key = sys.stdin.read(1)
                 
                 if key == '1':
-                    self.send_demo_objects('TUGV', 1, ['obstacle'])
+                    pos = self.generate_random_position()
+                    self.send_single_object('TUGV', 'obstacle', pos)
                 elif key == '2':
-                    self.send_demo_objects('MUGV', 2, ['obstacle', 'person'])
+                    pos = self.generate_random_position()
+                    self.send_single_object('MUGV', 'person', pos)
                 elif key == '3':
-                    self.send_demo_objects('SUGV1', 3, ['obstacle', 'car', 'person'])
+                    pos = self.generate_random_position()
+                    self.send_single_object('SUGV1', 'car', pos)
                 elif key == '4':
-                    # 랜덤 객체들
-                    num_objects = random.randint(1, 4)
-                    obj_classes = random.choices(self.object_classes, k=num_objects)
-                    self.send_demo_objects('SUGV2', num_objects, obj_classes)
+                    pos = self.generate_random_position()
+                    self.send_single_object('SUGV2', 'custom', pos)
                 elif key == '5':
-                    self.send_demo_objects('SUAV', 2, ['custom', 'custom'])
+                    pos = self.generate_random_position()
+                    self.send_single_object('SUAV', 'obstacle', pos)
+                elif key == 'r' or key == 'R':
+                    # 완전 랜덤: 로봇, 객체 클래스, 위치 모두 랜덤
+                    robot = random.choice(self.robot_names)
+                    obj_class = random.choice(self.object_classes)
+                    pos = self.generate_random_position()
+                    self.send_single_object(robot, obj_class, pos)
                 elif key == 'c' or key == 'C':
                     self.clear_all_objects()
                 elif key == 'q' or key == 'Q':
@@ -96,8 +114,8 @@ class DemoInterestObjectsClient(Node):
         finally:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
 
-    def send_demo_objects(self, robot_id, num_objects, obj_classes):
-        """데모 객체들을 서비스로 전송"""
+    def send_single_object(self, robot_id, obj_class, position):
+        """단일 객체를 서비스로 전송 (길이 1 배열)"""
         request = InterestObjs.Request()
         
         # 헤더 설정
@@ -109,16 +127,12 @@ class DemoInterestObjectsClient(Node):
         request.robot_id = robot_id
         request.camera_id = 'main_camera'
         
-        # 로봇 위치 설정
+        # 물체 위치 설정 (position 필드에 물체의 실제 위치)
         request.position = Pose()
-        if robot_id in self.robot_positions:
-            pos = self.robot_positions[robot_id]
-            request.position.position.x = float(pos[0])
-            request.position.position.y = float(pos[1]) 
-            request.position.position.z = float(pos[2])
-        
-        # 방향 (기본값)
-        request.position.orientation.w = 1.0
+        request.position.position.x = float(position[0])
+        request.position.position.y = float(position[1]) 
+        request.position.position.z = float(position[2])
+        request.position.orientation.w = 1.0  # 기본 방향
         
         # 타임스탬프
         request.stamp = self.get_clock().now().to_msg()
@@ -127,34 +141,31 @@ class DemoInterestObjectsClient(Node):
         request.source_img = self.dummy_image
         request.source_img.header.stamp = request.stamp
         
-        # 객체 정보 생성
-        for i in range(num_objects):
-            # 객체 클래스
-            if i < len(obj_classes):
-                request.obj_class.append(obj_classes[i])
-            else:
-                request.obj_class.append('unknown')
-            
-            # 객체 ID (랜덤)
-            obj_id = random.randint(1000, 9999)
-            request.obj_id.append(obj_id)
-            
-            # 바운딩 박스 생성 (랜덤 위치)
-            bbox = BoundingBox2D()
-            request.bbox.append(bbox)
+        # 단일 객체 정보 (길이 1 배열)
+        request.obj_class = [obj_class]  # 길이 1 배열
+        
+        # 객체 ID (0부터 순차 증가, 길이 1 배열)
+        obj_id = self.get_next_object_id()
+        request.obj_id = [obj_id]  # 길이 1 배열
+        
+        # 바운딩 박스 (사용하지 않지만 호환성을 위해 빈 박스 추가)
+        bbox = BoundingBox2D()
+        request.bbox = [bbox]  # 길이 1 배열
         
         # 서비스 호출
-        self.get_logger().info(f'Sending {num_objects} objects from {robot_id}: {obj_classes}')
+        self.get_logger().info(
+            f'🎲 Sending {obj_class} (ID: {obj_id}) from {robot_id} at random position ({position[0]:.1f}, {position[1]:.1f}, {position[2]:.1f})'
+        )
         
         future = self.client.call_async(request)
         
         # 콜백 설정
         future.add_done_callback(
-            lambda f: self.handle_service_response(f, robot_id, num_objects)
+            lambda f: self.handle_service_response(f, robot_id, obj_class, obj_id)
         )
 
     def clear_all_objects(self):
-        """모든 객체 클리어 (빈 요청 전송)"""
+        """모든 객체 클리어"""
         request = InterestObjs.Request()
         
         # 헤더 설정
@@ -162,7 +173,7 @@ class DemoInterestObjectsClient(Node):
         request.header.stamp = self.get_clock().now().to_msg()
         request.header.frame_id = 'map'
         
-        # 빈 요청 (객체 없음)
+        # 특수 로봇 ID로 클리어 요청
         request.robot_id = 'CLEAR_ALL'
         request.camera_id = 'admin'
         request.position = Pose()
@@ -171,28 +182,35 @@ class DemoInterestObjectsClient(Node):
         request.source_img = self.dummy_image
         
         # 빈 배열들 (아무것도 추가하지 않음)
+        request.obj_class = []
+        request.obj_id = []
+        request.bbox = []
         
-        self.get_logger().info('Clearing all objects...')
+        self.get_logger().info('🗑️  Clearing all objects...')
+        
+        # 클리어 후 카운터 리셋
+        self.object_id_counter = 0
+        self.get_logger().info('🔄 Object ID counter reset to 0')
         
         future = self.client.call_async(request)
         future.add_done_callback(
-            lambda f: self.handle_service_response(f, 'CLEAR_ALL', 0)
+            lambda f: self.handle_service_response(f, 'CLEAR_ALL', 'clear', 0)
         )
 
-    def handle_service_response(self, future, robot_id, num_objects):
+    def handle_service_response(self, future, robot_id, obj_class, obj_id):
         """서비스 응답 처리"""
         try:
             response = future.result()
             if response.result:
-                if num_objects > 0:
-                    self.get_logger().info(
-                        f'✅ Successfully sent {num_objects} objects from {robot_id}'
-                    )
-                else:
+                if obj_class == 'clear':
                     self.get_logger().info('✅ Successfully cleared all objects')
+                else:
+                    self.get_logger().info(
+                        f'✅ Successfully sent {obj_class} (ID: {obj_id}) from {robot_id}'
+                    )
             else:
                 self.get_logger().error(
-                    f'❌ Failed to process objects from {robot_id}'
+                    f'❌ Failed to process object from {robot_id}'
                 )
         except Exception as e:
             self.get_logger().error(f'Service call failed: {str(e)}')

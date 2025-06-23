@@ -29,11 +29,8 @@ private:
         const std::shared_ptr<u2_icd_pkg::srv::InterestObjs::Request> request,
         std::shared_ptr<u2_icd_pkg::srv::InterestObjs::Response> response);
     
-    // 타입 변환 헬퍼
-    Types::ObjectType stringToObjectType(const std::string& objClass);
+    // 헬퍼 함수들 (ObjectType 관련 함수 제거)
     Types::Vec3 poseToVec3(const geometry_msgs::msg::Pose& pose);
-    
-    // 좌표 변환 헬퍼
     Types::Vec3 rosToOpenGLCoordinates(const Types::Vec3& rosPos);
 };
 

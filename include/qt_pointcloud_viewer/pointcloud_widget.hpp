@@ -120,7 +120,7 @@ namespace Widget {
         // ============================================================================
         // Interest Objects Functions (전역 매니저 사용으로 간소화)
         // ============================================================================
-        void registerInterestObject(Types::ObjectType type, const QString& robotName);
+        void registerInterestObject(const QString& type, const QString& robotName);
         
     public slots:
         // ============================================================================

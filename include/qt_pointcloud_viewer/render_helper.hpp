@@ -73,6 +73,12 @@ public:
         std::mutex& pathMutex
     );
 
+    // 새로 추가: 직선 라벨 연결선 관련 함수들
+    static void drawStraightConnectorLine(QPainter& painter, const QPoint& objectPos, 
+                                        const QPoint& labelPos, const QColor& color);
+    static void drawArrowHead(QPainter& painter, const QPoint& from, const QPoint& to, 
+                            const QColor& color, int size);
+
 private:
     // Private helper functions
     static void drawCylinderMarker(const Types::Vec3& position, 
@@ -129,6 +135,12 @@ public:
         int screenWidth,
         int screenHeight,
         float textSize = 10.0f);
+
+    // 새로 추가: 직선 라벨 연결선 관련 함수들
+    static void drawStraightConnectorLine(QPainter& painter, const QPoint& objectPos, 
+                                        const QPoint& labelPos, const QColor& color);
+    static void drawArrowHead(QPainter& painter, const QPoint& from, const QPoint& to, 
+                            const QColor& color, int size);
 
 private:
     // 정육면체 렌더링 (ShapeHelper 사용)

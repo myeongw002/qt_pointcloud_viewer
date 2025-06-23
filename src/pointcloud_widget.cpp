@@ -928,7 +928,7 @@ void PointCloudWidget::resampleGridMapResolution(
 // Interest Objects Implementation (전역 매니저 사용)
 // ============================================================================
 
-void PointCloudWidget::registerInterestObject(Types::ObjectType type, const QString& robotName) {
+void PointCloudWidget::registerInterestObject(const QString& type, const QString& robotName) {
     // 로봇의 현재 위치 가져오기
     Types::Vec3 robotPosition = getRobotPosition(robotName);
     

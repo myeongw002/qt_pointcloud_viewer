@@ -1,55 +1,53 @@
-#ifndef INTEREST_OBJECT_MANAGER_HPP
-#define INTEREST_OBJECT_MANAGER_HPP
+#pragma once
 
+#include "common_types.hpp"
 #include <QObject>
+#include <QMutex>
 #include <QHash>
 #include <QStringList>
-#include <QMutex>
-#include <QMutexLocker>
-#include "common_types.hpp"
 
 namespace ObjectManager {
 
 class InterestObjectManager : public QObject {
     Q_OBJECT
-
+    
 public:
+    // 싱글톤 인스턴스 접근
     static InterestObjectManager& instance();
     
-    // Interest Object 관리
-    QString registerInterestObject(Types::ObjectType type, const QString& robotName, const Types::Vec3& position);
+    // 관심물체 등록/제거 (문자열 타입 사용)
+    QString registerInterestObject(const QString& type, const QString& robotName, const Types::Vec3& position);
+    
+    // 지정된 ID로 객체 등록 (문자열 타입 사용)
+    bool registerInterestObjectWithId(const QString& objectId, const QString& type, 
+                                     const QString& robotName, const Types::Vec3& position);
+    
+    // 서비스 요청 데이터로 객체 등록 (문자열 타입 사용)
+    bool registerInterestObjectFromService(const QString& serviceObjectId,
+                                         const QString& objectType,
+                                         const Types::Vec3& objectPosition,
+                                         const QString& robotId);
+    
     bool removeInterestObject(const QString& objectId);
     void clearAllInterestObjects();
     
-    // 조회 함수들
+    // 관심물체 조회
     Types::InterestObjectPtr getInterestObject(const QString& objectId) const;
     QStringList getAllObjectIds() const;
     QStringList getInterestObjectList() const;
     QHash<QString, Types::InterestObjectPtr> getAllInterestObjects() const;
     
-    // 설정 함수들
+    // 관심물체 속성 업데이트
     bool updateInterestObjectColor(const QString& objectId, const Types::ColorRGB& color);
     bool updateInterestObjectSize(const QString& objectId, float size);
     bool updateInterestObjectPosition(const QString& objectId, const Types::Vec3& position);
     
-    // 상태 관리
+    // 색상 관련 함수 추가
+    void reassignRandomColors();  // 모든 객체에 랜덤 색상 재할당
+    
+    // 표시 설정
     void setShowInterestObjects(bool show);
     bool getShowInterestObjects() const;
-
-    // 새로 추가: 지정된 ID로 객체 등록
-    bool registerInterestObjectWithId(
-        const QString& objectId,
-        Types::ObjectType type, 
-        const QString& robotName, 
-        const Types::Vec3& position);
-
-    // 새로 추가: 서비스 요청 데이터로 객체 등록
-    bool registerInterestObjectFromService(
-        const QString& serviceObjectId,      // 서비스에서 온 Object ID
-        Types::ObjectType objectType,        // 서비스에서 온 Object Class  
-        const Types::Vec3& objectPosition,   // 서비스/계산된 Position
-        const QString& robotId               // 서비스에서 온 Robot ID
-    );
 
 signals:
     void interestObjectRegistered(const QString& objectId, const QString& objectType);
@@ -58,25 +56,19 @@ signals:
     void showInterestObjectsChanged(bool show);
 
 private:
-    InterestObjectManager() = default;
+    explicit InterestObjectManager(QObject* parent = nullptr);
     ~InterestObjectManager() = default;
     
-    // 싱글톤 패턴
+    // 복사 생성자와 대입 연산자 삭제 (싱글톤)
     InterestObjectManager(const InterestObjectManager&) = delete;
     InterestObjectManager& operator=(const InterestObjectManager&) = delete;
     
-    // 데이터 저장소
-    QHash<QString, Types::InterestObjectPtr> interestObjects_;
-    mutable QMutex objectsMutex_;
-    
-    // 설정
-    bool showInterestObjects_ = true;
-    int objectCounter_ = 0;
-    
-    // 헬퍼 함수
     QString generateObjectId();
+    
+    mutable QMutex objectsMutex_;
+    QHash<QString, Types::InterestObjectPtr> interestObjects_;
+    int objectCounter_;
+    bool showInterestObjects_;
 };
 
 } // namespace ObjectManager
-
-#endif // INTEREST_OBJECT_MANAGER_HPP

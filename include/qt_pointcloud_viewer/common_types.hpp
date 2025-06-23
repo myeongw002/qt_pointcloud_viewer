@@ -5,10 +5,12 @@
 #include <vector>
 #include <memory>
 #include <chrono>
+#include <random>
 
 // Qt (Qt 메타타입 등록을 위해)
 #include <QMetaType>
 #include <QString>
+#include <QDateTime>
 
 // Third-party math
 #include <glm/glm.hpp>
@@ -43,8 +45,6 @@ using PoseStamped = geometry_msgs::msg::PoseStamped;
 using Path = std::vector<PoseStamped>;
 using PathPtr = std::shared_ptr<Path>;
 using PathConstPtr = std::shared_ptr<const Path>;
-
-
 
 // ── 그리드맵 구조체 정의 ───────────────────────────────
 struct GridMapData {
@@ -86,56 +86,96 @@ constexpr ColorRGB kDefaultColor{1.0f, 1.0f, 1.0f};
 using ColorRGBA = glm::vec4;  // RGBA 형식 (투명도 포함)
 constexpr ColorRGBA kDefaultColorRGBA{1.0f, 1.0f, 1.0f, 1.0f};  // 기본 흰색 불투명
 
+// ── 관심물체 색상 팔레트 ──────────────────────────────
+namespace InterestObjectColors {
+    // 미리 정의된 색상 팔레트 (RGB 0.0~1.0 범위)
+    const std::vector<ColorRGB> COLOR_PALETTE = {
+        ColorRGB(1.0f, 0.2f, 0.2f),   // 빨간색
+        ColorRGB(0.2f, 1.0f, 0.2f),   // 초록색  
+        ColorRGB(0.2f, 0.2f, 1.0f),   // 파란색
+        ColorRGB(1.0f, 1.0f, 0.2f),   // 노란색
+        ColorRGB(1.0f, 0.2f, 1.0f),   // 마젠타
+        ColorRGB(0.2f, 1.0f, 1.0f),   // 시안
+        ColorRGB(1.0f, 0.6f, 0.2f),   // 주황색
+        ColorRGB(0.8f, 0.2f, 1.0f),   // 보라색
+        ColorRGB(0.2f, 0.8f, 0.4f),   // 연두색
+        ColorRGB(1.0f, 0.4f, 0.6f),   // 분홍색
+        ColorRGB(0.4f, 0.6f, 1.0f),   // 하늘색
+        ColorRGB(0.8f, 0.8f, 0.2f),   // 올리브색
+        ColorRGB(1.0f, 0.8f, 0.4f),   // 살구색
+        ColorRGB(0.6f, 0.4f, 0.8f),   // 라벤더색
+        ColorRGB(0.4f, 0.8f, 0.6f),   // 민트색
+    };
+    
+    // 랜덤 색상 선택 함수
+    inline ColorRGB getRandomColor() {
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        static std::uniform_int_distribution<> dis(0, COLOR_PALETTE.size() - 1);
+        
+        return COLOR_PALETTE[dis(gen)];
+    }
+    
+    // 타입별 기본 색상 (백업용)
+    inline ColorRGB getColorByType(const QString& type) {
+        QString lowerType = type.toLower();
+        
+        if (lowerType.contains("obstacle") || lowerType.contains("person")) {
+            return ColorRGB(1.0f, 0.2f, 0.2f);  // 빨간색
+        } else if (lowerType.contains("car") || lowerType.contains("vehicle")) {
+            return ColorRGB(0.2f, 0.2f, 1.0f);  // 파란색
+        } else if (lowerType.contains("custom") || lowerType.contains("special")) {
+            return ColorRGB(0.2f, 1.0f, 0.2f);  // 초록색
+        } else {
+            return ColorRGB(1.0f, 1.0f, 0.2f);  // 노란색 (기본)
+        }
+    }
+}
 
-// ── 관심물체 구조체 정의 ───────────────────────────────
-enum class ObjectType {
-    UNKNOWN = 0,
-    OBSTACLE,
-    CUSTOM
-};
-
+// ── 관심물체 구조체 정의 (문자열 타입 사용) ─────────────
 struct InterestObject {
     QString id;                    // 고유 ID
-    ObjectType type;               // 물체 타입
+    QString type;                  // 물체 타입 (문자열로 변경)
     Vec3 position;                 // 3D 위치 (OpenGL 좌표계)
-    float size;                     // 크기 (width, height, depth)
+    float size;                    // 크기 (width, height, depth)
     ColorRGB color;                // 색상
     QString discoveredBy;          // 발견한 로봇 이름
     std::chrono::steady_clock::time_point timestamp;  // 등록 시간
     bool isActive;                 // 활성 상태
     QString description;           // 설명
+    QDateTime lastUpdateTime;      // 마지막 업데이트 시간
     
     // 생성자
     InterestObject() 
-        : type(ObjectType::UNKNOWN)
+        : type("unknown")
         , position(0.0f, 0.0f, 0.0f)
         , size(1.0f)
-        , color(1.0f, 1.0f, 0.0f)  // 기본 노란색
+        , color(InterestObjectColors::getRandomColor())  // 랜덤 색상
         , timestamp(std::chrono::steady_clock::now())
-        , isActive(true) {}
+        , isActive(true)
+        , lastUpdateTime(QDateTime::currentDateTime()) {}
     
-    InterestObject(const QString& objectId, ObjectType objectType, 
+    InterestObject(const QString& objectId, const QString& objectType, 
                   const Vec3& pos, const QString& robot)
         : id(objectId), type(objectType), position(pos)
-        , size(1.0f), color(1.0f, 1.0f, 0.0f)
-        , discoveredBy(robot), timestamp(std::chrono::steady_clock::now())
-        , isActive(true) {}
-};
-
-// ── 유틸리티 함수들 ────────────────────────────────────
-inline QString objectTypeToString(ObjectType type) {
-    switch (type) {
-        case ObjectType::OBSTACLE: return "Obstacle";
-        case ObjectType::CUSTOM: return "Custom";
-        default: return "Unknown";
+        , size(1.0f), discoveredBy(robot)
+        , timestamp(std::chrono::steady_clock::now())
+        , isActive(true)
+        , lastUpdateTime(QDateTime::currentDateTime()) {
+        
+        // 랜덤 색상 설정
+        color = InterestObjectColors::getRandomColor();
+        setDescription();
     }
-}
 
-inline ObjectType stringToObjectType(const QString& str) {
-    if (str == "Obstacle") return ObjectType::OBSTACLE;
-    if (str == "Custom") return ObjectType::CUSTOM;
-    return ObjectType::UNKNOWN;
-}
+private:
+    void setDescription() {
+        description = QString("Object #%1 (%2) discovered by %3")
+            .arg(id)
+            .arg(type)
+            .arg(discoveredBy);
+    }
+};
 
 using InterestObjectPtr = std::shared_ptr<InterestObject>;
 using InterestObjectConstPtr = std::shared_ptr<const InterestObject>;
@@ -147,6 +187,5 @@ Q_DECLARE_METATYPE(Types::CloudConstPtr)
 Q_DECLARE_METATYPE(Types::PathConstPtr)
 Q_DECLARE_METATYPE(Types::GridMapPtr)
 Q_DECLARE_METATYPE(Types::InterestObjectPtr)
-Q_DECLARE_METATYPE(Types::ObjectType)
 
 #endif // QT_POINTCLOUD_VIEWER_COMMON_TYPES_HPP

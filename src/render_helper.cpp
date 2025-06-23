@@ -179,27 +179,35 @@ void PointCloudRenderer::drawRobotNamesAtPositions(
         const auto& path = *pathPtr;
         const auto& currentPose = path.back();
         
-        // ROS → OpenGL 좌표 변환
-        Types::Vec3 worldPosition(
+        // 로봇의 실제 위치 (ROS → OpenGL 좌표 변환)
+        Types::Vec3 robotWorldPosition(
             -currentPose.pose.position.y,
-            currentPose.pose.position.z + 2.0f,
+            currentPose.pose.position.z,
             -currentPose.pose.position.x
         );
         
+        // 라벨 위치 (로봇 위에)
+        Types::Vec3 labelWorldPosition = robotWorldPosition + Types::Vec3(0.0f, 5.0f, 0.0f);
+        
         // 3D 위치를 화면 좌표로 변환
-        QPoint screenPos = worldToScreen(worldPosition, viewMatrix, projectionMatrix, 
-                                       screenWidth, screenHeight);
+        QPoint robotScreenPos = worldToScreen(robotWorldPosition, viewMatrix, projectionMatrix, 
+                                            screenWidth, screenHeight);
+        QPoint labelScreenPos = worldToScreen(labelWorldPosition, viewMatrix, projectionMatrix, 
+                                            screenWidth, screenHeight);
         
         // 화면 범위 내에 있는지 확인
-        if (screenPos.x() >= 0 && screenPos.x() < screenWidth && 
-            screenPos.y() >= 0 && screenPos.y() < screenHeight) {
+        if (labelScreenPos.x() >= 0 && labelScreenPos.x() < screenWidth && 
+            labelScreenPos.y() >= 0 && labelScreenPos.y() < screenHeight) {
             
             // 로봇 색상 설정
             Types::ColorRGB color = robotColors.value(robotName, Types::ColorRGB(0.0f, 1.0f, 0.0f));
             QColor robotColor(color.x * 255, color.y * 255, color.z * 255);
             
+            // 직선 연결선 그리기 (로봇 위치 → 라벨)
+            drawStraightConnectorLine(painter, robotScreenPos, labelScreenPos, robotColor);
+            
             // 로봇 이름 텍스트 그리기
-            drawRobotNameText(painter, robotName, robotColor, screenPos, textSize);
+            drawRobotNameText(painter, robotName, robotColor, labelScreenPos, textSize);
         }
     }
 }
@@ -692,9 +700,6 @@ void InterestObjectRenderer::drawInterestObjectLabels(
     
     if (allObjects.isEmpty()) return;
     
-    // 객체 번호 카운터 (각 로봇별로 구분)
-    QHash<QString, int> robotObjectCounts;
-    
     for (auto it = allObjects.cbegin(); it != allObjects.cend(); ++it) {
         const auto& obj = it.value();
         if (!obj || !obj->isActive) continue;
@@ -704,36 +709,46 @@ void InterestObjectRenderer::drawInterestObjectLabels(
             continue;
         }
         
-        // 현재 로봇의 객체 번호 증가
-        QString robotKey = (currentRobot == "COMBINED") ? obj->discoveredBy : currentRobot;
-        robotObjectCounts[robotKey] += 1;
-        int objNumber = robotObjectCounts[robotKey];
+        // 객체의 실제 위치
+        Types::Vec3 objectWorldPosition = obj->position;
         
-        // 객체 위치보다 위에 라벨 표시
-        Types::Vec3 labelPosition = obj->position;
-        labelPosition += Types::Vec3(0.0f, 2.0f, 0.0f);  // Y축으로 약간 위로 이동
+        // 라벨 위치 (객체 위에)
+        Types::Vec3 labelWorldPosition = obj->position + Types::Vec3(0.0f, 3.0f, 0.0f);
         
         // 3D 위치를 화면 좌표로 변환
-        QPoint screenPos = worldToScreen(labelPosition, viewMatrix, projectionMatrix, 
-                                       screenWidth, screenHeight);
+        QPoint objectScreenPos = worldToScreen(objectWorldPosition, viewMatrix, projectionMatrix, 
+                                             screenWidth, screenHeight);
+        QPoint labelScreenPos = worldToScreen(labelWorldPosition, viewMatrix, projectionMatrix, 
+                                            screenWidth, screenHeight);
         
         // 화면 범위 내에 있는지 확인
-        if (screenPos.x() >= 0 && screenPos.x() < screenWidth && 
-            screenPos.y() >= 0 && screenPos.y() < screenHeight) {
+        if (labelScreenPos.x() >= 0 && labelScreenPos.x() < screenWidth && 
+            labelScreenPos.y() >= 0 && labelScreenPos.y() < screenHeight) {
             
-            // 새로운 라벨 형식: #n[objectclass]
+            // 새로운 라벨 형식: #obj_id[obj_class]
             QString labelText;
-
-            labelText = QString("#%1[%2]")
-                .arg(objNumber)
-                .arg(Types::objectTypeToString(obj->type));
             
+            if (currentRobot == "COMBINED") {
+                // COMBINED 모드일 때: #obj_id[obj_class]\n{robot}
+                labelText = QString("#%1[%2]{%3}")
+                    .arg(obj->id)
+                    .arg(obj->type)  // 문자열 직접 사용
+                    .arg(obj->discoveredBy);
+            } else {
+                // 단일 로봇 모드일 때: #obj_id[obj_class]
+                labelText = QString("#%1[%2]")
+                    .arg(obj->id)
+                    .arg(obj->type);  // 문자열 직접 사용
+            }
             
             // 객체 색상 사용
             QColor labelColor(obj->color.x * 255, obj->color.y * 255, obj->color.z * 255);
             
+            // 직선 연결선 그리기 (객체 위치 → 라벨)
+            drawStraightConnectorLine(painter, objectScreenPos, labelScreenPos, labelColor);
+            
             // 라벨 그리기
-            drawObjectLabel(painter, labelText, labelColor, screenPos, textSize);
+            drawObjectLabel(painter, labelText, labelColor, labelScreenPos, textSize);
         }
     }
 }
@@ -812,6 +827,136 @@ void InterestObjectRenderer::drawObjectLabel(
         painter.drawText(xPos, yOffset, line);
         yOffset += metrics.height();
     }
+}
+
+// 새로 추가: 직선 연결선 그리기 함수
+void PointCloudRenderer::drawStraightConnectorLine(
+    QPainter& painter,
+    const QPoint& objectPos,
+    const QPoint& labelPos,
+    const QColor& color) {
+    
+    // 연결선 스타일 설정
+    QPen connectorPen(color, 2, Qt::SolidLine);
+    connectorPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(connectorPen);
+    
+    // 직선으로 연결
+    painter.drawLine(objectPos, labelPos);
+    
+    // 시작점에 작은 원 (객체/로봇 위치 표시)
+    painter.setBrush(QBrush(color));
+    painter.setPen(QPen(Qt::white, 1));
+    painter.drawEllipse(objectPos, 4, 4);
+    
+    // 끝점에 작은 화살표 (라벨 방향 표시)
+    drawArrowHead(painter, objectPos, labelPos, color, 8);
+}
+
+// InterestObjectRenderer에도 동일한 함수 추가
+void InterestObjectRenderer::drawStraightConnectorLine(
+    QPainter& painter,
+    const QPoint& objectPos,
+    const QPoint& labelPos,
+    const QColor& color) {
+    
+    // 연결선 스타일 설정
+    QPen connectorPen(color, 2, Qt::SolidLine);
+    connectorPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(connectorPen);
+    
+    // 직선으로 연결
+    painter.drawLine(objectPos, labelPos);
+    
+    // 시작점에 작은 원 (객체 위치 표시)
+    painter.setBrush(QBrush(color));
+    painter.setPen(QPen(Qt::white, 1));
+    painter.drawEllipse(objectPos, 4, 4);
+    
+    // 끝점에 작은 화살표 (라벨 방향 표시)
+    drawArrowHead(painter, objectPos, labelPos, color, 8);
+}
+
+// 화살표 머리 그리기 헬퍼 함수
+void PointCloudRenderer::drawArrowHead(
+    QPainter& painter,
+    const QPoint& from,
+    const QPoint& to,
+    const QColor& color,
+    int size) {
+    
+    // 방향 벡터 계산
+    QPoint direction = to - from;
+    double length = sqrt(direction.x() * direction.x() + direction.y() * direction.y());
+    
+    if (length < 0.001) return;  // 너무 짧으면 그리지 않음
+    
+    // 정규화된 방향 벡터
+    double dx = direction.x() / length;
+    double dy = direction.y() / length;
+    
+    // 화살표 머리 점들 계산
+    double arrowLength = size;
+    double arrowAngle = M_PI / 6;  // 30도
+    
+    QPoint arrowP1(
+        to.x() - arrowLength * (dx * cos(arrowAngle) + dy * sin(arrowAngle)),
+        to.y() - arrowLength * (dy * cos(arrowAngle) - dx * sin(arrowAngle))
+    );
+    
+    QPoint arrowP2(
+        to.x() - arrowLength * (dx * cos(arrowAngle) - dy * sin(arrowAngle)),
+        to.y() - arrowLength * (dy * cos(arrowAngle) + dx * sin(arrowAngle))
+    );
+    
+    // 화살표 머리 그리기
+    painter.setBrush(QBrush(color));
+    painter.setPen(QPen(color, 1));
+    
+    QPolygon arrowHead;
+    arrowHead << to << arrowP1 << arrowP2;
+    painter.drawPolygon(arrowHead);
+}
+
+// InterestObjectRenderer에도 동일한 함수 추가
+void InterestObjectRenderer::drawArrowHead(
+    QPainter& painter,
+    const QPoint& from,
+    const QPoint& to,
+    const QColor& color,
+    int size) {
+    
+    // 방향 벡터 계산
+    QPoint direction = to - from;
+    double length = sqrt(direction.x() * direction.x() + direction.y() * direction.y());
+    
+    if (length < 0.001) return;  // 너무 짧으면 그리지 않음
+    
+    // 정규화된 방향 벡터
+    double dx = direction.x() / length;
+    double dy = direction.y() / length;
+    
+    // 화살표 머리 점들 계산
+    double arrowLength = size;
+    double arrowAngle = M_PI / 6;  // 30도
+    
+    QPoint arrowP1(
+        to.x() - arrowLength * (dx * cos(arrowAngle) + dy * sin(arrowAngle)),
+        to.y() - arrowLength * (dy * cos(arrowAngle) - dx * sin(arrowAngle))
+    );
+    
+    QPoint arrowP2(
+        to.x() - arrowLength * (dx * cos(arrowAngle) - dy * sin(arrowAngle)),
+        to.y() - arrowLength * (dy * cos(arrowAngle) + dx * sin(arrowAngle))
+    );
+    
+    // 화살표 머리 그리기
+    painter.setBrush(QBrush(color));
+    painter.setPen(QPen(color, 1));
+    
+    QPolygon arrowHead;
+    arrowHead << to << arrowP1 << arrowP2;
+    painter.drawPolygon(arrowHead);
 }
 
 } // namespace Renderer

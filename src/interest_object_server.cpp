@@ -7,7 +7,6 @@ InterestObjectServer::InterestObjectServer(
     rclcpp::Node::SharedPtr node, QObject* parent)
     : QObject(parent), node_(node) {
     
-    // 서비스 서버 생성
     service_ = node_->create_service<u2_icd_pkg::srv::InterestObjs>(
         "interest_objects_service",
         std::bind(&InterestObjectServer::handleInterestObjectsRequest,
@@ -22,84 +21,115 @@ void InterestObjectServer::handleInterestObjectsRequest(
     std::shared_ptr<u2_icd_pkg::srv::InterestObjs::Response> response) {
     
     RCLCPP_INFO(node_->get_logger(), 
-        "Received interest objects request from robot: %s with %zu objects", 
-        request->robot_id.c_str(), request->obj_class.size());
+        "🔔 RECEIVED SERVICE REQUEST from robot: %s", 
+        request->robot_id.c_str());
     
     QString robotId = QString::fromStdString(request->robot_id);
-    int registeredCount = 0;
+    
+    // 요청 내용 상세 로그
+    RCLCPP_INFO(node_->get_logger(), "📋 Request details:");
+    RCLCPP_INFO(node_->get_logger(), "  Robot ID: %s", request->robot_id.c_str());
+    RCLCPP_INFO(node_->get_logger(), "  Object classes: %zu", request->obj_class.size());
+    RCLCPP_INFO(node_->get_logger(), "  Object IDs: %zu", request->obj_id.size());
+    RCLCPP_INFO(node_->get_logger(), "  Object position: (%.3f, %.3f, %.3f)", 
+                request->position.position.x, request->position.position.y, request->position.position.z);
+    RCLCPP_INFO(node_->get_logger(), "  Timestamp: %d.%d", 
+                request->stamp.sec, request->stamp.nanosec);
     
     try {
         auto& manager = ObjectManager::InterestObjectManager::instance();
         
-        // 각 객체를 처리
-        for (size_t i = 0; i < request->obj_class.size(); ++i) {
-            // 배열 크기 확인
-            if (i >= request->obj_id.size()) {
-                RCLCPP_WARN(node_->get_logger(), "Object ID array size mismatch at index %zu", i);
-                continue;
-            }
-            
-            // 객체 정보 추출
-            std::string objClassStr = request->obj_class[i];
-            Types::ObjectType objType = stringToObjectType(objClassStr);
-            
-            // 로봇 위치를 객체 위치로 사용 (실제로는 bbox 정보를 사용해 3D 위치 계산 가능)
-            Types::Vec3 rosPosition = poseToVec3(request->position);
-            Types::Vec3 openglPosition = rosToOpenGLCoordinates(rosPosition);
-            
-            // 바운딩 박스 정보가 있다면 활용 (선택적)
-            if (i < request->bbox.size()) {
-                const auto& bbox = request->bbox[i];
-                // bbox 정보를 이용해 위치 오프셋 적용 가능
-                // 현재는 단순히 로봇 위치 사용
-                RCLCPP_DEBUG(node_->get_logger(), 
-                    "BBox center: (%.3f, %.3f), size: %.3fx%.3f",
-                    bbox.center.x, bbox.center.y, bbox.size_x, bbox.size_y);
-            }
-            
-            // Interest Object 등록
-            QString objectId = manager.registerInterestObject(objType, robotId, openglPosition);
-            
-            if (!objectId.isEmpty()) {
-                registeredCount++;
-                RCLCPP_DEBUG(node_->get_logger(), 
-                    "Registered object: %s (type: %s, ID: %s)",
-                    objClassStr.c_str(), 
-                    Types::objectTypeToString(objType).toStdString().c_str(),
-                    objectId.toStdString().c_str());
-            }
+        // CLEAR_ALL 처리 (특수 케이스)
+        if (robotId == "CLEAR_ALL") {
+            RCLCPP_INFO(node_->get_logger(), "🗑️  Clearing all objects...");
+            manager.clearAllInterestObjects();
+            response->result = true;
+            emit serviceRequestReceived(robotId, 0);
+            return;
+        }
+        
+        // 배열 크기 검증 (길이 1 가정)
+        if (request->obj_class.empty() || request->obj_id.empty()) {
+            RCLCPP_ERROR(node_->get_logger(), 
+                "❌ Empty arrays: obj_class(%zu) or obj_id(%zu)", 
+                request->obj_class.size(), request->obj_id.size());
+            response->result = false;
+            return;
+        }
+        
+        // 첫 번째 (유일한) 객체 처리 - 길이 1 배열 가정
+        
+        // ============================================================================
+        // 1. 서비스 요청에서 객체 정보 추출
+        // ============================================================================
+        
+        // Object Class (obj_class[0]) - 문자열 그대로 사용
+        std::string objClassStr = request->obj_class[0];
+        QString objectType = QString::fromStdString(objClassStr);  // 문자열 그대로 사용
+        
+        // Object ID (obj_id[0]) - uint16을 QString으로 변환
+        uint16_t serviceObjectId = request->obj_id[0];
+        QString objectId = QString::number(serviceObjectId);
+        
+        QString discoveredBy = robotId;
+        
+        RCLCPP_INFO(node_->get_logger(), 
+            "🔍 Processing single object: service_id=%u, class=%s, robot=%s", 
+            serviceObjectId, objClassStr.c_str(), robotId.toStdString().c_str());
+        
+        // ============================================================================
+        // 2. 객체 위치 사용 (position을 물체의 위치로 직접 사용)
+        // ============================================================================
+        
+        // 서비스 요청의 position을 물체 위치로 직접 사용
+        Types::Vec3 rosObjectPos = poseToVec3(request->position);
+        Types::Vec3 objectPosition = rosToOpenGLCoordinates(rosObjectPos);
+        
+        RCLCPP_INFO(node_->get_logger(), 
+            "📍 Using service position as object location: ROS(%.3f,%.3f,%.3f) -> OpenGL(%.3f,%.3f,%.3f)",
+            rosObjectPos.x, rosObjectPos.y, rosObjectPos.z,
+            objectPosition.x, objectPosition.y, objectPosition.z);
+        
+        // ============================================================================
+        // 3. Interest Object 등록 (서비스 값 직접 사용)
+        // ============================================================================
+        
+        // Interest Object 등록 (문자열 타입으로 직접 전달)
+        bool success = manager.registerInterestObjectFromService(
+            objectId,        // obj_id[0]을 그대로 사용
+            objectType,      // obj_class[0]을 문자열 그대로 사용
+            objectPosition,  // position을 물체 위치로 직접 사용
+            discoveredBy     // robot_id
+        );
+        
+        if (success) {
+            RCLCPP_INFO(node_->get_logger(), 
+                "✅ Registered NEW object: id=%s, type=%s, robot=%s, pos=(%.3f,%.3f,%.3f)",
+                objectId.toStdString().c_str(), objClassStr.c_str(), 
+                discoveredBy.toStdString().c_str(),
+                objectPosition.x, objectPosition.y, objectPosition.z);
+        } else {
+            RCLCPP_INFO(node_->get_logger(), 
+                "🔄 Updated EXISTING object: id=%s (position/data refreshed)",
+                objectId.toStdString().c_str());
         }
         
         // 응답 설정
         response->result = true;
         
         RCLCPP_INFO(node_->get_logger(), 
-            "Successfully registered %d/%zu objects from robot %s",
-            registeredCount, request->obj_class.size(), request->robot_id.c_str());
+            "✅ Successfully processed object from robot %s at timestamp %d.%d",
+            request->robot_id.c_str(), request->stamp.sec, request->stamp.nanosec);
         
         // 시그널 발생
-        emit serviceRequestReceived(robotId, static_cast<int>(request->obj_class.size()));
-        emit objectsRegistered(registeredCount);
+        emit serviceRequestReceived(robotId, 1);  // 항상 1개 객체
+        emit objectsRegistered(1);
         
     } catch (const std::exception& e) {
         RCLCPP_ERROR(node_->get_logger(), 
-            "Error processing interest objects request: %s", e.what());
+            "❌ Error processing interest objects request: %s", e.what());
         response->result = false;
     }
-}
-
-Types::ObjectType InterestObjectServer::stringToObjectType(const std::string& objClass) {
-    // 서비스에서 오는 문자열을 ObjectType으로 변환
-    if (objClass == "obstacle" || objClass == "Obstacle") {
-        return Types::ObjectType::OBSTACLE;
-    } else if (objClass == "custom" || objClass == "Custom") {
-        return Types::ObjectType::CUSTOM;
-    } else if (objClass == "person" || objClass == "car" || objClass == "object") {
-        // 일반적인 검출 객체들은 OBSTACLE로 분류
-        return Types::ObjectType::OBSTACLE;
-    }
-    
-    return Types::ObjectType::UNKNOWN;
 }
 
 Types::Vec3 InterestObjectServer::poseToVec3(const geometry_msgs::msg::Pose& pose) {
