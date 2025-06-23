@@ -12,6 +12,7 @@
 #include <memory>
 #include <vector>
 #include <QString>
+#include "common_types.hpp"  // Types::GridMapData 사용
 
 namespace GridMap {
 
@@ -26,32 +27,10 @@ struct GridMapParameters {
     int morphKernelSize = 3;         // 커널 크기
 };
 
-struct GridMapData {
-    int width = 0;
-    int height = 0;
-    float resolution = 0.1f;
-    float originX = 0.0f;
-    float originY = 0.0f;
-    
-    // OpenCV 형태의 점유도 맵 (기존)
-    cv::Mat occupancyMap;
-    
-    // 렌더링용 데이터 (pointcloud_widget용)
-    std::vector<float> data;  // 이미 있는지 확인하고 없으면 추가
-    
-    // 메타 정보
-    size_t sourceCloudHash = 0;
-    std::chrono::steady_clock::time_point timestamp;
-    
-    // 유효성 검사
-    bool isValid() const {
-        return width > 0 && height > 0 && resolution > 0.0f && 
-               !occupancyMap.empty() && 
-               occupancyMap.rows == height && occupancyMap.cols == width;
-    }
-};
+// Types::GridMapData 사용 (이제 같은 타입)
+using GridMapData = Types::GridMapData;
 
-// Path 데이터 구조체 추가
+// Path 데이터 구조체
 struct ProjectedPath {
     std::vector<cv::Point2f> points;  // 그리드 좌표계의 경로 점들
     std::vector<float> orientations;  // 각 점에서의 방향각 (라디안)
@@ -83,7 +62,7 @@ public:
         GridMapData& gridData
     );
     
-    // 새로 추가: Path 프로젝션 함수들
+    // Path 프로젝션 함수들
     static ProjectedPath projectPathToGridMap(
         const std::vector<geometry_msgs::msg::PoseStamped>& path,
         const GridMapData& gridData,
@@ -120,10 +99,10 @@ private:
         const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& cloud
     );
     
-    // 새로 추가: Mat을 Vector로 변환
+    // Mat을 Vector로 변환
     static void convertMatToVector(GridMapData& gridData);
     
-    // 새로 추가: Path 프로젝션 헬퍼 함수들
+    // Path 프로젝션 헬퍼 함수들
     static cv::Point2f worldToGrid(
         float worldX, float worldY,
         const GridMapData& gridData

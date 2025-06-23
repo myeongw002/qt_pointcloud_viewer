@@ -7,28 +7,21 @@
 #include <QWheelEvent>
 #include <QTimer>
 #include <QObject>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <mutex>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include "common_types.hpp"
 #include "grid_map_processor.hpp"
-#include "pointcloud_widget.hpp"
-#include "render_helper.hpp"  // 이 include를 맨 위로 이동
+#include "render_helper.hpp"
 
 class QPainter;
 class QPaintEvent;
 
 namespace Widget {
-    using Cloud = pcl::PointCloud<pcl::PointXYZI>;
-    using CloudConstPtr = Cloud::ConstPtr;
-    
-    // PathConstPtr 타입을 직접 벡터로 변경
-    using PathConstPtr = std::vector<geometry_msgs::msg::PoseStamped>;  // std::shared_ptr 제거
-    using PositionMarkerType = RenderHelper::PositionMarkerType;
-    
+    // Types 네임스페이스의 타입들 사용
+    using CloudConstPtr = Types::CloudConstPtr;
+    using PathConstPtr = Types::PathConstPtr;
+    using MarkerType = RenderHelper::PositionMarkerType;
+
     class PointCloudWidget : public QOpenGLWidget, protected QOpenGLFunctions {
         Q_OBJECT
     
@@ -42,23 +35,23 @@ namespace Widget {
         void setRobot(const QString& robot);
         
         // ============================================================================
-        // Color Management Functions
+        // Color Management Functions (Types::ColorRGB 사용)
         // ============================================================================
-        void setRobotPointsColor(const QString& robot, const glm::vec3& color);
-        void setRobotPathColor(const QString& robot, const glm::vec3& color);
-        glm::vec3 getRobotPointsColor(const QString& robot) const;
-        glm::vec3 getRobotPathColor(const QString& robot) const;
+        void setRobotPointsColor(const QString& robot, const Types::ColorRGB& color);
+        void setRobotPathColor(const QString& robot, const Types::ColorRGB& color);
+        Types::ColorRGB getRobotPointsColor(const QString& robot) const;
+        Types::ColorRGB getRobotPathColor(const QString& robot) const;
         void resetAllColorsToDefault();
         
         // ============================================================================
-        // Camera Control Functions
+        // Camera Control Functions (Types::Vec3 사용)
         // ============================================================================
-        void setFocusPoint(const glm::vec3& focus);
+        void setFocusPoint(const Types::Vec3& focus);
         void setRotationSensitivity(float sensitivity);
         void setTopView(bool enable);
         bool isTopView() const { return isTopView_; }
         void resetCamera();
-        void jumpToPosition(const glm::vec3& position);
+        void jumpToPosition(const Types::Vec3& position);
         void jumpToRobotPosition(const QString& robotName);
         
         // ============================================================================
@@ -66,7 +59,7 @@ namespace Widget {
         // ============================================================================
         void setLockIndicatorToCurrentPosition(bool lock);
         void setIndicatorTargetRobot(const QString& robot);
-        glm::vec3 getRobotCurrentPosition(const QString& robotName);
+        Types::Vec3 getRobotCurrentPosition(const QString& robotName);
         
         // ============================================================================
         // Display Option Functions
@@ -81,7 +74,7 @@ namespace Widget {
         void setPositionRadius(float radius);
         bool isShowPosition() const { return showPosition_; }
         
-        // Added Getter functions
+        // Getter functions
         bool getShowAxes() const { return showAxes_; }
         bool getShowGrid() const { return showGrid_; }
         float getGridSize() const { return cellSize_; }
@@ -91,7 +84,7 @@ namespace Widget {
         bool getShowRobotLabel() const { return showRobotLabel_; }
         float getPositionRadius() const { return currentPositionRadius_; }
         float getRotationSensitivity() const { return rotationSensitivity_; }
-        glm::vec3 getFocusPoint() const { return focusPoint_; }
+        Types::Vec3 getFocusPoint() const { return focusPoint_; }
 
         // Point and path style settings
         void setShowGridMap(bool show);
@@ -102,21 +95,23 @@ namespace Widget {
         float getPointSize() const { return pointSize_; }
         float getPathWidth() const { return pathWidth_; }
         
-        // Added Getter functions
+        // Getter functions
         bool getShowPoints() const { return showPoints_; }
         bool getShowPath() const { return showPath_; }
         bool getShowGridMap() const { return showGridMap_; }
-        void setPositionMarkerType(PositionMarkerType type);
+        void setPositionMarkerType(MarkerType type);
         void setGridMapResolution(float resolution);
-        float getGridMapResolution() const;        
+        float getGridMapResolution() const;
+        void setGridMapParameters(const GridMap::GridMapParameters& params);  // Add this line
         void setShowPositionNames(bool show);
         bool getShowPositionNames() const;
-        // Map Style 제어 함수 추가
-        void setMapStyle(const QString& style);  // "pointcloud" 또는 "gridmap"
+        
+        // Map Style 제어 함수
+        void setMapStyle(const QString& style);
         QString getMapStyle() const { return mapStyle_; }
         
-        // Added Getter functions
-        PositionMarkerType getPositionMarkerType() const { return positionMarkerType_; }
+        // Getter functions
+        MarkerType getPositionMarkerType() const { return positionMarkerType_; }
     
     public slots:
         // ============================================================================
@@ -126,9 +121,7 @@ namespace Widget {
         void onPathShared(const QString& robot, PathConstPtr path);
         
     protected:
-        // ============================================================================
         // Qt Event Overrides
-        // ============================================================================
         void initializeGL() override;
         void paintGL() override;
         void resizeGL(int w, int h) override;
@@ -143,36 +136,35 @@ namespace Widget {
 
     private:
         // ============================================================================
-        // Robot Data Management
+        // Robot Data Management (Types 사용)
         // ============================================================================
         QString robotName_ = "";
         QHash<QString, CloudConstPtr> clouds_;
-        QHash<QString, PathConstPtr> paths_;  // = QHash<QString, std::vector<...>>
+        QHash<QString, PathConstPtr> paths_;
         mutable std::mutex cloudMutex_;
         mutable std::mutex pathMutex_;
         
         // ============================================================================
-        // Color Management
+        // Color Management (Types::ColorRGB 사용)
         // ============================================================================
-        QHash<QString, glm::vec3> robotPointsColors_;
-        QHash<QString, glm::vec3> robotPathColors_;
+        QHash<QString, Types::ColorRGB> robotPointsColors_;
+        QHash<QString, Types::ColorRGB> robotPathColors_;
         void initializeDefaultColors();
         
         // ============================================================================
-        // Camera System
+        // Camera System (Types::Vec3, Mat4 사용)
         // ============================================================================
-        // Camera position and orientation
-        glm::vec3 cameraPos_;
-        glm::vec3 focusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
+        Types::Vec3 cameraPos_;
+        Types::Vec3 focusPoint_ = Types::Vec3(0.0f, 0.0f, 0.0f);
         float distance_ = 10.0f;
         float yaw_ = 0.0f;
         float pitch_ = 0.0f;
         float rotationSensitivity_ = 0.3f;
         
         // Camera matrices
-        glm::mat4 viewMatrix_;
-        glm::mat4 projectionMatrix_;
-        glm::mat4 rvizToOpenGLMatrix_;
+        Types::Mat4 viewMatrix_;
+        Types::Mat4 projectionMatrix_;
+        Types::Mat4 rvizToOpenGLMatrix_;
         
         // Camera control functions
         void updateCameraPosition();
@@ -187,14 +179,14 @@ namespace Widget {
         float backupDistance_ = 10.0f;
         float backupYaw_ = 0.0f;
         float backupPitch_ = 0.0f;
-        glm::vec3 backupFocusPoint_ = glm::vec3(0.0f, 0.0f, 0.0f);
+        Types::Vec3 backupFocusPoint_ = Types::Vec3(0.0f, 0.0f, 0.0f);
         
         // ============================================================================
         // Indicator System
         // ============================================================================
         bool lockIndicatorToCurrentPosition_ = false;
         QString indicatorTargetRobot_ = "";
-        glm::vec3 lastKnownPosition_ = glm::vec3(0.0f, 0.0f, 0.0f);
+        Types::Vec3 lastKnownPosition_ = Types::Vec3(0.0f, 0.0f, 0.0f);
         
         // Indicator UI
         bool showIndicator_ = false;
@@ -204,16 +196,15 @@ namespace Widget {
         
         // Indicator related functions
         void updateIndicatorPosition();
-        glm::vec3 getCurrentRobotPosition(const QString& robot) const;
+        Types::Vec3 getCurrentRobotPosition(const QString& robot) const;
         bool hasValidCurrentPosition(const QString& robot) const;
         void hideIndicator();
         
         // ============================================================================
         // Rendering System
         // ============================================================================
-        // Position marker related
         bool showPosition_ = true;
-        PositionMarkerType positionMarkerType_ = PositionMarkerType::AXES;  // RenderHelper 타입 사용
+        MarkerType positionMarkerType_ = MarkerType::AXES;
         float currentPositionRadius_ = 0.3f;
         float currentPositionHeight_ = 0.2f;
         float positionAxesLength_ = 0.5f;
@@ -221,14 +212,12 @@ namespace Widget {
         
         // 그리드 맵 관련
         bool showGridMap_ = false;
-        GridMap::GridMapParameters gridParams_;
-        QHash<QString, std::shared_ptr<GridMap::GridMapData>> gridMaps_;
+        QHash<QString, Types::GridMapPtr> gridMaps_;
         mutable std::mutex gridMapMutex_;
         
         // ============================================================================
         // UI Display Options
         // ============================================================================
-        // Axes and grid
         bool showAxes_ = true;
         bool showGrid_ = true;
         int planeCellCount_ = 10;
@@ -237,34 +226,29 @@ namespace Widget {
         float axesLength_ = 1.0f;
         float axesRadius_ = 0.05f;
         
-        // Robot label
         bool showRobotLabel_ = true;
         const int fontSize_ = 10;
         const int circleSize_ = 12;
         const int circleMargin_ = 5;
         const int horizontalMargin_ = 8;
         const int verticalMargin_ = 4;
-        bool showPositionNames_ = true;  // Position 이름 표시 여부
+        bool showPositionNames_ = true;
         const float positionNameFontSize_ = 9.0f;
-        // Point and path display settings
+        
         bool showPoints_ = true;
         bool showPath_ = true;
         float pointSize_ = 2.0f;
         float pathWidth_ = 3.0f;
-        float gridMapResolution_ = 0.05f;  // 기본 해상도 5cm
-        QString mapStyle_ = "pointcloud";  // "pointcloud" 또는 "gridmap"
+        float gridMapResolution_ = 0.05f;
+        QString mapStyle_ = "pointcloud";
+        
         // ============================================================================
         // Grid Map Functions
         // ============================================================================
-        void setGridMapParameters(const GridMap::GridMapParameters& params);
+        GridMap::GridMapParameters gridParams_;  // Add this line
         void updateGridMapForRobot(const QString& robotName, CloudConstPtr cloud);
-        void resampleGridMapResolution(std::shared_ptr<GridMap::GridMapData> gridData, float newResolution);
-        GridMap::GridMapParameters getGridMapParameters() const { return gridParams_; }
-
+        void resampleGridMapResolution(Types::GridMapPtr gridData, float newResolution);
     };
 }
-
-Q_DECLARE_METATYPE(Widget::CloudConstPtr)
-Q_DECLARE_METATYPE(Widget::PathConstPtr)
 
 #endif // POINTCLOUD_WIDGET_H

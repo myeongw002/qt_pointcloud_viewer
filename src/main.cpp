@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <QApplication>
 #include "mainwindow.hpp"
+#include "common_types.hpp"
 #include <QDebug>
 #include <QLoggingCategory>
 #include <QDateTime>
@@ -25,8 +26,10 @@ int main(int argc, char *argv[]) {
     // Or more detailed pattern
     // qSetMessagePattern("[%{time yyyy-MM-dd hh:mm:ss.zzz}] %{type} %{file}:%{line} - %{message}");
     
-    qRegisterMetaType<Widget::CloudConstPtr>("CloudConstPtr");
-    qRegisterMetaType<Widget::PathConstPtr>("PathConstPtr");
+    // Types 네임스페이스의 메타타입 등록
+    qRegisterMetaType<Types::CloudConstPtr>("CloudConstPtr");
+    qRegisterMetaType<Types::PathConstPtr>("PathConstPtr");
+    qRegisterMetaType<Types::ColorRGB>("ColorRGB");
     
     MainWindow window;
     window.show();

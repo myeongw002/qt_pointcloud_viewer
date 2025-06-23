@@ -2,6 +2,7 @@
 #include "shape_helper.hpp"
 #include "grid_map_processor.hpp"
 #include "render_helper.hpp"
+#include "common_types.hpp"
 #include <QDebug>
 #include <QEvent>
 #include <QPainter>
@@ -28,10 +29,9 @@ PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
     lastMousePos_ = QPoint(0, 0);
     showIndicator_ = false;
     
-    // Enable keyboard focus for this widget
     setFocusPolicy(Qt::StrongFocus);
     
-    // 기본값 설정 (RenderHelper 타입 사용)
+    // 기본값 설정
     showPoints_ = true;
     showPath_ = true;
     showPosition_ = true;
@@ -41,13 +41,13 @@ PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
     showGridMap_ = true;
     pointSize_ = 2.0f;
     pathWidth_ = 3.0f;
-    positionMarkerType_ = RenderHelper::PositionMarkerType::AXES;  // 명시적으로 RenderHelper 타입 사용
+    positionMarkerType_ = MarkerType::AXES;
     
     connect(&hideTimer_, &QTimer::timeout, this, &PointCloudWidget::hideIndicator);
     updateCameraPosition();
     initializeDefaultColors();
     
-    qDebug() << "PointCloudWidget created with RenderHelper integration";
+    qDebug() << "PointCloudWidget created with Types integration";
 }
 
 PointCloudWidget::~PointCloudWidget() {
@@ -65,54 +65,49 @@ void PointCloudWidget::setRobot(const QString& robot) {
 }
 
 // ============================================================================
-// Color Management Functions
+// Color Management Functions (Types::ColorRGB 사용)
 // ============================================================================
 
 void PointCloudWidget::initializeDefaultColors() {
-    // Default point colors
-    robotPointsColors_["TUGV"] = glm::vec3(1.0f, 0.0f, 0.0f);    // Red
-    robotPointsColors_["MUGV"] = glm::vec3(0.0f, 1.0f, 0.0f);    // Green
-    robotPointsColors_["SUGV1"] = glm::vec3(0.0f, 0.0f, 1.0f);   // Blue
-    robotPointsColors_["SUGV2"] = glm::vec3(1.0f, 1.0f, 0.0f);   // Yellow
-    robotPointsColors_["SUAV"] = glm::vec3(1.0f, 0.0f, 1.0f);    // Magenta
-    robotPointsColors_["DEFAULT"] = glm::vec3(0.0f, 1.0f, 0.0f); // Default Green
+    // Default point colors (Types::ColorRGB 사용)
+    robotPointsColors_["TUGV"] = Types::ColorRGB(1.0f, 0.0f, 0.0f);    // Red
+    robotPointsColors_["MUGV"] = Types::ColorRGB(0.0f, 1.0f, 0.0f);    // Green
+    robotPointsColors_["SUGV1"] = Types::ColorRGB(0.0f, 0.0f, 1.0f);   // Blue
+    robotPointsColors_["SUGV2"] = Types::ColorRGB(1.0f, 1.0f, 0.0f);   // Yellow
+    robotPointsColors_["SUAV"] = Types::ColorRGB(1.0f, 0.0f, 1.0f);    // Magenta
+    robotPointsColors_["DEFAULT"] = Types::ColorRGB(0.0f, 1.0f, 0.0f); // Default Green
     
     // Default path colors (slightly brighter than points)
-    robotPathColors_["TUGV"] = glm::vec3(1.0f, 0.5f, 0.5f);     // Light Red
-    robotPathColors_["MUGV"] = glm::vec3(0.5f, 1.0f, 0.5f);     // Light Green
-    robotPathColors_["SUGV1"] = glm::vec3(0.5f, 0.5f, 1.0f);    // Light Blue
-    robotPathColors_["SUGV2"] = glm::vec3(1.0f, 1.0f, 0.5f);    // Light Yellow
-    robotPathColors_["SUAV"] = glm::vec3(1.0f, 0.5f, 1.0f);     // Light Magenta
-    robotPathColors_["DEFAULT"] = glm::vec3(0.5f, 1.0f, 0.5f);  // Default Light Green
+    robotPathColors_["TUGV"] = Types::ColorRGB(1.0f, 0.5f, 0.5f);     // Light Red
+    robotPathColors_["MUGV"] = Types::ColorRGB(0.5f, 1.0f, 0.5f);     // Light Green
+    robotPathColors_["SUGV1"] = Types::ColorRGB(0.5f, 0.5f, 1.0f);    // Light Blue
+    robotPathColors_["SUGV2"] = Types::ColorRGB(1.0f, 1.0f, 0.5f);    // Light Yellow
+    robotPathColors_["SUAV"] = Types::ColorRGB(1.0f, 0.5f, 1.0f);     // Light Magenta
+    robotPathColors_["DEFAULT"] = Types::ColorRGB(0.5f, 1.0f, 0.5f);  // Default Light Green
 }
 
-void PointCloudWidget::setRobotPointsColor(const QString& robot, const glm::vec3& color) {
+void PointCloudWidget::setRobotPointsColor(const QString& robot, const Types::ColorRGB& color) {
     robotPointsColors_[robot] = color;
     update();
 }
 
-void PointCloudWidget::setRobotPathColor(const QString& robot, const glm::vec3& color) {
+void PointCloudWidget::setRobotPathColor(const QString& robot, const Types::ColorRGB& color) {
     robotPathColors_[robot] = color;
     update();
 }
 
-glm::vec3 PointCloudWidget::getRobotPointsColor(const QString& robot) const {
+Types::ColorRGB PointCloudWidget::getRobotPointsColor(const QString& robot) const {
     if (robotPointsColors_.contains(robot)) {
         return robotPointsColors_[robot];
     }
     return robotPointsColors_["DEFAULT"];
 }
 
-glm::vec3 PointCloudWidget::getRobotPathColor(const QString& robot) const {
+Types::ColorRGB PointCloudWidget::getRobotPathColor(const QString& robot) const {
     if (robotPathColors_.contains(robot)) {
         return robotPathColors_[robot];
     }
     return robotPathColors_["DEFAULT"];
-}
-
-void PointCloudWidget::resetAllColorsToDefault() {
-    initializeDefaultColors();
-    update();
 }
 
 // ============================================================================
@@ -149,10 +144,10 @@ void PointCloudWidget::onPathShared(const QString& robot, PathConstPtr path) {
 }
 
 // ============================================================================
-// Camera Control Functions
+// Camera Control Functions (Types::Vec3 사용)
 // ============================================================================
 
-void PointCloudWidget::setFocusPoint(const glm::vec3& focus) {
+void PointCloudWidget::setFocusPoint(const Types::Vec3& focus) {
     focusPoint_ = focus;
     updateCameraPosition();
     update();
@@ -174,7 +169,7 @@ void PointCloudWidget::updateCameraPosition() {
     float openglY = rosZ;   // ROS Z(up) → OpenGL Y(up)
     float openglZ = -rosX;  // ROS X(forward) → OpenGL -Z(back)
     
-    cameraPos_ = focusPoint_ + glm::vec3(openglX, openglY, openglZ);
+    cameraPos_ = focusPoint_ + Types::Vec3(openglX, openglY, openglZ);
 }
 
 void PointCloudWidget::setTopView(bool enable) {
@@ -242,7 +237,7 @@ void PointCloudWidget::resetCamera() {
     update();
 }
 
-void PointCloudWidget::jumpToPosition(const glm::vec3& position) {
+void PointCloudWidget::jumpToPosition(const Types::Vec3& position) {
     focusPoint_ = position;
     
     if (isTopView_) {
@@ -263,7 +258,7 @@ void PointCloudWidget::jumpToRobotPosition(const QString& robotName) {
         return;
     }
     
-    glm::vec3 robotPos = getCurrentRobotPosition(robotName);
+    Types::Vec3 robotPos = getCurrentRobotPosition(robotName);
     jumpToPosition(robotPos);
     
     qDebug() << "Camera jumped to" << robotName 
@@ -310,7 +305,7 @@ void PointCloudWidget::updateIndicatorPosition() {
         return;
     }
     
-    glm::vec3 currentPos = getCurrentRobotPosition(indicatorTargetRobot_);
+    Types::Vec3 currentPos = getCurrentRobotPosition(indicatorTargetRobot_);
     
     if (hasValidCurrentPosition(indicatorTargetRobot_)) {
         lastKnownPosition_ = currentPos;
@@ -325,37 +320,71 @@ void PointCloudWidget::updateIndicatorPosition() {
     }
 }
 
-glm::vec3 PointCloudWidget::getCurrentRobotPosition(const QString& robot) const {
+bool PointCloudWidget::hasValidCurrentPosition(const QString& robot) const {
     std::lock_guard<std::mutex> lock(pathMutex_);
     
     auto it = paths_.find(robot);
-    if (it != paths_.end() && !it.value().empty()) {
-        const auto& currentPose = it.value().back();
+    return (it != paths_.end() && it.value() && !it.value()->empty());
+}
+
+// ============================================================================
+// Robot Position Functions (누락된 함수들 추가)
+// ============================================================================
+
+Types::Vec3 PointCloudWidget::getCurrentRobotPosition(const QString& robot) const {
+    std::lock_guard<std::mutex> lock(pathMutex_);
+    
+    auto it = paths_.find(robot);
+    if (it != paths_.end() && it.value() && !it.value()->empty()) {
+        const auto& currentPose = it.value()->back();
         
-        return glm::vec3(
-            -currentPose.pose.position.y,
-            currentPose.pose.position.z,
-            -currentPose.pose.position.x
-        );
+        // ROS → OpenGL 좌표 변환
+        float rosX = currentPose.pose.position.x;
+        float rosY = currentPose.pose.position.y;
+        float rosZ = currentPose.pose.position.z;
+        
+        return Types::Vec3(-rosY, rosZ, -rosX);  // ROS → OpenGL
     }
     
     return lastKnownPosition_;
 }
 
-bool PointCloudWidget::hasValidCurrentPosition(const QString& robot) const {
-    std::lock_guard<std::mutex> lock(pathMutex_);
-    
-    auto it = paths_.find(robot);
-    return (it != paths_.end() && !it.value().empty());
+Types::Vec3 PointCloudWidget::getRobotCurrentPosition(const QString& robotName) {
+    return getCurrentRobotPosition(robotName);  // 같은 함수 호출
 }
 
-glm::vec3 PointCloudWidget::getRobotCurrentPosition(const QString& robotName) {
-    return getCurrentRobotPosition(robotName);
-}
-
-void PointCloudWidget::hideIndicator() {
-    showIndicator_ = false;
+void PointCloudWidget::resetAllColorsToDefault() {
+    initializeDefaultColors();  // 기본 색상으로 재설정
     update();
+    qDebug() << "All robot colors reset to default";
+}
+
+void PointCloudWidget::setGridMapParameters(const GridMap::GridMapParameters& params) {
+    gridParams_ = params;
+    gridMapResolution_ = params.resolution;
+    
+    // 기존 그리드맵들 재생성
+    std::lock_guard<std::mutex> lock(gridMapMutex_);
+    for (auto it = gridMaps_.begin(); it != gridMaps_.end(); ++it) {
+        if (it.value()) {
+            // 해당 로봇의 포인트클라우드가 있다면 재처리
+            auto cloudIt = clouds_.find(it.key());
+            if (cloudIt != clouds_.end() && cloudIt.value()) {
+                updateGridMapForRobot(it.key(), cloudIt.value());
+            }
+        }
+    }
+    
+    update();
+    qDebug() << "Grid map parameters updated - Resolution:" << params.resolution;
+}
+
+float PointCloudWidget::getGridMapResolution() const {
+    return gridMapResolution_;
+}
+
+bool PointCloudWidget::getShowPositionNames() const {
+    return showPositionNames_;
 }
 
 // ============================================================================
@@ -408,7 +437,7 @@ void PointCloudWidget::setPositionRadius(float radius) {
     }
 }
 
-void PointCloudWidget::setPositionMarkerType(PositionMarkerType type) {
+void PointCloudWidget::setPositionMarkerType(MarkerType type) {
     positionMarkerType_ = type;
     update();
 }
@@ -478,33 +507,19 @@ void PointCloudWidget::setShowGridMap(bool show) {
     }
 }
 
-void PointCloudWidget::setGridMapParameters(const GridMap::GridMapParameters& params) {
-    gridParams_ = params;
-    
-    // 기존 그리드맵 데이터 클리어 (새 파라미터 적용)
-    {
-        std::lock_guard<std::mutex> lock(gridMapMutex_);
-        gridMaps_.clear();
-    }
-    
-    qDebug() << "Grid map parameters updated for robot:" << robotName_;
-    update();
-}
-
 void PointCloudWidget::updateGridMapForRobot(const QString& robotName, CloudConstPtr cloud) {
     if (!cloud || cloud->empty()) {
         qDebug() << "PointCloudWidget::updateGridMapForRobot: Empty cloud for robot:" << robotName;
         return;
     }
     
-    // 그리드맵 프로세싱
-    std::lock_guard<std::mutex> lock(gridMapMutex_);
-    
-    auto gridData = std::make_shared<GridMap::GridMapData>();
+    auto gridData = std::make_shared<Types::GridMapData>();  // Types::GridMapData 직접 사용
     
     // GridMapProcessor::processPointCloud 사용
     if (GridMap::GridMapProcessor::processPointCloud(cloud, gridParams_, *gridData)) {
-        gridMaps_[robotName] = gridData;
+        std::lock_guard<std::mutex> lock(gridMapMutex_);
+        gridMaps_[robotName] = gridData;  // 캐스팅 불필요
+        
         qDebug() << "PointCloudWidget: Grid map updated for robot:" << robotName 
                  << "size:" << gridData->width << "x" << gridData->height
                  << "points:" << cloud->size();
@@ -740,36 +755,34 @@ void PointCloudWidget::wheelEvent(QWheelEvent *event) {
     update();
 }
 
+void PointCloudWidget::hideIndicator() {
+    showIndicator_ = false;
+    update();
+}
 // GridMap Resolution 제어 함수 구현
 
 void PointCloudWidget::setGridMapResolution(float resolution) {
     if (gridMapResolution_ != resolution) {
-        gridMapResolution_ = std::clamp(resolution, 0.01f, 1.0f);  // 범위 제한
+        gridMapResolution_ = std::clamp(resolution, 0.01f, 1.0f);
         
-        // 모든 GridMap에 새로운 해상도 적용
         std::lock_guard<std::mutex> lock(gridMapMutex_);
         for (auto it = gridMaps_.begin(); it != gridMaps_.end(); ++it) {
-            if (it.value() && it.value()->isValid()) {
-                // GridMap 데이터를 새로운 해상도로 리샘플링
+            if (it.value() && it.value()->isValid()) {  // 직접 접근
                 resampleGridMapResolution(it.value(), gridMapResolution_);
             }
         }
         
-        update();  // 화면 갱신
+        update();
         qDebug() << "GridMap resolution set to:" << gridMapResolution_ << "meters";
     }
 }
 
-float PointCloudWidget::getGridMapResolution() const {
-    return gridMapResolution_;
-}
-
 // GridMap 해상도 리샘플링 함수 (새로 추가)
 void PointCloudWidget::resampleGridMapResolution(
-    std::shared_ptr<GridMap::GridMapData> gridData, 
+    Types::GridMapPtr gridData, 
     float newResolution) {
     
-    if (!gridData || !gridData->isValid()) return;
+    if (!gridData || !gridData->isValid()) return;  // 직접 접근
     
     qDebug() << "Resampling GridMap from" << gridData->resolution 
              << "to" << newResolution << "meters";
@@ -783,9 +796,6 @@ void PointCloudWidget::resampleGridMapResolution(
     int newWidth = static_cast<int>(gridData->width * scaleRatio);
     int newHeight = static_cast<int>(gridData->height * scaleRatio);
     
-    qDebug() << "Resizing from" << gridData->width << "x" << gridData->height 
-             << "to" << newWidth << "x" << newHeight;
-    
     // OpenCV 리사이즈 (INTER_NEAREST: 장애물 정보 보존)
     cv::Mat resizedMap;
     cv::resize(originalMap, resizedMap, cv::Size(newWidth, newHeight), 0, 0, cv::INTER_NEAREST);
@@ -795,8 +805,6 @@ void PointCloudWidget::resampleGridMapResolution(
     gridData->width = newWidth;
     gridData->height = newHeight;
     gridData->resolution = newResolution;
-    
-    // Origin은 동일하게 유지 (같은 실제 위치)
     
     qDebug() << "GridMap resampling completed - New size:" 
              << gridData->width << "x" << gridData->height 

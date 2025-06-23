@@ -4,12 +4,12 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <nav_msgs/msg/path.hpp>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 #include <QMap>
+#include "common_types.hpp"
 
-using CloudConstPtr = pcl::PointCloud<pcl::PointXYZI>::ConstPtr;
-
+// Types 네임스페이스 사용
+using CloudConstPtr = Types::CloudConstPtr;
+using PathConstPtr = Types::PathConstPtr;
 class DataBroker final : public QObject, public rclcpp::Node
 {
     Q_OBJECT
@@ -18,8 +18,9 @@ public:
 
 signals:
     void cloudArrived(const QString& robot, CloudConstPtr cloud);
-    void pathArrived(const QString& robot, const std::vector<geometry_msgs::msg::PoseStamped>& path);
+    void pathArrived(const QString& robot, PathConstPtr path);  // PathConstPtr 타입으로 변경
     void gridMapUpdateRequested(const QString& robot, CloudConstPtr cloud);
+
 private:
     void createPcdSub(const QString& robot, const std::string& topic);
     void createPathSub(const QString& robot, const std::string& topic);

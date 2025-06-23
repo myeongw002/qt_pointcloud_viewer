@@ -3,10 +3,10 @@
 
 #include <QObject>
 #include <QHash>
-#include <glm/glm.hpp>
-#include "render_helper.hpp"  // RenderHelper의 타입들을 위해
+#include "common_types.hpp"
+#include "render_helper.hpp"
 
-// Forward declaration (헤더에서는 전방 선언만 유지)
+// Forward declaration
 namespace Widget {
     class PointCloudWidget;
 }
@@ -21,7 +21,7 @@ struct ViewerSettings {
     bool showAxes = true;
     bool showGrid = true;
     bool showRobotLabel = true;
-    bool showGridMap = false;  // 새로 추가
+    bool showGridMap = false;
     
     // Style settings
     float pointSize = 2.0f;
@@ -32,15 +32,15 @@ struct ViewerSettings {
     int gridCellCount = 10;
     float axesSize = 1.0f;
     RenderHelper::PositionMarkerType markerType = RenderHelper::PositionMarkerType::AXES;
-    QString mapStyle = "pointcloud";  // 새로 추가: "pointcloud" 또는 "gridmap"
+    QString mapStyle = "pointcloud";
     
     // Camera settings
     bool isTopView = false;
-    glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
+    Types::Vec3 focusPoint = Types::Vec3(0.0f, 0.0f, 0.0f);
     
-    // Color settings for each robot
-    QHash<QString, glm::vec3> robotPointsColors;
-    QHash<QString, glm::vec3> robotPathColors;
+    // Color settings for each robot (Types::ColorRGB 사용)
+    QHash<QString, Types::ColorRGB> robotPointsColors;
+    QHash<QString, Types::ColorRGB> robotPathColors;
 };
 
 class ViewerSettingsManager : public QObject {

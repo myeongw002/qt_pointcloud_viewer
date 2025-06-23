@@ -3,32 +3,28 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <QDebug>
 
-static QString robotToPcdTopic(const QString& r)
-{
-    const QMap<QString,QString> map{
-        {"TUGV","/tugv/viz_global_cloud"},
-        {"MUGV","/mugv/viz_global_cloud"},
-        {"SUGV1","/sugv1/viz_global_cloud"},
-        {"SUGV2","/sugv2/viz_global_cloud"},
-        {"SUAV"  ,"/suav/viz_global_cloud"} };
-    return map.value(r,"/");
+static QString robotToPcdTopic(const QString& r) {
+    if (r == "TUGV") return "/tugv/viz_global_cloud";
+    if (r == "MUGV") return "/mugv/viz_global_cloud";
+    if (r == "SUGV1") return "/sugv1/viz_global_cloud";
+    if (r == "SUGV2") return "/sugv2/viz_global_cloud";
+    if (r == "SUAV") return "/suav/viz_global_cloud";
+    return "/";
 }
 
-static QString robotToPathTopic(const QString& r)
-{
-    const QMap<QString,QString> map{
-        {"TUGV","/tugv/viz_path"},
-        {"MUGV","/mugv/viz_path"},
-        {"SUGV1","/sugv1/viz_path"},
-        {"SUGV2","/sugv2/viz_path"},
-        {"SUAV"  ,"/suav/viz_path"} };
-    return map.value(r,"/");
+static QString robotToPathTopic(const QString& r) {
+    if (r == "TUGV") return "/tugv/viz_path";
+    if (r == "MUGV") return "/mugv/viz_path";
+    if (r == "SUGV1") return "/sugv1/viz_path";
+    if (r == "SUGV2") return "/sugv2/viz_path";
+    if (r == "SUAV") return "/suav/viz_path";
+    return "/";
 }
 
 DataBroker::DataBroker(const QStringList& robots, QObject *parent)
     : QObject(parent), Node("qt_pointcloud_viewer", rclcpp::NodeOptions().use_intra_process_comms(true))
 {
-    for (const QString& r : robots) {  // Added variable declaration
+    for (const QString& r : robots) {
         createPcdSub(r, robotToPcdTopic(r).toStdString());
         createPathSub(r, robotToPathTopic(r).toStdString());
     }
@@ -40,26 +36,22 @@ void DataBroker::createPcdSub(const QString& robot, const std::string& topic) {
     pcdSubs_[topic] = create_subscription<sensor_msgs::msg::PointCloud2>(
         topic, qos,
         [this, robot](const sensor_msgs::msg::PointCloud2::SharedPtr msg){
-            auto tmp = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
+            auto tmp = boost::make_shared<Types::Cloud>();  // Types::Cloud 사용
             pcl::fromROSMsg(*msg, *tmp);
             CloudConstPtr cloud = tmp;
             
-            // 포인트클라우드 신호 발송
             emit cloudArrived(robot, cloud);
-            
-            // 그리드 맵 신호도 발송 (위젯에서 직접 처리하도록)
             emit gridMapUpdateRequested(robot, cloud);
         });
 }
 
-void DataBroker::createPathSub(const QString& robot, const std::string& topic)
-{
+void DataBroker::createPathSub(const QString& robot, const std::string& topic) {
     auto qos = rclcpp::SensorDataQoS();
     pathSubs_[topic] = create_subscription<nav_msgs::msg::Path>(
         topic, qos,
         [this, robot](const nav_msgs::msg::Path::SharedPtr msg){
-            // Convert Path message to vector
-            std::vector<geometry_msgs::msg::PoseStamped> pathVector = msg->poses;
-            emit pathArrived(robot, pathVector);  // Send converted vector
+            // PathConstPtr 타입으로 변환
+            auto pathPtr = std::make_shared<const Types::Path>(msg->poses);
+            emit pathArrived(robot, pathPtr);  // PathConstPtr 시그널 발생
         });
 }
