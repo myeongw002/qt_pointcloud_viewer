@@ -57,8 +57,45 @@ MainWindow::MainWindow(QWidget *parent)
                     QStringList{"TUGV","MUGV","SUGV1","SUGV2","SUAV"},
                     this);
         
+        // ROS node 생성
+        node_ = std::make_shared<rclcpp::Node>("qt_pointcloud_viewer_main");
+        
+        // Interest Object 서비스 서버 초기화 (클래스 이름 통일)
+        interestObjectServer_ = std::make_shared<Service::InterestObjectServer>(node_, this);
+        
+        // 서비스 서버 시그널 연결 (클래스 이름 통일)
+        connect(interestObjectServer_.get(), &Service::InterestObjectServer::serviceRequestReceived,
+                this, [this](const QString& robotId, int objectCount) {
+            updateStatusBar(QString("Received %1 objects from %2").arg(objectCount).arg(robotId));
+            qDebug() << "Service request processed:" << robotId << "objects:" << objectCount;
+        });
+        
+        connect(interestObjectServer_.get(), &Service::InterestObjectServer::objectsRegistered,
+                this, [this](int count) {
+            qDebug() << "Successfully registered" << count << "interest objects";
+        });
+        
         setupViewerPanels();
-        ros_thread_ = std::thread([this](){ rclcpp::spin(broker_); });
+        ros_thread_ = std::thread([this](){
+            try {
+                // MultiThreadedExecutor 생성
+                rclcpp::executors::MultiThreadedExecutor executor;
+                
+                // 두 노드 모두 추가
+                executor.add_node(broker_);      // DataBroker 노드
+                executor.add_node(node_);        // 서비스 서버 노드
+
+                qDebug() << "ROS executor initialized with nodes";
+                RCLCPP_INFO(node_->get_logger(), "MultiThreadedExecutor spinning with service server");
+                
+                // 실행 시작
+                executor.spin();
+                
+            } catch (const std::exception& e) {
+                std::cerr << "❌ ROS executor error: " << e.what() << std::endl;
+                RCLCPP_ERROR(node_->get_logger(), "Executor error: %s", e.what());
+            }
+        });
         
     } catch (const std::exception &e) {
         std::cerr << "Exception in setupUi(): " << e.what() << std::endl;

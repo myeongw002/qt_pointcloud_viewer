@@ -1,0 +1,158 @@
+[0.000000] (-) TimerEvent: {}
+[0.000256] (qt_pointcloud_viewer) JobQueued: {'identifier': 'qt_pointcloud_viewer', 'dependencies': OrderedDict()}
+[0.000672] (qt_pointcloud_viewer) JobStarted: {'identifier': 'qt_pointcloud_viewer'}
+[0.010036] (qt_pointcloud_viewer) JobProgress: {'identifier': 'qt_pointcloud_viewer', 'progress': 'cmake'}
+[0.010731] (qt_pointcloud_viewer) JobProgress: {'identifier': 'qt_pointcloud_viewer', 'progress': 'build'}
+[0.011705] (qt_pointcloud_viewer) Command: {'cmd': ['/home/myungw00/.local/bin/cmake', '--build', '/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/build/qt_pointcloud_viewer', '--', '-j16', '-l16'], 'cwd': '/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/build/qt_pointcloud_viewer', 'env': OrderedDict([('GJS_DEBUG_TOPICS', 'JS ERROR;JS LOG'), ('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'myungw00'), ('LC_TIME', 'ko_KR.UTF-8'), ('SSH_AGENT_PID', '2086'), ('XDG_SESSION_TYPE', 'x11'), ('GIT_ASKPASS', '/usr/share/code/resources/app/extensions/git/dist/askpass.sh'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/home/myungw00/ROS2/Qt_ws/install/u2_icd_pkg/lib:/home/myungw00/ROS2/ros2_ws/install/tutorial_interfaces/lib:/home/myungw00/ROS2/ros2_ws/install/turtlesim/lib:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_composition/lib:/opt/ros/galactic/opt/yaml_cpp_vendor/lib:/opt/ros/galactic/opt/rviz_ogre_vendor/lib:/opt/ros/galactic/lib/x86_64-linux-gnu:/opt/ros/galactic/lib'), ('QT4_IM_MODULE', 'xim'), ('HOME', '/home/myungw00'), ('CHROME_DESKTOP', 'code.desktop'), ('CONDA_SHLVL', '0'), ('OLDPWD', '/home/myungw00/ROS2/Qt_ws'), ('TERM_PROGRAM_VERSION', '1.100.3'), ('DESKTOP_SESSION', 'ubuntu'), ('GIO_LAUNCHED_DESKTOP_FILE', '/usr/share/applications/code.desktop'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('VSCODE_GIT_ASKPASS_MAIN', '/usr/share/code/resources/app/extensions/git/dist/askpass-main.js'), ('LC_MONETARY', 'ko_KR.UTF-8'), ('VSCODE_GIT_ASKPASS_NODE', '/usr/share/code/code'), ('MANAGERPID', '1973'), ('PYDEVD_DISABLE_FILE_VALIDATION', '1'), ('BUNDLED_DEBUGPY_PATH', '/home/myungw00/.vscode/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('COLORTERM', 'truecolor'), ('_CE_M', ''), ('GIO_LAUNCHED_DESKTOP_FILE_PID', '37205'), ('_colcon_cd_root', '/opt/ros/galactic/'), ('IM_CONFIG_PHASE', '1'), ('COLCON_PREFIX_PATH', '/home/myungw00/ROS2/Qt_ws/install:/home/myungw00/ROS2/ros2_ws/install'), ('ROS_DISTRO', 'galactic'), ('GTK_IM_MODULE', 'kime'), ('LOGNAME', 'myungw00'), ('JOURNAL_STREAM', '8:443912'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('XDG_SESSION_CLASS', 'user'), ('USERNAME', 'myungw00'), ('TERM', 'xterm-256color'), ('FLIR_GENTL64_CTI', '/opt/spinnaker/lib/flir-gentl/FLIR_GenTL.cti'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('_CE_CONDA', ''), ('ROS_LOCALHOST_ONLY', '0'), ('WINDOWPATH', '2'), ('PATH', '/home/myungw00/.local/bin:/home/myungw00/anaconda3/condabin:/opt/ros/galactic/bin:/home/myungw00/.local/bin:/opt/spinnaker/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/myungw00/.vscode/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/scripts/noConfigScripts:/home/myungw00/.config/Code/User/globalStorage/github.copilot-chat/debugCommand'), ('SESSION_MANAGER', 'local/myungw00-Lenovo-ThinkBook-16p-Gen-2:@/tmp/.ICE-unix/2122,unix/myungw00-Lenovo-ThinkBook-16p-Gen-2:/tmp/.ICE-unix/2122'), ('INVOCATION_ID', '3cbda44ceffa4623bd593617614c5acd'), ('XDG_MENU_PREFIX', 'gnome-'), ('LC_ADDRESS', 'ko_KR.UTF-8'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('GDK_BACKEND', 'x11'), ('DISPLAY', ':0'), ('VSCODE_DEBUGPY_ADAPTER_ENDPOINTS', '/home/myungw00/.vscode/extensions/ms-python.debugpy-2025.8.0-linux-x64/.noConfigDebugAdapterEndpoints/endpoint-035bc22991cfa4de.txt'), ('LANG', 'en_US.UTF-8'), ('XDG_CURRENT_DESKTOP', 'Unity'), ('LC_TELEPHONE', 'ko_KR.UTF-8'), ('RMW_IMPLEMENTATION', 'rmw_cyclonedds_cpp'), ('XMODIFIERS', '@im=kime'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/1000/vscode-git-092624cd01.sock'), ('TERM_PROGRAM', 'vscode'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('ROS_DOMAIN_ID', '5'), ('AMENT_PREFIX_PATH', '/home/myungw00/ROS2/Qt_ws/install/qt_pointcloud_viewer:/home/myungw00/ROS2/Qt_ws/install/u2_icd_pkg:/home/myungw00/ROS2/Qt_ws/install/qt_gui_test:/home/myungw00/ROS2/ros2_ws/install/tutorial_interfaces:/home/myungw00/ROS2/ros2_ws/install/turtlesim:/home/myungw00/ROS2/ros2_ws/install/python_parameters:/home/myungw00/ROS2/ros2_ws/install/py_pubsub:/home/myungw00/ROS2/ros2_ws/install/my_package:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_service:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_server:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_guard_conditions:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_executors:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_multithreaded_executor:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_timer:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_subscriber:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_service:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_composition:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_action_server:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_action_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_cbg_executor:/home/myungw00/ROS2/ros2_ws/install/cpp_pubsub:/home/myungw00/ROS2/ros2_ws/install/cpp_parameters:/opt/ros/galactic'), ('CONDA_PYTHON_EXE', '/home/myungw00/anaconda3/bin/python'), ('ORIGINAL_XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('SHELL', '/bin/bash'), ('LC_NAME', 'ko_KR.UTF-8'), ('QT_ACCESSIBILITY', '1'), ('GDMSESSION', 'ubuntu'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('LC_MEASUREMENT', 'ko_KR.UTF-8'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('GJS_DEBUG_OUTPUT', 'stderr'), ('LC_IDENTIFICATION', 'ko_KR.UTF-8'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('QT_IM_MODULE', 'kime'), ('PWD', '/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/build/qt_pointcloud_viewer'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('CONDA_EXE', '/home/myungw00/anaconda3/bin/conda'), ('PYLON_ROOT', '/opt/pylon'), ('CLUTTER_IM_MODULE', 'xim'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/myungw00/ROS2/Qt_ws/install/u2_icd_pkg/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/install/tutorial_interfaces/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/install/turtlesim/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/build/python_parameters:/home/myungw00/ROS2/ros2_ws/install/python_parameters/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/build/py_pubsub:/home/myungw00/ROS2/ros2_ws/install/py_pubsub/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/build/examples_rclpy_pointcloud_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_pointcloud_publisher/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/build/examples_rclpy_minimal_subscriber:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_subscriber/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/build/examples_rclpy_minimal_service:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_service/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/build/examples_rclpy_minimal_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_publisher/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/build/examples_rclpy_minimal_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_client/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/build/examples_rclpy_minimal_action_server:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_server/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/build/examples_rclpy_minimal_action_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_client/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/build/examples_rclpy_guard_conditions:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_guard_conditions/lib/python3.8/site-packages:/home/myungw00/ROS2/ros2_ws/build/examples_rclpy_executors:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_executors/lib/python3.8/site-packages:/opt/ros/galactic/lib/python3.8/site-packages'), ('LC_NUMERIC', 'ko_KR.UTF-8'), ('LC_PAPER', 'ko_KR.UTF-8'), ('COLCON', '1'), ('GENICAM_GENTL64_PATH', '/opt/spinnaker/lib/flir-gentl::/opt/pylon/lib/gentlproducer/gtl:/opt/pylon/lib/pylonCXP/bin/:/opt/pylon/lib/gentlproducer/gtl:/opt/pylon/lib/pylonCXP/bin/'), ('CMAKE_PREFIX_PATH', '/home/myungw00/ROS2/Qt_ws/install/qt_pointcloud_viewer:/home/myungw00/ROS2/Qt_ws/install/u2_icd_pkg:/home/myungw00/ROS2/Qt_ws/install/qt_gui_test:/home/myungw00/ROS2/ros2_ws/install/tutorial_interfaces:/home/myungw00/ROS2/ros2_ws/install/turtlesim:/home/myungw00/ROS2/ros2_ws/install/my_package:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_multithreaded_executor:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_timer:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_subscriber:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_service:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_composition:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_action_server:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_minimal_action_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclcpp_cbg_executor:/home/myungw00/ROS2/ros2_ws/install/cpp_pubsub:/home/myungw00/ROS2/ros2_ws/install/cpp_parameters:/home/myungw00/ROS2/ros2_ws/install/python_parameters:/home/myungw00/ROS2/ros2_ws/install/py_pubsub:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_service:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_server:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_guard_conditions:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_executors:/opt/ros/galactic')]), 'shell': False}
+[0.099825] (-) TimerEvent: {}
+[0.104600] (qt_pointcloud_viewer) StdoutLine: {'line': b'[  2%] \x1b[34m\x1b[1mAutomatic MOC and UIC for target qt_pointcloud_viewer\x1b[0m\n'}
+[0.113481] (qt_pointcloud_viewer) StdoutLine: {'line': b'[  2%] Built target qt_pointcloud_viewer_autogen\n'}
+[0.151085] (qt_pointcloud_viewer) StdoutLine: {'line': b'[  5%] \x1b[34m\x1b[1mGenerating include/qt_pointcloud_viewer/moc_pointcloud_widget.cpp\x1b[0m\n'}
+[0.199918] (-) TimerEvent: {}
+[0.300221] (-) TimerEvent: {}
+[0.386982] (qt_pointcloud_viewer) StdoutLine: {'line': b'[  7%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/main.cpp.o\x1b[0m\n'}
+[0.387834] (qt_pointcloud_viewer) StdoutLine: {'line': b'[ 13%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/pointcloud_widget.cpp.o\x1b[0m\n'}
+[0.387954] (qt_pointcloud_viewer) StdoutLine: {'line': b'[ 13%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/mainwindow.cpp.o\x1b[0m\n'}
+[0.388565] (qt_pointcloud_viewer) StdoutLine: {'line': b'[ 15%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/viewer_container.cpp.o\x1b[0m\n'}
+[0.392183] (qt_pointcloud_viewer) StdoutLine: {'line': b'[ 18%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/viewer_window.cpp.o\x1b[0m\n'}
+[0.393648] (qt_pointcloud_viewer) StdoutLine: {'line': b'[ 21%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/control_tree_widget.cpp.o\x1b[0m\n'}
+[0.393947] (qt_pointcloud_viewer) StdoutLine: {'line': b'[ 23%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/viewer_settings_manager.cpp.o\x1b[0m\n'}
+[0.394527] (qt_pointcloud_viewer) StdoutLine: {'line': b'[ 26%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_mainwindow.cpp.o\x1b[0m\n'}
+[0.395575] (qt_pointcloud_viewer) StdoutLine: {'line': b'[ 28%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_pointcloud_widget.cpp.o\x1b[0m\n'}
+[0.398177] (qt_pointcloud_viewer) StdoutLine: {'line': b'[ 31%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_viewer_container.cpp.o\x1b[0m\n'}
+[0.399800] (qt_pointcloud_viewer) StdoutLine: {'line': b'[ 34%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_viewer_window.cpp.o\x1b[0m\n'}
+[0.400302] (-) TimerEvent: {}
+[0.400740] (qt_pointcloud_viewer) StdoutLine: {'line': b'[ 36%] \x1b[32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_control_tree_widget.cpp.o\x1b[0m\n'}
+[0.502802] (-) TimerEvent: {}
+[0.603259] (-) TimerEvent: {}
+[0.704061] (-) TimerEvent: {}
+[0.804964] (-) TimerEvent: {}
+[0.905861] (-) TimerEvent: {}
+[1.006175] (-) TimerEvent: {}
+[1.107046] (-) TimerEvent: {}
+[1.207877] (-) TimerEvent: {}
+[1.308622] (-) TimerEvent: {}
+[1.409356] (-) TimerEvent: {}
+[1.510247] (-) TimerEvent: {}
+[1.611920] (-) TimerEvent: {}
+[1.712660] (-) TimerEvent: {}
+[1.813242] (-) TimerEvent: {}
+[1.913940] (-) TimerEvent: {}
+[2.014632] (-) TimerEvent: {}
+[2.115201] (-) TimerEvent: {}
+[2.215798] (-) TimerEvent: {}
+[2.316204] (-) TimerEvent: {}
+[2.416800] (-) TimerEvent: {}
+[2.517381] (-) TimerEvent: {}
+[2.618027] (-) TimerEvent: {}
+[2.718675] (-) TimerEvent: {}
+[2.819242] (-) TimerEvent: {}
+[2.919825] (-) TimerEvent: {}
+[3.020228] (-) TimerEvent: {}
+[3.120667] (-) TimerEvent: {}
+[3.221055] (-) TimerEvent: {}
+[3.321447] (-) TimerEvent: {}
+[3.421826] (-) TimerEvent: {}
+[3.522200] (-) TimerEvent: {}
+[3.622535] (-) TimerEvent: {}
+[3.722899] (-) TimerEvent: {}
+[3.823303] (-) TimerEvent: {}
+[3.923705] (-) TimerEvent: {}
+[4.024086] (-) TimerEvent: {}
+[4.124493] (-) TimerEvent: {}
+[4.224899] (-) TimerEvent: {}
+[4.325336] (-) TimerEvent: {}
+[4.425749] (-) TimerEvent: {}
+[4.526132] (-) TimerEvent: {}
+[4.626535] (-) TimerEvent: {}
+[4.726942] (-) TimerEvent: {}
+[4.827579] (-) TimerEvent: {}
+[4.928651] (-) TimerEvent: {}
+[5.030367] (-) TimerEvent: {}
+[5.130971] (-) TimerEvent: {}
+[5.232006] (-) TimerEvent: {}
+[5.332607] (-) TimerEvent: {}
+[5.433054] (-) TimerEvent: {}
+[5.533487] (-) TimerEvent: {}
+[5.633945] (-) TimerEvent: {}
+[5.734395] (-) TimerEvent: {}
+[5.834828] (-) TimerEvent: {}
+[5.935291] (-) TimerEvent: {}
+[6.036028] (-) TimerEvent: {}
+[6.136479] (-) TimerEvent: {}
+[6.236854] (-) TimerEvent: {}
+[6.337396] (-) TimerEvent: {}
+[6.437740] (-) TimerEvent: {}
+[6.538129] (-) TimerEvent: {}
+[6.638571] (-) TimerEvent: {}
+[6.739013] (-) TimerEvent: {}
+[6.839462] (-) TimerEvent: {}
+[6.939854] (-) TimerEvent: {}
+[7.033891] (qt_pointcloud_viewer) StderrLine: {'line': b'\x1b[01m\x1b[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:\x1b[m\x1b[K In constructor \xe2\x80\x98\x1b[01m\x1b[KWidget::PointCloudWidget::PointCloudWidget(QWidget*)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.034230] (qt_pointcloud_viewer) StderrLine: {'line': b'\x1b[01m\x1b[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:44:5:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KshowInterestObjects_\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98\x1b[01m\x1b[KrenderInterestObjects\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[7.034424] (qt_pointcloud_viewer) StderrLine: {'line': b'   44 |     \x1b[01;31m\x1b[KshowInterestObjects_\x1b[m\x1b[K = true;  // \xec\xb6\x94\xea\xb0\x80\n'}
+[7.034576] (qt_pointcloud_viewer) StderrLine: {'line': b'      |     \x1b[01;31m\x1b[K^~~~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.034714] (qt_pointcloud_viewer) StderrLine: {'line': b'      |     \x1b[32m\x1b[KrenderInterestObjects\x1b[m\x1b[K\n'}
+[7.036727] (qt_pointcloud_viewer) StderrLine: {'line': b'\x1b[01m\x1b[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:\x1b[m\x1b[K In lambda function:\n'}
+[7.036928] (qt_pointcloud_viewer) StderrLine: {'line': b'\x1b[01m\x1b[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:66:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KshowInterestObjects_\x1b[m\x1b[K\xe2\x80\x99 is not captured\n'}
+[7.037069] (qt_pointcloud_viewer) StderrLine: {'line': b'   66 |                 \x1b[01;31m\x1b[KshowInterestObjects_\x1b[m\x1b[K = show;\n'}
+[7.037193] (qt_pointcloud_viewer) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.037316] (qt_pointcloud_viewer) StderrLine: {'line': b'\x1b[01m\x1b[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:65:24:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kthe lambda has no capture-default\n'}
+[7.037439] (qt_pointcloud_viewer) StderrLine: {'line': b'   65 |             this, [this\x1b[01;36m\x1b[K]\x1b[m\x1b[K(bool show) {\n'}
+[7.037555] (qt_pointcloud_viewer) StderrLine: {'line': b'      |                        \x1b[01;36m\x1b[K^\x1b[m\x1b[K\n'}
+[7.037671] (qt_pointcloud_viewer) StderrLine: {'line': b'\x1b[01m\x1b[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:44:5:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[K<typeprefixerror>showInterestObjects_\x1b[m\x1b[K\xe2\x80\x99 declared here\n'}
+[7.037816] (qt_pointcloud_viewer) StderrLine: {'line': b'   44 |     \x1b[01;36m\x1b[KshowInterestObjects_\x1b[m\x1b[K = true;  // \xec\xb6\x94\xea\xb0\x80\n'}
+[7.037941] (qt_pointcloud_viewer) StderrLine: {'line': b'      |     \x1b[01;36m\x1b[K^~~~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.039939] (-) TimerEvent: {}
+[7.103468] (qt_pointcloud_viewer) StderrLine: {'line': b'\x1b[01m\x1b[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kvirtual void Widget::PointCloudWidget::paintGL()\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.103820] (qt_pointcloud_viewer) StderrLine: {'line': b'\x1b[01m\x1b[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:693:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KshowInterestObjects_\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98\x1b[01m\x1b[KrenderInterestObjects\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[7.104017] (qt_pointcloud_viewer) StderrLine: {'line': b'  693 |     if (\x1b[01;31m\x1b[KshowInterestObjects_\x1b[m\x1b[K) {\n'}
+[7.104169] (qt_pointcloud_viewer) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.104306] (qt_pointcloud_viewer) StderrLine: {'line': b'      |         \x1b[32m\x1b[KrenderInterestObjects\x1b[m\x1b[K\n'}
+[7.140088] (-) TimerEvent: {}
+[7.240669] (-) TimerEvent: {}
+[7.341088] (-) TimerEvent: {}
+[7.425270] (qt_pointcloud_viewer) StderrLine: {'line': b'\x1b[01m\x1b[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:\x1b[m\x1b[K In lambda function:\n'}
+[7.425594] (qt_pointcloud_viewer) StderrLine: {'line': b'\x1b[01m\x1b[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:204:52:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kinvalid operands of types \xe2\x80\x98\x1b[01m\x1b[Kconst char*\x1b[m\x1b[K\xe2\x80\x99 and \xe2\x80\x98\x1b[01m\x1b[Kconst char [2]\x1b[m\x1b[K\xe2\x80\x99 to binary \xe2\x80\x98\x1b[01m\x1b[Koperator+\x1b[m\x1b[K\xe2\x80\x99\n'}
+[7.425796] (qt_pointcloud_viewer) StderrLine: {'line': b'  204 |             qDebug() << \x1b[32m\x1b[K"Grid cell count:" + value\x1b[m\x1b[K \x1b[01;31m\x1b[K+\x1b[m\x1b[K \x1b[34m\x1b[K"x"\x1b[m\x1b[K + value;\n'}
+[7.425947] (qt_pointcloud_viewer) StderrLine: {'line': b'      |                         \x1b[32m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~~~~\x1b[m\x1b[K \x1b[01;31m\x1b[K^\x1b[m\x1b[K \x1b[34m\x1b[K~~~\x1b[m\x1b[K\n'}
+[7.426091] (qt_pointcloud_viewer) StderrLine: {'line': b'      |                                            \x1b[32m\x1b[K|\x1b[m\x1b[K         \x1b[34m\x1b[K|\x1b[m\x1b[K\n'}
+[7.426224] (qt_pointcloud_viewer) StderrLine: {'line': b'      |                                            \x1b[32m\x1b[K|\x1b[m\x1b[K         \x1b[34m\x1b[Kconst char [2]\x1b[m\x1b[K\n'}
+[7.426343] (qt_pointcloud_viewer) StderrLine: {'line': b'      |                                            \x1b[32m\x1b[Kconst char*\x1b[m\x1b[K\n'}
+[7.441218] (-) TimerEvent: {}
+[7.541625] (-) TimerEvent: {}
+[7.642646] (-) TimerEvent: {}
+[7.743049] (-) TimerEvent: {}
+[7.843454] (-) TimerEvent: {}
+[7.944451] (-) TimerEvent: {}
+[8.044865] (-) TimerEvent: {}
+[8.075386] (qt_pointcloud_viewer) StderrLine: {'line': b'make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:165: CMakeFiles/qt_pointcloud_viewer.dir/src/pointcloud_widget.cpp.o] Error 1\n'}
+[8.075591] (qt_pointcloud_viewer) StderrLine: {'line': b'make[2]: *** Waiting for unfinished jobs....\n'}
+[8.144978] (-) TimerEvent: {}
+[8.245331] (-) TimerEvent: {}
+[8.345673] (-) TimerEvent: {}
+[8.446007] (-) TimerEvent: {}
+[8.546317] (-) TimerEvent: {}
+[8.612466] (qt_pointcloud_viewer) StderrLine: {'line': b'make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:249: CMakeFiles/qt_pointcloud_viewer.dir/src/control_tree_widget.cpp.o] Error 1\n'}
+[8.646431] (-) TimerEvent: {}
+[8.746750] (-) TimerEvent: {}
+[8.847104] (-) TimerEvent: {}
+[8.947428] (-) TimerEvent: {}
+[9.047773] (-) TimerEvent: {}
+[9.148151] (-) TimerEvent: {}
+[9.248481] (-) TimerEvent: {}
+[9.348800] (-) TimerEvent: {}
+[9.449096] (-) TimerEvent: {}
+[9.549404] (-) TimerEvent: {}
+[9.649690] (-) TimerEvent: {}
+[9.749993] (-) TimerEvent: {}
+[9.850315] (-) TimerEvent: {}
+[9.950622] (-) TimerEvent: {}
+[10.050982] (-) TimerEvent: {}
+[10.151431] (-) TimerEvent: {}
+[10.251709] (-) TimerEvent: {}
+[10.299330] (qt_pointcloud_viewer) StderrLine: {'line': b'make[1]: *** [CMakeFiles/Makefile2:152: CMakeFiles/qt_pointcloud_viewer.dir/all] Error 2\n'}
+[10.300003] (qt_pointcloud_viewer) StderrLine: {'line': b'make: *** [Makefile:146: all] Error 2\n'}
+[10.303781] (qt_pointcloud_viewer) CommandEnded: {'returncode': 2}
+[10.317048] (qt_pointcloud_viewer) JobEnded: {'identifier': 'qt_pointcloud_viewer', 'rc': 2}
+[10.327652] (-) EventReactorShutdown: {}

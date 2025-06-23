@@ -1,0 +1,5 @@
+[  2%] [34m[1mAutomatic MOC and UIC for target qt_pointcloud_viewer[0m
+[  2%] Built target qt_pointcloud_viewer_autogen
+[  5%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/pointcloud_widget.cpp.o[0m
+[  7%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/control_tree_widget.cpp.o[0m
+[ 10%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/viewer_settings_manager.cpp.o[0m

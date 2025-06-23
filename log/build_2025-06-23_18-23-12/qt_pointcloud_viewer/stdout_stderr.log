@@ -1,0 +1,74 @@
+[  2%] [34m[1mAutomatic MOC and UIC for target qt_pointcloud_viewer[0m
+[  2%] Built target qt_pointcloud_viewer_autogen
+[  5%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/pointcloud_widget.cpp.o[0m
+[  7%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/control_tree_widget.cpp.o[0m
+[ 10%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/viewer_settings_manager.cpp.o[0m
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:[m[K In constructor ‘[01m[KWidget::PointCloudWidget::PointCloudWidget(QWidget*)[m[K’:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:44:5:[m[K [01;31m[Kerror: [m[K‘[01m[KshowInterestObjects_[m[K’ was not declared in this scope; did you mean ‘[01m[KrenderInterestObjects[m[K’?
+   44 |     [01;31m[KshowInterestObjects_[m[K = true;  // 추가
+      |     [01;31m[K^~~~~~~~~~~~~~~~~~~~[m[K
+      |     [32m[KrenderInterestObjects[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:[m[K In lambda function:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:66:17:[m[K [01;31m[Kerror: [m[K‘[01m[KshowInterestObjects_[m[K’ is not captured
+   66 |                 [01;31m[KshowInterestObjects_[m[K = show;
+      |                 [01;31m[K^~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:65:24:[m[K [01;36m[Knote: [m[Kthe lambda has no capture-default
+   65 |             this, [this[01;36m[K][m[K(bool show) {
+      |                        [01;36m[K^[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:44:5:[m[K [01;36m[Knote: [m[K‘[01m[K<typeprefixerror>showInterestObjects_[m[K’ declared here
+   44 |     [01;36m[KshowInterestObjects_[m[K = true;  // 추가
+      |     [01;36m[K^~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:[m[K At global scope:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:511:6:[m[K [01;31m[Kerror: [m[Kno declaration matches ‘[01m[Kvoid Widget::PointCloudWidget::setShowObjects(bool)[m[K’
+  511 | void [01;31m[KPointCloudWidget[m[K::setShowObjects(bool show) {
+      |      [01;31m[K^~~~~~~~~~~~~~~~[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:511:6:[m[K [01;36m[Knote: [m[Kno functions named ‘[01m[Kvoid Widget::PointCloudWidget::setShowObjects(bool)[m[K’
+In file included from [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:1[m[K:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/include/qt_pointcloud_viewer/pointcloud_widget.hpp:26:11:[m[K [01;36m[Knote: [m[K‘[01m[Kclass Widget::PointCloudWidget[m[K’ defined here
+   26 |     class [01;36m[KPointCloudWidget[m[K : public QOpenGLWidget, protected QOpenGLFunctions {
+      |           [01;36m[K^~~~~~~~~~~~~~~~[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:516:6:[m[K [01;31m[Kerror: [m[Kno declaration matches ‘[01m[Kvoid Widget::PointCloudWidget::setShowObjectLabels(bool)[m[K’
+  516 | void [01;31m[KPointCloudWidget[m[K::setShowObjectLabels(bool show) {
+      |      [01;31m[K^~~~~~~~~~~~~~~~[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:516:6:[m[K [01;36m[Knote: [m[Kno functions named ‘[01m[Kvoid Widget::PointCloudWidget::setShowObjectLabels(bool)[m[K’
+In file included from [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:1[m[K:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/include/qt_pointcloud_viewer/pointcloud_widget.hpp:26:11:[m[K [01;36m[Knote: [m[K‘[01m[Kclass Widget::PointCloudWidget[m[K’ defined here
+   26 |     class [01;36m[KPointCloudWidget[m[K : public QOpenGLWidget, protected QOpenGLFunctions {
+      |           [01;36m[K^~~~~~~~~~~~~~~~[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:[m[K In member function ‘[01m[Kvirtual void Widget::PointCloudWidget::paintGL()[m[K’:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:693:9:[m[K [01;31m[Kerror: [m[K‘[01m[KshowInterestObjects_[m[K’ was not declared in this scope; did you mean ‘[01m[KrenderInterestObjects[m[K’?
+  693 |     if ([01;31m[KshowInterestObjects_[m[K) {
+      |         [01;31m[K^~~~~~~~~~~~~~~~~~~~[m[K
+      |         [32m[KrenderInterestObjects[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/viewer_settings_manager.cpp:[m[K In member function ‘[01m[Kvoid Widget::ViewerSettingsManager::applySettings(Widget::PointCloudWidget*, const Widget::ViewerSettings&)[m[K’:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/viewer_settings_manager.cpp:172:13:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass Widget::PointCloudWidget[m[K’ has no member named ‘[01m[KsetShowObjects[m[K’; did you mean ‘[01m[KsetShowObject[m[K’?
+  172 |     widget->[01;31m[KsetShowObjects[m[K(settings.showObjects);
+      |             [01;31m[K^~~~~~~~~~~~~~[m[K
+      |             [32m[KsetShowObject[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/viewer_settings_manager.cpp:173:13:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass Widget::PointCloudWidget[m[K’ has no member named ‘[01m[KsetShowObjectLabels[m[K’; did you mean ‘[01m[KsetShowObjectLabel[m[K’?
+  173 |     widget->[01;31m[KsetShowObjectLabels[m[K(settings.showObjectLabels);
+      |             [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+      |             [32m[KsetShowObjectLabel[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:[m[K In lambda function:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:204:52:[m[K [01;31m[Kerror: [m[Kinvalid operands of types ‘[01m[Kconst char*[m[K’ and ‘[01m[Kconst char [2][m[K’ to binary ‘[01m[Koperator+[m[K’
+  204 |             qDebug() << [32m[K"Grid cell count:" + value[m[K [01;31m[K+[m[K [34m[K"x"[m[K + value;
+      |                         [32m[K~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K [01;31m[K^[m[K [34m[K~~~[m[K
+      |                                            [32m[K|[m[K         [34m[K|[m[K
+      |                                            [32m[K|[m[K         [34m[Kconst char [2][m[K
+      |                                            [32m[Kconst char*[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:[m[K In lambda function:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:1009:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass Widget::PointCloudWidget[m[K’ has no member named ‘[01m[KsetShowObjects[m[K’; did you mean ‘[01m[KsetShowObject[m[K’?
+ 1009 |             pointCloudWidget_->[01;31m[KsetShowObjects[m[K(checked);
+      |                                [01;31m[K^~~~~~~~~~~~~~[m[K
+      |                                [32m[KsetShowObject[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:[m[K In lambda function:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:1023:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass Widget::PointCloudWidget[m[K’ has no member named ‘[01m[KsetShowObjectLabels[m[K’; did you mean ‘[01m[KsetShowObjectLabel[m[K’?
+ 1023 |             pointCloudWidget_->[01;31m[KsetShowObjectLabels[m[K(checked);
+      |                                [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+      |                                [32m[KsetShowObjectLabel[m[K
+make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:277: CMakeFiles/qt_pointcloud_viewer.dir/src/viewer_settings_manager.cpp.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
+make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:165: CMakeFiles/qt_pointcloud_viewer.dir/src/pointcloud_widget.cpp.o] Error 1
+make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:249: CMakeFiles/qt_pointcloud_viewer.dir/src/control_tree_widget.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:152: CMakeFiles/qt_pointcloud_viewer.dir/all] Error 2
+make: *** [Makefile:146: all] Error 2

@@ -41,7 +41,7 @@ PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
     showGrid_ = true;
     showRobotLabel_ = true;
     showGridMap_ = true;
-    showInterestObjects_ = true;  // 추가
+    showObjects_ = true;  // 추가
     pointSize_ = 2.0f;
     pathWidth_ = 3.0f;
     positionMarkerType_ = MarkerType::AXES;
@@ -63,7 +63,7 @@ PointCloudWidget::PointCloudWidget(QWidget *parent) : QOpenGLWidget(parent) {
             this, &PointCloudWidget::onGlobalInterestObjectUpdated);
     connect(&manager, &ObjectManager::InterestObjectManager::showInterestObjectsChanged,
             this, [this](bool show) { 
-                showInterestObjects_ = show;
+                showObjects_ = show;
                 update(); 
             });
     
@@ -508,6 +508,16 @@ void PointCloudWidget::setShowPath(bool show) {
     update();
 }
 
+void PointCloudWidget::setShowObjects(bool show) {
+    showObjects_ = show;
+    update();
+}
+
+void PointCloudWidget::setShowObjectLabels(bool show) {
+    showObjectLabels_ = show;
+    update();
+}
+
 void PointCloudWidget::setPositionRadius(float radius) {
     if (radius >= 0.1f && radius <= 2.0f) {
         currentPositionRadius_ = radius;
@@ -680,7 +690,7 @@ void PointCloudWidget::paintGL() {
     if (showIndicator_) {
         RenderHelper::PointCloudRenderer::drawCameraIndicator(focusPoint_);
     }
-    if (showInterestObjects_) {
+    if (showObjects_) {
         renderInterestObjects();
     }
 }
@@ -711,6 +721,28 @@ void PointCloudWidget::paintEvent(QPaintEvent* event) {
             height(),
             positionNameFontSize_,
             pathMutex_
+        );
+    }
+
+    if (showObjects_ && showObjectLabels_) {
+        auto& manager = ObjectManager::InterestObjectManager::instance();
+        
+        if (!manager.getShowInterestObjects()) return;
+        
+        // 전역 매니저에서 모든 InterestObject 가져오기
+        auto allObjects = manager.getAllInterestObjects();
+        
+        if (allObjects.isEmpty()) return;
+
+        RenderHelper::InterestObjectRenderer::drawInterestObjectLabels(
+            painter, 
+            allObjects,
+            robotName_,
+            viewMatrix_,
+            projectionMatrix_,
+            width(),
+            height(),
+            objectLabelFontSize_
         );
     }
     

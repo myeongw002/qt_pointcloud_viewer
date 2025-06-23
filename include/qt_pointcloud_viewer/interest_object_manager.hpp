@@ -36,6 +36,21 @@ public:
     void setShowInterestObjects(bool show);
     bool getShowInterestObjects() const;
 
+    // 새로 추가: 지정된 ID로 객체 등록
+    bool registerInterestObjectWithId(
+        const QString& objectId,
+        Types::ObjectType type, 
+        const QString& robotName, 
+        const Types::Vec3& position);
+
+    // 새로 추가: 서비스 요청 데이터로 객체 등록
+    bool registerInterestObjectFromService(
+        const QString& serviceObjectId,      // 서비스에서 온 Object ID
+        Types::ObjectType objectType,        // 서비스에서 온 Object Class  
+        const Types::Vec3& objectPosition,   // 서비스/계산된 Position
+        const QString& robotId               // 서비스에서 온 Robot ID
+    );
+
 signals:
     void interestObjectRegistered(const QString& objectId, const QString& objectType);
     void interestObjectRemoved(const QString& objectId);

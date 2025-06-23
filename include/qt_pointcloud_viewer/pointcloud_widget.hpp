@@ -74,7 +74,8 @@ namespace Widget {
         void setShowRobotLabel(bool show);
         void setPositionRadius(float radius);
         bool isShowPosition() const { return showPosition_; }
-        
+        void setShowObjects(bool show);
+        void setShowObjectLabels(bool show);
         // Getter functions
         bool getShowAxes() const { return showAxes_; }
         bool getShowGrid() const { return showGrid_; }
@@ -86,6 +87,8 @@ namespace Widget {
         float getPositionRadius() const { return currentPositionRadius_; }
         float getRotationSensitivity() const { return rotationSensitivity_; }
         Types::Vec3 getFocusPoint() const { return focusPoint_; }
+        bool getShowObjects() const { return showObjects_; }
+        bool getShowObjectLabels() const { return showObjectLabels_; }
 
         // Point and path style settings
         void setShowGridMap(bool show);
@@ -250,7 +253,7 @@ namespace Widget {
         const int verticalMargin_ = 4;
         bool showPositionNames_ = true;
         const float positionNameFontSize_ = 9.0f;
-        
+        const float objectLabelFontSize_ = 5.0f;
         bool showPoints_ = true;
         bool showPath_ = true;
         float pointSize_ = 2.0f;
@@ -271,7 +274,8 @@ namespace Widget {
         // ============================================================================
         Types::Vec3 getRobotPosition(const QString& robotName) const;
         void renderInterestObjects();  // 전역 매니저에서 데이터 가져와서 렌더링
-        bool showInterestObjects_ = true;
+        bool showObjects_ = true;
+        bool showObjectLabels_ = true;
     };
 }
 

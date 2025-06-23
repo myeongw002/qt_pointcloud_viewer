@@ -40,6 +40,7 @@ add_executable(${PROJECT_NAME}
     src/grid_map_processor.cpp
     src/render_helper.cpp
     src/interest_object_manager.cpp
+    src/interest_object_server.cpp
     ${UI_HEADERS}  # 생성된 UI 헤더 추가
 )
 
@@ -53,7 +54,8 @@ set(MOC_HEADERS include/${PROJECT_NAME}/mainwindow.hpp
     include/${PROJECT_NAME}/control_tree_widget.hpp
     include/${PROJECT_NAME}/debug_console_widget.hpp
     include/${PROJECT_NAME}/viewer_settings_manager.hpp
-    include/${PROJECT_NAME}/interest_object_manager.hpp)
+    include/${PROJECT_NAME}/interest_object_manager.hpp
+    include/${PROJECT_NAME}/interest_object_server.hpp)
 qt5_wrap_cpp(MOC_SRCS ${MOC_HEADERS})
 
 target_include_directories(${PROJECT_NAME} PUBLIC

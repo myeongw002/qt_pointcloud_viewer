@@ -1,0 +1,15 @@
+[  2%] [34m[1mAutomatic MOC and UIC for target qt_pointcloud_viewer[0m
+[  2%] Built target qt_pointcloud_viewer_autogen
+[  5%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/pointcloud_widget.cpp.o[0m
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:[m[K In member function ‘[01m[Kvoid Widget::PointCloudWidget::renderInterestObjects()[m[K’:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:950:13:[m[K [01;31m[Kerror: [m[Kcannot bind non-const lvalue reference of type ‘[01m[KQPainter&[m[K’ to an rvalue of type ‘[01m[KQPainter[m[K’
+  950 |             [01;31m[KQPainter(this)[m[K,
+      |             [01;31m[K^~~~~~~~~~~~~~[m[K
+In file included from [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/include/qt_pointcloud_viewer/pointcloud_widget.hpp:14[m[K,
+                 from [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:1[m[K:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/include/qt_pointcloud_viewer/render_helper.hpp:124:19:[m[K [01;36m[Knote: [m[K  initializing argument 1 of ‘[01m[Kstatic void RenderHelper::InterestObjectRenderer::drawInterestObjectLabels(QPainter&, const QHash<QString, std::shared_ptr<Types::InterestObject> >&, const QString&, const Mat4&, const Mat4&, int, int, float)[m[K’
+  124 |         [01;36m[KQPainter& painter[m[K,
+      |         [01;36m[K~~~~~~~~~~^~~~~~~[m[K
+make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:165: CMakeFiles/qt_pointcloud_viewer.dir/src/pointcloud_widget.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:152: CMakeFiles/qt_pointcloud_viewer.dir/all] Error 2
+make: *** [Makefile:146: all] Error 2

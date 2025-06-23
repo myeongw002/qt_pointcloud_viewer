@@ -1,0 +1,14 @@
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:[m[K In member function ‘[01m[Kvirtual void Widget::PointCloudWidget::paintEvent(QPaintEvent*)[m[K’:
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:728:47:[m[K [01;31m[Kerror: [m[K‘[01m[KdrawObjectLabels[m[K’ is not a member of ‘[01m[KRenderHelper::InterestObjectRenderer[m[K’
+  728 |         RenderHelper::InterestObjectRenderer::[01;31m[KdrawObjectLabels[m[K(
+      |                                               [01;31m[K^~~~~~~~~~~~~~~~[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:730:62:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass ObjectManager::InterestObjectManager[m[K’ has no member named ‘[01m[KgetInterestObjects[m[K’; did you mean ‘[01m[KgetInterestObject[m[K’?
+  730 |             ObjectManager::InterestObjectManager::instance().[01;31m[KgetInterestObjects[m[K(),
+      |                                                              [01;31m[K^~~~~~~~~~~~~~~~~~[m[K
+      |                                                              [32m[KgetInterestObject[m[K
+[01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:735:13:[m[K [01;31m[Kerror: [m[K‘[01m[KobjectLabelFontSize_[m[K’ was not declared in this scope
+  735 |             [01;31m[KobjectLabelFontSize_[m[K
+      |             [01;31m[K^~~~~~~~~~~~~~~~~~~~[m[K
+make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:165: CMakeFiles/qt_pointcloud_viewer.dir/src/pointcloud_widget.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:152: CMakeFiles/qt_pointcloud_viewer.dir/all] Error 2
+make: *** [Makefile:146: all] Error 2

@@ -1,0 +1,74 @@
+[0.016s] Invoking command in '/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/build/qt_pointcloud_viewer': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/myungw00/ROS2/ros2_ws/install/python_parameters:/home/myungw00/ROS2/ros2_ws/install/py_pubsub:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_service:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_server:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_guard_conditions:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_executors:/opt/ros/galactic /home/myungw00/.local/bin/cmake --build /home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/build/qt_pointcloud_viewer -- -j16 -l16
+[0.122s] [  2%] [34m[1mAutomatic MOC and UIC for target qt_pointcloud_viewer[0m
+[0.135s] [  2%] Built target qt_pointcloud_viewer_autogen
+[0.162s] [  5%] [34m[1mGenerating include/qt_pointcloud_viewer/moc_pointcloud_widget.cpp[0m
+[0.403s] [  7%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/main.cpp.o[0m
+[0.404s] [ 10%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/mainwindow.cpp.o[0m
+[0.404s] [ 13%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/pointcloud_widget.cpp.o[0m
+[0.404s] [ 15%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/viewer_container.cpp.o[0m
+[0.409s] [ 21%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/viewer_window.cpp.o[0m
+[0.409s] [ 21%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/control_tree_widget.cpp.o[0m
+[0.409s] [ 23%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/src/viewer_settings_manager.cpp.o[0m
+[0.411s] [ 26%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_mainwindow.cpp.o[0m
+[0.413s] [ 28%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_pointcloud_widget.cpp.o[0m
+[0.414s] [ 31%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_viewer_container.cpp.o[0m
+[0.415s] [ 34%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_viewer_window.cpp.o[0m
+[0.415s] [ 36%] [32mBuilding CXX object CMakeFiles/qt_pointcloud_viewer.dir/include/qt_pointcloud_viewer/moc_control_tree_widget.cpp.o[0m
+[7.124s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:[m[K In constructor ‘[01m[KWidget::PointCloudWidget::PointCloudWidget(QWidget*)[m[K’:
+[7.124s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:44:5:[m[K [01;31m[Kerror: [m[K‘[01m[KshowInterestObjects_[m[K’ was not declared in this scope; did you mean ‘[01m[KrenderInterestObjects[m[K’?
+[7.125s]    44 |     [01;31m[KshowInterestObjects_[m[K = true;  // 추가
+[7.125s]       |     [01;31m[K^~~~~~~~~~~~~~~~~~~~[m[K
+[7.125s]       |     [32m[KrenderInterestObjects[m[K
+[7.126s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:[m[K In lambda function:
+[7.126s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:66:17:[m[K [01;31m[Kerror: [m[K‘[01m[KshowInterestObjects_[m[K’ is not captured
+[7.126s]    66 |                 [01;31m[KshowInterestObjects_[m[K = show;
+[7.126s]       |                 [01;31m[K^~~~~~~~~~~~~~~~~~~~[m[K
+[7.126s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:65:24:[m[K [01;36m[Knote: [m[Kthe lambda has no capture-default
+[7.126s]    65 |             this, [this[01;36m[K][m[K(bool show) {
+[7.126s]       |                        [01;36m[K^[m[K
+[7.127s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:44:5:[m[K [01;36m[Knote: [m[K‘[01m[K<typeprefixerror>showInterestObjects_[m[K’ declared here
+[7.127s]    44 |     [01;36m[KshowInterestObjects_[m[K = true;  // 추가
+[7.127s]       |     [01;36m[K^~~~~~~~~~~~~~~~~~~~[m[K
+[7.140s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/viewer_settings_manager.cpp:[m[K In member function ‘[01m[Kvoid Widget::ViewerSettingsManager::applySettings(Widget::PointCloudWidget*, const Widget::ViewerSettings&)[m[K’:
+[7.140s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/viewer_settings_manager.cpp:172:13:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass Widget::PointCloudWidget[m[K’ has no member named ‘[01m[KsetShowObjects[m[K’; did you mean ‘[01m[KsetShowObject[m[K’?
+[7.140s]   172 |     widget->[01;31m[KsetShowObjects[m[K(settings.showObjects);
+[7.140s]       |             [01;31m[K^~~~~~~~~~~~~~[m[K
+[7.141s]       |             [32m[KsetShowObject[m[K
+[7.141s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/viewer_settings_manager.cpp:173:13:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass Widget::PointCloudWidget[m[K’ has no member named ‘[01m[KsetShowObjectLabels[m[K’; did you mean ‘[01m[KsetShowObjectLabel[m[K’?
+[7.141s]   173 |     widget->[01;31m[KsetShowObjectLabels[m[K(settings.showObjectLabels);
+[7.141s]       |             [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[7.141s]       |             [32m[KsetShowObjectLabel[m[K
+[7.195s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:[m[K In member function ‘[01m[Kvoid Widget::PointCloudWidget::setShowObject(bool)[m[K’:
+[7.195s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:512:5:[m[K [01;31m[Kerror: [m[K‘[01m[KshowObject_[m[K’ was not declared in this scope; did you mean ‘[01m[KshowObjects_[m[K’?
+[7.195s]   512 |     [01;31m[KshowObject_[m[K = show;
+[7.196s]       |     [01;31m[K^~~~~~~~~~~[m[K
+[7.196s]       |     [32m[KshowObjects_[m[K
+[7.251s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:[m[K In member function ‘[01m[Kvirtual void Widget::PointCloudWidget::paintGL()[m[K’:
+[7.252s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/pointcloud_widget.cpp:693:9:[m[K [01;31m[Kerror: [m[K‘[01m[KshowInterestObjects_[m[K’ was not declared in this scope; did you mean ‘[01m[KrenderInterestObjects[m[K’?
+[7.252s]   693 |     if ([01;31m[KshowInterestObjects_[m[K) {
+[7.252s]       |         [01;31m[K^~~~~~~~~~~~~~~~~~~~[m[K
+[7.252s]       |         [32m[KrenderInterestObjects[m[K
+[7.582s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:[m[K In lambda function:
+[7.582s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:204:52:[m[K [01;31m[Kerror: [m[Kinvalid operands of types ‘[01m[Kconst char*[m[K’ and ‘[01m[Kconst char [2][m[K’ to binary ‘[01m[Koperator+[m[K’
+[7.582s]   204 |             qDebug() << [32m[K"Grid cell count:" + value[m[K [01;31m[K+[m[K [34m[K"x"[m[K + value;
+[7.582s]       |                         [32m[K~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K [01;31m[K^[m[K [34m[K~~~[m[K
+[7.582s]       |                                            [32m[K|[m[K         [34m[K|[m[K
+[7.583s]       |                                            [32m[K|[m[K         [34m[Kconst char [2][m[K
+[7.583s]       |                                            [32m[Kconst char*[m[K
+[7.739s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:[m[K In lambda function:
+[7.739s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:1009:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass Widget::PointCloudWidget[m[K’ has no member named ‘[01m[KsetShowObjects[m[K’; did you mean ‘[01m[KsetShowObject[m[K’?
+[7.740s]  1009 |             pointCloudWidget_->[01;31m[KsetShowObjects[m[K(checked);
+[7.741s]       |                                [01;31m[K^~~~~~~~~~~~~~[m[K
+[7.742s]       |                                [32m[KsetShowObject[m[K
+[7.746s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:[m[K In lambda function:
+[7.746s] [01m[K/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/src/control_tree_widget.cpp:1023:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass Widget::PointCloudWidget[m[K’ has no member named ‘[01m[KsetShowObjectLabels[m[K’; did you mean ‘[01m[KsetShowObjectLabel[m[K’?
+[7.747s]  1023 |             pointCloudWidget_->[01;31m[KsetShowObjectLabels[m[K(checked);
+[7.747s]       |                                [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[7.747s]       |                                [32m[KsetShowObjectLabel[m[K
+[8.509s] make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:277: CMakeFiles/qt_pointcloud_viewer.dir/src/viewer_settings_manager.cpp.o] Error 1
+[8.509s] make[2]: *** Waiting for unfinished jobs....
+[8.681s] make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:165: CMakeFiles/qt_pointcloud_viewer.dir/src/pointcloud_widget.cpp.o] Error 1
+[9.139s] make[2]: *** [CMakeFiles/qt_pointcloud_viewer.dir/build.make:249: CMakeFiles/qt_pointcloud_viewer.dir/src/control_tree_widget.cpp.o] Error 1
+[11.601s] make[1]: *** [CMakeFiles/Makefile2:152: CMakeFiles/qt_pointcloud_viewer.dir/all] Error 2
+[11.601s] make: *** [Makefile:146: all] Error 2
+[11.603s] Invoked command in '/home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/build/qt_pointcloud_viewer' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/myungw00/ROS2/ros2_ws/install/python_parameters:/home/myungw00/ROS2/ros2_ws/install/py_pubsub:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_pointcloud_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_subscriber:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_service:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_publisher:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_server:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_minimal_action_client:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_guard_conditions:/home/myungw00/ROS2/ros2_ws/install/examples_rclpy_executors:/opt/ros/galactic /home/myungw00/.local/bin/cmake --build /home/myungw00/ROS2/Qt_ws/src/qt_pointcloud_viewer/build/qt_pointcloud_viewer -- -j16 -l16

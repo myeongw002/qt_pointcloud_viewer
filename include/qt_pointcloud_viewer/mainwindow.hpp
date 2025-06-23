@@ -17,6 +17,7 @@
 #include "data_broker.hpp"
 #include "control_tree_widget.hpp"
 #include "debug_console_widget.hpp"
+#include "interest_object_server.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -96,6 +97,11 @@ private:
     QAction* debugConsoleAction_;
     QAction* controlPanelAction_;
     
+    // ============================================================================
+    // 서비스 서버 (이름 통일)
+    // ============================================================================
+    std::shared_ptr<Service::InterestObjectServer> interestObjectServer_;
+
     // ============================================================================
     // Initialization Functions
     // ============================================================================

@@ -1,0 +1,8 @@
+source;share/qt_pointcloud_viewer/hook/cmake_prefix_path.ps1
+source;share/qt_pointcloud_viewer/hook/cmake_prefix_path.dsv
+source;share/qt_pointcloud_viewer/hook/cmake_prefix_path.sh
+source;share/qt_pointcloud_viewer/local_setup.bash
+source;share/qt_pointcloud_viewer/local_setup.dsv
+source;share/qt_pointcloud_viewer/local_setup.ps1
+source;share/qt_pointcloud_viewer/local_setup.sh
+source;share/qt_pointcloud_viewer/local_setup.zsh

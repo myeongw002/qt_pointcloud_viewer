@@ -23,6 +23,10 @@ struct ViewerSettings {
     bool showRobotLabel = true;
     bool showGridMap = false;
     
+    // Interest Objects 설정 추가
+    bool showObjects = true;
+    bool showObjectLabels = true;
+    
     // Style settings
     float pointSize = 2.0f;
     float pathWidth = 3.0f;

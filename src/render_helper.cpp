@@ -692,6 +692,9 @@ void InterestObjectRenderer::drawInterestObjectLabels(
     
     if (allObjects.isEmpty()) return;
     
+    // 객체 번호 카운터 (각 로봇별로 구분)
+    QHash<QString, int> robotObjectCounts;
+    
     for (auto it = allObjects.cbegin(); it != allObjects.cend(); ++it) {
         const auto& obj = it.value();
         if (!obj || !obj->isActive) continue;
@@ -701,6 +704,10 @@ void InterestObjectRenderer::drawInterestObjectLabels(
             continue;
         }
         
+        // 현재 로봇의 객체 번호 증가
+        QString robotKey = (currentRobot == "COMBINED") ? obj->discoveredBy : currentRobot;
+        robotObjectCounts[robotKey] += 1;
+        int objNumber = robotObjectCounts[robotKey];
         
         // 객체 위치보다 위에 라벨 표시
         Types::Vec3 labelPosition = obj->position;
@@ -714,10 +721,13 @@ void InterestObjectRenderer::drawInterestObjectLabels(
         if (screenPos.x() >= 0 && screenPos.x() < screenWidth && 
             screenPos.y() >= 0 && screenPos.y() < screenHeight) {
             
-            // 라벨 텍스트 생성
-            QString labelText = QString("%1\n[%2]")
-                .arg(Types::objectTypeToString(obj->type))
-                .arg(obj->discoveredBy);
+            // 새로운 라벨 형식: #n[objectclass]
+            QString labelText;
+
+            labelText = QString("#%1[%2]")
+                .arg(objNumber)
+                .arg(Types::objectTypeToString(obj->type));
+            
             
             // 객체 색상 사용
             QColor labelColor(obj->color.x * 255, obj->color.y * 255, obj->color.z * 255);
@@ -759,8 +769,8 @@ void InterestObjectRenderer::drawObjectLabel(
     const QPoint& screenPos,
     float textSize) {
     
-    // 텍스트 설정
-    QFont font("Arial", static_cast<int>(textSize), QFont::Bold);
+    // 텍스트 설정 - 더 읽기 쉽게 조정
+    QFont font("Consolas", static_cast<int>(textSize + 2), QFont::Bold);  // 고정폭 폰트 사용
     painter.setFont(font);
     
     // 멀티라인 텍스트 처리
@@ -777,20 +787,24 @@ void InterestObjectRenderer::drawObjectLabel(
         totalHeight += metrics.height();
     }
     
-    // 배경 박스 계산
-    QRect bgRect(screenPos.x() - maxWidth / 2 - 8,
-                 screenPos.y() - totalHeight / 2 - 4,
-                 maxWidth + 16,
-                 totalHeight + 8);
+    // 배경 박스 계산 (여백 증가)
+    int hPadding = 10;
+    int vPadding = 6;
+    QRect bgRect(screenPos.x() - maxWidth / 2 - hPadding,
+                 screenPos.y() - totalHeight / 2 - vPadding,
+                 maxWidth + (hPadding * 2),
+                 totalHeight + (vPadding * 2));
     
-    // 반투명 배경 그리기
-    painter.setBrush(QBrush(QColor(0, 0, 0, 150)));
-    painter.setPen(QPen(color, 1));
-    painter.drawRoundedRect(bgRect, 4, 4);
+    // 개선된 배경 그리기
+    painter.setBrush(QBrush(QColor(0, 0, 0, 180)));  // 더 진한 배경
+    painter.setPen(QPen(color, 2));  // 더 굵은 테두리
+    painter.drawRoundedRect(bgRect, 6, 6);  // 더 둥근 모서리
+
+    int yOffset = bgRect.top() + vPadding + metrics.ascent();
     
-    // 텍스트 그리기
+    // 실제 텍스트
     painter.setPen(QPen(Qt::white));
-    int yOffset = bgRect.top() + 4 + metrics.ascent();
+    yOffset = bgRect.top() + vPadding + metrics.ascent();
     
     for (const QString& line : lines) {
         QRect lineRect = metrics.boundingRect(line);
@@ -798,12 +812,6 @@ void InterestObjectRenderer::drawObjectLabel(
         painter.drawText(xPos, yOffset, line);
         yOffset += metrics.height();
     }
-    
-    // 타입별 아이콘 추가 (작은 사각형)
-    painter.setBrush(QBrush(color));
-    painter.setPen(Qt::NoPen);
-    QRect iconRect(bgRect.right() - 12, bgRect.top() + 2, 8, 8);
-    painter.drawRect(iconRect);
 }
 
 } // namespace Renderer

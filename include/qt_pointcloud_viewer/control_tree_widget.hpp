@@ -27,7 +27,6 @@ class ControlTreeWidget : public QTreeWidget {
 
 public:
     explicit ControlTreeWidget(QWidget* parent = nullptr);
-    ~ControlTreeWidget() = default;
     
     void setRobotName(const QString& robotName);
     void setTargetWidget(PointCloudWidget* widget);
@@ -54,16 +53,16 @@ private:
     QSlider* pathWidthSlider_ = nullptr;     // ← Path Width 슬라이더 참조 추가
     QLabel* pathWidthLabel_ = nullptr;       // ← Path Width 레이블 참조 추가
     QString currentMapStyle_ = "pointcloud";  // 현재 맵 스타일 추적
-    // Interest Objects 관련 UI 요소들
+    // Interest Objects 관련 UI 요소들 (안전한 멤버 변수로 관리)
     QTreeWidgetItem* interestObjectsGroup_;
-    QComboBox* robotSelectorCombo_;
-    QComboBox* objectTypeCombo_;
-    QPushButton* registerObjectBtn_;
-    QPushButton* clearObjectsBtn_;
     QCheckBox* showInterestObjectsCheck_;
     QTreeWidgetItem* objectListGroup_;
-    QComboBox* targetRobotCombo_;
+    QPushButton* clearObjectsBtn_;
+    // 새로 추가: 라벨들을 멤버 변수로 관리
+    QLabel* objectCountLabel_;
+    QLabel* serviceStatusLabel_;
     QComboBox* mapStyleCombo_ = nullptr;  // New combo box for map style selection
+    QComboBox* targetRobotCombo_ = nullptr;  // New combo box for target robot selection
     // ============================================================================
     // Core Functions
     // ============================================================================
@@ -74,10 +73,7 @@ private:
     void updateColorButtons();
     void setupInterestObjectsGroup();
     void addInterestObjectsControls(QTreeWidgetItem* parent);
-    void updateRobotSelector();
-    void registerCurrentObject();
     void clearAllObjects();
-    void updateObjectTypeCombo();
     QString getCurrentRobot() const;  // 추가
     
     // ============================================================================

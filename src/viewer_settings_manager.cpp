@@ -123,7 +123,8 @@ ViewerSettings ViewerSettingsManager::extractSettings(PointCloudWidget* widget) 
     settings.showGrid = widget->getShowGrid();
     settings.showRobotLabel = widget->getShowRobotLabel();
     settings.showGridMap = widget->getShowGridMap();  // 새로 추가
-    
+    settings.showObjects = widget->getShowObjects();
+    settings.showObjectLabels = widget->getShowObjectLabels();
     // Extract style settings
     settings.pointSize = widget->getPointSize();
     settings.pathWidth = widget->getPathWidth();
@@ -167,7 +168,9 @@ void ViewerSettingsManager::applySettings(PointCloudWidget* widget, const Viewer
     widget->setShowGrid(settings.showGrid);
     widget->setShowRobotLabel(settings.showRobotLabel);
     widget->setShowGridMap(settings.showGridMap);  // 새로 추가
-    
+    // Interest Objects 설정 적용
+    widget->setShowObjects(settings.showObjects);
+    widget->setShowObjectLabels(settings.showObjectLabels);
     // Apply style settings
     widget->setPointSize(settings.pointSize);
     widget->setPathWidth(settings.pathWidth);

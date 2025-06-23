@@ -153,6 +153,9 @@ private:
         const QColor& color,
         const QPoint& screenPos,
         float textSize);
+    
+    // 새로 추가: 서비스 ID 추출 헬퍼
+    static QString extractServiceId(const QString& objectId);
 };
 
 class GridMapRenderer {
