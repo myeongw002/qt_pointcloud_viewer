@@ -1,0 +1,37 @@
+{
+  "theme1": {
+    "name": "Dark Professional",
+    "color1": "#222831",
+    "color2": "#393E46", 
+    "color3": "#00ADB5",
+    "color4": "#EEEEEE"
+  },
+  "theme2": {
+    "name": "Light Pastel",
+    "color1": "#FCD8CD",
+    "color2": "#FEEBF6",
+    "color3": "#EBD6FB",
+    "color4": "#687FE5"
+  },
+  "theme3": {
+    "name": "Red Crimson",
+    "color1": "#2C1810",
+    "color2": "#3D2914",
+    "color3": "#E74C3C",
+    "color4": "#F7F3E9"
+  },
+  "theme4": {
+    "name": "Forest Green",
+    "color1": "#0F1A0F",
+    "color2": "#1B2F1B", 
+    "color3": "#27AE60",
+    "color4": "#E8F6E8"
+  },
+  "theme5": {
+    "name": "Ocean Blue",
+    "color1": "#0B1426",
+    "color2": "#1B2951",
+    "color3": "#3498DB",
+    "color4": "#EBF2FA"
+  }
+}

@@ -33,6 +33,8 @@ MainWindow::MainWindow(QWidget *parent)
     , debugConsoleDock_(nullptr)
     , debugConsoleAction_(nullptr)
     , controlPanelAction_(nullptr)
+    , themeMenu_(nullptr)          // 추가
+    , themeActionGroup_(nullptr)   // 추가
 {
     try {
         std::cout << "Setting up UI..." << std::endl;
@@ -42,7 +44,8 @@ MainWindow::MainWindow(QWidget *parent)
         setupPointCloudWidgets();
         setupControlPanel();
         setupDebugConsole();
-        
+        setupThemeMenu();        // 추가
+
         // Initial visibility (변경: 기본값을 숨김으로 설정)
         ui_->dockWidget->setVisible(false);  // ← true에서 false로 변경
         
@@ -583,4 +586,72 @@ void MainWindow::openNewViewer() {
         
         win->show();
     }, Qt::QueuedConnection);
+}
+
+void MainWindow::setupThemeMenu() {
+    // 테마 메뉴 생성
+    themeMenu_ = menuBar()->addMenu("&Theme");
+    themeActionGroup_ = new QActionGroup(this);
+    themeActionGroup_->setExclusive(true);
+    
+    // 테마 관리자에서 정렬된 테마 목록 가져오기
+    Theme::ThemeManager* themeManager = Theme::ThemeManager::instance();
+    QStringList themes = themeManager->getAvailableThemes();
+    
+    qDebug() << "Setting up theme menu with themes:" << themes;
+    
+    // 각 테마에 대한 액션 생성 (이미 정렬된 순서대로)
+    for (const QString& themeName : themes) {
+        QAction* themeAction = new QAction(themeName, this);
+        themeAction->setCheckable(true);
+        themeAction->setData(themeName);
+        
+        // 기본 테마를 체크 상태로 설정
+        if (themeName == "Default") {
+            themeAction->setChecked(true);
+        }
+        
+        themeActionGroup_->addAction(themeAction);
+        themeMenu_->addAction(themeAction);
+    }
+    
+    // 테마 변경 신호 연결
+    connect(themeActionGroup_, &QActionGroup::triggered,
+            this, &MainWindow::onThemeChanged);
+    
+    // 구분선 추가
+    themeMenu_->addSeparator();
+    
+    // 기본 테마로 복원 액션
+    QAction* resetThemeAction = new QAction("Reset to Default", this);
+    connect(resetThemeAction, &QAction::triggered, [this]() {
+        Theme::ThemeManager::instance()->applyDefaultTheme();
+        
+        // 모든 위젯에 스타일 강제 업데이트
+        this->setStyleSheet("");
+        this->update();
+        this->repaint();
+        
+        // 기본 테마 액션을 체크 상태로 변경
+        for (QAction* action : themeActionGroup_->actions()) {
+            if (action->data().toString() == "Default") {
+                action->setChecked(true);
+                break;
+            }
+        }
+    });
+    themeMenu_->addAction(resetThemeAction);
+    
+    qDebug() << "Theme menu setup completed with" << themes.size() << "themes";
+}
+
+void MainWindow::onThemeChanged(QAction* action) {
+    if (!action) return;
+    
+    QString themeName = action->data().toString();
+    qDebug() << "Changing theme to:" << themeName;
+    
+    Theme::ThemeManager::instance()->applyTheme(themeName);
+    
+    updateStatusBar(QString("Theme changed to: %1").arg(themeName));
 }

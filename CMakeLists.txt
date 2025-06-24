@@ -9,6 +9,7 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/ui)
 set(OpenGL_GL_PREFERENCE GLVND)
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -41,6 +42,7 @@ add_executable(${PROJECT_NAME}
     src/render_helper.cpp
     src/interest_object_manager.cpp
     src/interest_object_server.cpp
+    src/theme_manager.cpp
     ${UI_HEADERS}  # 생성된 UI 헤더 추가
 )
 
@@ -55,7 +57,8 @@ set(MOC_HEADERS include/${PROJECT_NAME}/mainwindow.hpp
     include/${PROJECT_NAME}/debug_console_widget.hpp
     include/${PROJECT_NAME}/viewer_settings_manager.hpp
     include/${PROJECT_NAME}/interest_object_manager.hpp
-    include/${PROJECT_NAME}/interest_object_server.hpp)
+    include/${PROJECT_NAME}/interest_object_server.hpp
+    include/${PROJECT_NAME}/theme_manager.hpp)
 qt5_wrap_cpp(MOC_SRCS ${MOC_HEADERS})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -83,6 +86,7 @@ ament_target_dependencies(${PROJECT_NAME}
     vision_msgs
     pcl_conversions 
     pcl_ros
+    ament_index_cpp
 )
 
 target_sources(${PROJECT_NAME} PRIVATE 
@@ -92,6 +96,10 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 install(TARGETS ${PROJECT_NAME} 
         DESTINATION lib/${PROJECT_NAME}
+)
+
+install(FILES resources/themes.json
+    DESTINATION share/resources/${PROJECT_NAME}
 )
 
 ament_package()

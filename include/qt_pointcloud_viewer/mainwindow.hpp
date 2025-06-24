@@ -9,6 +9,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QVector3D>
+#include <QActionGroup>
 #include <rclcpp/rclcpp.hpp>
 #include <thread>
 
@@ -18,6 +19,7 @@
 #include "control_tree_widget.hpp"
 #include "debug_console_widget.hpp"
 #include "interest_object_server.hpp"
+#include "theme_manager.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -53,6 +55,7 @@ private slots:
     void toggleControlPanel();
     void showControlPanel();
     void hideControlPanel();
+    void onThemeChanged(QAction* action);  // 추가
 
 protected:
     // ============================================================================
@@ -118,6 +121,12 @@ private:
     Widget::PointCloudWidget* getWidgetByName(const QString& robotName);
     void resetToDefaultLayout();
     void updateStatusBar(const QString& message);
+
+    // 테마 관련 멤버 추가
+    QMenu* themeMenu_;
+    QActionGroup* themeActionGroup_;
+    
+    void setupThemeMenu();  // 추가
 };
 
 #endif // MAINWINDOW_H
