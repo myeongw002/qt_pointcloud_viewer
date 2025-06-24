@@ -102,4 +102,9 @@ install(FILES resources/themes.json
     DESTINATION share/resources/${PROJECT_NAME}
 )
 
+install(PROGRAMS
+    scripts/demo_service.py
+    DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()
